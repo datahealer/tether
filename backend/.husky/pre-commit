@@ -1,0 +1,14 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run ESLint and Prettier checks before committing
+npm run lint
+npm run format-check
+
+# If any of the above commands fail, prevent the commit
+if [ $? -ne 0 ]; then
+  echo "Commit failed due to linting or formatting errors."
+  exit 1
+fi
+
+echo "Pre-commit checks passed."

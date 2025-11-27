@@ -1,0 +1,65 @@
+name: CodeRabbit Configuration
+version: 1.0
+description: Configuration for CodeRabbit deployment and CI/CD settings
+
+environments:
+  dev:
+    aws:
+      config: config/aws/dev-aws-config.json
+      env: config/env/dev.env
+    resources:
+      - name: app-dev
+        type: EC2
+        properties:
+          instanceType: t2.micro
+          ami: ami-12345678
+      - name: db-dev
+        type: RDS
+        properties:
+          engine: mysql
+          instanceClass: db.t2.micro
+          allocatedStorage: 20
+
+  stage:
+    aws:
+      config: config/aws/stage-aws-config.json
+      env: config/env/stage.env
+    resources:
+      - name: app-stage
+        type: EC2
+        properties:
+          instanceType: t2.small
+          ami: ami-12345678
+      - name: db-stage
+        type: RDS
+        properties:
+          engine: mysql
+          instanceClass: db.t2.small
+          allocatedStorage: 50
+
+  prod:
+    aws:
+      config: config/aws/prod-aws-config.json
+      env: config/env/prod.env
+    resources:
+      - name: app-prod
+        type: EC2
+        properties:
+          instanceType: t2.large
+          ami: ami-12345678
+      - name: db-prod
+        type: RDS
+        properties:
+          engine: mysql
+          instanceClass: db.t2.large
+          allocatedStorage: 100
+
+approvalFlow:
+  exceptions:
+    allowed: true
+    justification: "Exceptions for strict typing are allowed when integrating with third-party libraries or legacy code where type definitions are not available."
+    frequency: "Exceptions should be minimized and used only when absolutely necessary."
+    process:
+      - request: "Submit a request for exception with justification."
+      - review: "Code review team evaluates the request."
+      - approval: "Approval required from at least one senior developer."

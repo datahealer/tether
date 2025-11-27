@@ -1,0 +1,18 @@
+{
+  "region": "us-west-2",
+  "accessKeyId": "YOUR_STAGE_ACCESS_KEY_ID",
+  "secretAccessKey": "YOUR_STAGE_SECRET_ACCESS_KEY",
+  "s3": {
+    "bucket": "your-app-stage-bucket",
+    "url": "https://your-app-stage-bucket.s3.amazonaws.com"
+  },
+  "dynamodb": {
+    "tableName": "your-app-stage-table"
+  },
+  "lambda": {
+    "functionName": "your-app-stage-function"
+  },
+  "apiGateway": {
+    "endpoint": "https://your-api-stage.execute-api.us-west-2.amazonaws.com/stage"
+  }
+}

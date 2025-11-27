@@ -1,0 +1,15 @@
+{
+  "region": "us-west-2",
+  "accessKeyId": "your-access-key-id",
+  "secretAccessKey": "your-secret-access-key",
+  "bucketName": "your-bucket-name-dev",
+  "dynamodb": {
+    "tableName": "your-table-name-dev"
+  },
+  "s3": {
+    "bucket": "your-s3-bucket-dev"
+  },
+  "lambda": {
+    "functionName": "your-lambda-function-dev"
+  }
+}

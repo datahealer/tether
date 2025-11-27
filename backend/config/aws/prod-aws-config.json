@@ -1,0 +1,18 @@
+{
+  "region": "us-east-1",
+  "accessKeyId": "YOUR_PROD_ACCESS_KEY_ID",
+  "secretAccessKey": "YOUR_PROD_SECRET_ACCESS_KEY",
+  "bucket": "name-prod-bucket",
+  "dynamodb": {
+    "tableName": "name-prod-table"
+  },
+  "s3": {
+    "bucketName": "name-prod-s3-bucket"
+  },
+  "lambda": {
+    "functionName": "name-prod-lambda"
+  },
+  "apiGateway": {
+    "restApiId": "name-prod-api-gateway"
+  }
+}
