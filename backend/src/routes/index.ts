@@ -1,13 +1,38 @@
-import { Router, Application } from 'express';
-import IndexController from '../controllers/index';
+// src/routes/index.ts
+import { Express } from 'express';
 
-const router = Router();
-const indexController = new IndexController();
+// Import all route files
+import authRoutes from './auth';
+import onboardingRoutes from './onboarding';
+// import settingsRoutes from './settings';
+// import couplesRoutes from './couple';
+// import tethersRoutes from './tethers.routes';
+// import progressRoutes from './progress.routes';
+// import purchasesRoutes from './purchases.routes';
+// import adminRoutes from './admin.routes';
 
-export const setRoutes = (app: Application): void => {
-    app.use('/api', router);
+export const setRoutes = (app: Express) => {
+  // === PUBLIC ROUTES ===
+  app.use('/auth', authRoutes);
 
-    router.get('/', indexController.handleHome.bind(indexController));
-    router.get('/endpoint1', indexController.handleEndpoint1.bind(indexController));
-    router.post('/endpoint2', indexController.handleEndpoint2.bind(indexController));
+  // === PROTECTED ROUTES (all require JWT via authMiddleware) ===
+  app.use('/onboarding', onboardingRoutes);
+  // app.use('/settings', settingsRoutes);
+  // app.use('/couples', couplesRoutes);
+  // app.use('/tethers', tethersRoutes);
+  // app.use('/progress', progressRoutes);
+  // app.use('/purchases', purchasesRoutes);
+
+  // === ADMIN (add extra protection later) ===
+  // app.use('/admin', adminRoutes);
+
+  // Health check
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', app: 'Tether API v1', time: new Date().toISOString() });
+  });
+
+  // 404 handler
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
 };
