@@ -1,35 +1,44 @@
-import dotenv from 'dotenv';
-import path from 'path';
 import express from 'express';
-import connectDB from './db/db';
-import { setRoutes } from './routes/index';
-// import '../types/express'; 
-// Load environment variables with absolute path
-// const envPath = path.resolve(__dirname, `../config/env/${process.env.NODE_ENV || 'development'}.env`);
-// dotenv.config({ path: envPath });
+import cors from 'cors';
+import dotenv from 'dotenv';
+import router from './routes';
+import sequelize from './db/db';
 
 // Load environment variables
-const envFile = process.env.NODE_ENV === 'production' ? 'prod.env' : 'dev.env';
-const envPath = path.resolve(__dirname, `../config/env/${envFile}`);
-console.log('Loading env from:', envPath);
-dotenv.config({ path: envPath });
+dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env` });
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Debug: Check if env variables are loaded
-console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✓ Loaded' : '✗ Not loaded');
-console.log('PORT:', process.env.PORT);
-
 // Middleware
+app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-connectDB();
+// Routes
+app.use('/api', router);
 
-// Set up routes
-setRoutes(app);
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
 });
+
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Call the DB initializer (./db/db) which may perform authentication/sync internally.
+    await sequelize();
+    console.log('Database initialized successfully.');
+
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Unable to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

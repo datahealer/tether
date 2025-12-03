@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User';
+import  User  from '../models/User';
 
 export const authMiddleware = async (
   req: Request,
@@ -23,7 +23,8 @@ export const authMiddleware = async (
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    req.user = user;
+    // convert mongoose document to a plain object and cast to any to satisfy the Request type
+    req.user = (user && (user as any).toObject ? (user as any).toObject() : user) as any;
     next();
   } catch (err) {
     res.status(401).json({ error: 'Unauthorized' });

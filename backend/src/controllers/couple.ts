@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { CoupleInvite } from '../models/CoupleInvite';
-import { Couple } from '../models/Couple';
-import { User } from '../models/User';
+import  CoupleInvite  from '../models/CoupleInvite';
+import  Couple  from '../models/Couple';
+import User  from '../models/User';
 import { SubscriptionTier } from '../types/enums';
 import { IUser } from '../types/interfaces';
 
@@ -25,9 +25,9 @@ export const createInvite = async (req: Request, res: Response) => {
     }
 
     res.json({
-      code: invite.code,
-      shareUrl: `tether://join/${invite.code}`,
-      expiresAt: invite.expiresAt,
+      code: invite.get('code'),
+      shareUrl: `tether://join/${invite.get('code')}`,
+      expiresAt: invite.get('expiresAt'),
     });
   } catch (error) {
     console.error('Create invite error:', error);
@@ -54,26 +54,25 @@ export const joinCouple = async (req: Request, res: Response) => {
       expiresAt: { $gt: new Date() },
     });
 
-    if (!invite || invite.inviterUserId.toString() === user._id.toString()) {
+    if (!invite || invite.inviterId.toString() === user._id.toString()) {
       return res.status(400).json({ error: 'Invalid or expired invite' });
     }
 
     const couple = await Couple.create({
-      users: [invite.inviterUserId, user._id],
+      users: [invite.inviterId, user._id],
       rhythm: 'daily',
       subscriptionTier: SubscriptionTier.FREE,
     });
 
-    await User.updateMany({ _id: { $in: couple.users } }, { coupleId: couple._id });
-    invite.usedByUserId = user._id;
-    invite.usedAt = new Date();
+    await User.updateMany({ _id: { $in: couple.get('users') } }, { coupleId: couple._id });
+    invite.set({ usedByUserId: user._id, usedAt: new Date() });
     await invite.save();
 
     // Sync entitlements if one is Premium
-    const users = await User.find({ _id: { $in: couple.users } });
+    const users = await User.find({ _id: { $in: couple.get('users') } });
     const hasPremium = users.some((u) => u.onboardingData);
     if (hasPremium) {
-      couple.subscriptionTier = SubscriptionTier.PREMIUM;
+      couple.set('subscriptionTier', SubscriptionTier.PREMIUM);
     }
     await couple.save();
 

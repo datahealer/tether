@@ -1,8 +1,14 @@
 import { Router } from 'express';
-import { signIn } from '../controllers/auth';
+import { googleAuth, appleAuth } from '../controllers/auth';
 
 const router = Router();
 
-router.post('/signin', signIn);
+// OAuth routes
+router.post('/google', googleAuth);
+router.post('/apple', appleAuth);
+
+// Email/password routes
+// router.post('/signup', emailSignup);
+// router.post('/login', emailLogin);
 
 export default router;
