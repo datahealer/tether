@@ -42,12 +42,20 @@ import coupleRoutes from './couple';
 import onboardingRoutes from './onboarding';
 import settingsRoutes from './settings';
 
+import adminAuthRoutes from './admin/auth';
+import adminQuestionRoutes from './admin/questions';
+
 const router = Router();
 
+// Mobile app routes
 router.use('/auth', authRoutes);
 router.use('/couple', coupleRoutes);
 router.use('/onboarding', onboardingRoutes);
 router.use('/settings', settingsRoutes);
+
+// Admin routes (correctly prefixed)
+router.use('/admin/auth', adminAuthRoutes);
+router.use('/admin/questions', adminQuestionRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

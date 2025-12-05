@@ -3,12 +3,12 @@ import { googleAuth, appleAuth } from '../controllers/auth';
 
 const router = Router();
 
-// OAuth routes
+// OAuth routes for mobile app
 router.post('/google', googleAuth);
 router.post('/apple', appleAuth);
 
-// Email/password routes
-// router.post('/signup', emailSignup);
-// router.post('/login', emailLogin);
+// If you want email/password for mobile app, add here:
+// router.post('/signup', mobileSignup);
+// router.post('/login', mobileLogin);
 
 export default router;
