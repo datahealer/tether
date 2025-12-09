@@ -1,6 +1,59 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+# # "org" ensures this Service is used with the correct Serverless Framework Access Key.
+# org: vanshorgo
+# # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+# app: tether-backend
+# service: tether-backend
+
+# useDotenv: true
+
+# provider:
+#   name: aws
+#   runtime: nodejs18.x
+#   region: us-east-1
+#   stage: ${opt:stage, 'dev'}
+#   environment:
+#     DATABASE_URL: ${env:DATABASE_URL}
+#     PORT: ${env:PORT}
+#     NODE_ENV: ${env:NODE_ENV}
+#     GOOGLE_CLIENT_ID: ${env:GOOGLE_CLIENT_ID}
+#     GOOGLE_CLIENT_SECRET: ${env:GOOGLE_CLIENT_SECRET}
+#     JWT_SECRET: ${env:JWT_SECRET}
+#     JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN}
+#   httpApi:
+#     cors:
+#       allowedOrigins:
+#         - http://localhost:5173
+#         - http://localhost:3000
+#       allowedHeaders:
+#         - Content-Type
+#         - Authorization
+#         - X-Amz-Date
+#         - X-Api-Key
+#         - X-Amz-Security-Token
+#       allowedMethods:
+#         - GET
+#         - POST
+#         - PUT
+#         - DELETE
+#         - PATCH
+#         - OPTIONS
+#       allowCredentials: true
+
+# functions:
+#   api:
+#     handler: dist/index.handler
+#     events:
+#       - httpApi:
+#           path: /{proxy+}
+#           method: ANY
+
+# plugins:
+#   - serverless-offline
+
+# custom:
+#   serverless-offline:
+#     httpPort: 3000
 org: vanshorgo
-# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
 app: tether-backend
 service: tether-backend
 
@@ -24,6 +77,8 @@ provider:
       allowedOrigins:
         - http://localhost:5173
         - http://localhost:3000
+          # Add your Amplify domain
+        - https://dev.d3tt7e7nz4d0aw.amplifyapp.com  # Replace with actual URL
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -38,6 +93,16 @@ provider:
         - PATCH
         - OPTIONS
       allowCredentials: true
+
+package:
+  patterns:
+    - 'dist/**'
+    - 'node_modules/**'
+    - 'package.json'
+    - '!src/**'
+    - '!.git/**'
+    - '!.vscode/**'
+    - '!tests/**'
 
 functions:
   api:

@@ -1,15 +1,23 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import Admin, { IAdmin } from '../../models/admin';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
+import Admin from '../../models/admin';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // Generate JWT Token with 'admin' type
 const generateToken = (adminId: string): string => {
-  return jwt.sign({ id: adminId, type: 'admin' }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+   const expiresIn: SignOptions['expiresIn'] = JWT_EXPIRES_IN
+    ? (JWT_EXPIRES_IN as unknown as SignOptions['expiresIn'])
+    : '7d';
+  const options: SignOptions = {
+      expiresIn: expiresIn
+    };
+    
+  return jwt.sign(
+    { id: adminId, type: 'admin' }, JWT_SECRET,options, 
+   
+  );
 };
 
 // @route   POST /api/admin/auth/signup
