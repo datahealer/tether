@@ -1,395 +1,430 @@
 
 
 
-
-// // app/onboarding/account-creation.tsx
-// import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
-// import { LinearGradient } from 'expo-linear-gradient';
+// import React, { useState, useEffect } from 'react';
+// import { 
+//   View, 
+//   Text, 
+//   StyleSheet, 
+//   TextInput, 
+//   TouchableOpacity, 
+//   Switch, 
+//   Alert,
+//   KeyboardAvoidingView,
+//   Platform,
+//   ScrollView
+// } from 'react-native';
 // import { useRouter } from 'expo-router';
-// import { useState, useEffect } from 'react';
+// import { Ionicons } from '@expo/vector-icons';
+// import * as Haptics from 'expo-haptics';
+// import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 // import { useAuth } from '@/context/auth_context';
-// import { useOnboarding } from '@/context/onboarding_context';
-// import { useGoogleAuth, processGoogleSignIn, isAppleAuthAvailable, signInWithApple } from '@/services/auth_service';
-// import { updateOnboardingData } from '@/services/onboarding_service';
-// import * as AppleAuthentication from 'expo-apple-authentication';
+// import { useGoogleAuth, processGoogleSignIn } from '@/services/auth_service';
+// import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '../../theme/constants';
 
 // export default function AccountCreationScreen() {
 //   const router = useRouter();
-//   const { signIn } = useAuth();
-//   const { onboardingData } = useOnboarding();
-//   const { request, response, promptAsync } = useGoogleAuth();
-//   const [name, setName] = useState('');
+//   const { signUp, signIn } = useAuth();
+  
 //   const [email, setEmail] = useState('');
 //   const [password, setPassword] = useState('');
 //   const [showPassword, setShowPassword] = useState(false);
+//   const [savePassword, setSavePassword] = useState(false);
 //   const [loading, setLoading] = useState(false);
-//   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+//   const [emailFocused, setEmailFocused] = useState(false);
+//   const [passwordFocused, setPasswordFocused] = useState(false);
 
-//   useEffect(() => {
-//     checkAppleAuth();
-//   }, []);
-
-//   const checkAppleAuth = async () => {
-//     const available = await isAppleAuthAvailable();
-//     setAppleAuthAvailable(available);
-//   };
+//   // Google Sign In
+//   const { request, response, promptAsync } = useGoogleAuth();
 
 //   useEffect(() => {
 //     if (response?.type === 'success') {
-//       handleGoogleResponse();
+//       handleGoogleResponse(response);
 //     }
 //   }, [response]);
 
-//   const syncOnboardingDataToBackend = async () => {
-//     try {
-//       await updateOnboardingData(onboardingData);
-//     } catch (error: any) {
-//       console.error('Failed to sync onboarding data:', error);
-//     }
-//   };
-
-//   const handleEmailSignUp = async () => {
-//     if (!name.trim() || !email.trim() || !password.trim()) {
-//       Alert.alert('Error', 'Please fill in all fields');
-//       return;
-//     }
-
+//   const handleGoogleResponse = async (googleResponse: any) => {
 //     setLoading(true);
 //     try {
-//       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/signup`, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({ name, email, password }),
-//       });
-
-//       if (!response.ok) {
-//         throw new Error('Failed to create account');
-//       }
-
-//       const userData = await response.json();
-//       await signIn(userData);
-//       await syncOnboardingDataToBackend();
-//       router.push('/onboarding/partner-invite');
-//     } catch (error: any) {
-//       Alert.alert('Error', error.message || 'Failed to create account');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleGoogleResponse = async () => {
-//     try {
-//       setLoading(true);
-//       const user = await processGoogleSignIn(response);
+//       const user = await processGoogleSignIn(googleResponse);
 //       await signIn(user);
-//       await syncOnboardingDataToBackend();
-//       router.push('/onboarding/partner-invite');
+//       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+//       router.push('/onboarding/privacy');
 //     } catch (error: any) {
-//       Alert.alert('Error', error.message || 'Google sign-in failed');
+//       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+//       Alert.alert('Error', error.message || 'Failed to sign in with Google');
 //     } finally {
 //       setLoading(false);
 //     }
 //   };
 
 //   const handleGoogleSignIn = async () => {
-//     if (!request) {
-//       Alert.alert('Error', 'Google Sign-In not ready');
-//       return;
-//     }
 //     try {
+//       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 //       await promptAsync();
 //     } catch (error: any) {
-//       Alert.alert('Error', error.message || 'Failed to sign in with Google');
+//       Alert.alert('Error', 'Failed to initiate Google sign in');
 //     }
 //   };
 
-//   const handleAppleSignIn = async () => {
+//   const handleCreateAccount = async () => {
+//     if (!email || !password) {
+//       Alert.alert('Error', 'Please fill in all fields');
+//       return;
+//     }
+
+//     if (password.length < 8) {
+//       Alert.alert('Error', 'Password must be at least 8 characters');
+//       return;
+//     }
+
+//     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 //     setLoading(true);
+    
 //     try {
-//       const userData = await signInWithApple();
-//       await signIn(userData);
-//       await syncOnboardingDataToBackend();
-//       router.push('/onboarding/partner-invite');
+//       await signUp(email, password);
+//       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+//       router.push('/onboarding/privacy');
 //     } catch (error: any) {
-//       if (error.message !== 'Sign in was canceled') {
-//         Alert.alert('Error', error.message || 'Failed to sign in with Apple');
-//       }
+//       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+//       Alert.alert('Error', error.message || 'Failed to create account');
 //     } finally {
 //       setLoading(false);
 //     }
 //   };
 
 //   return (
-//     <LinearGradient
-//       colors={['#F5E6D3', '#E8D4C0', '#F0DDD0']}
-//       style={styles.container}
-//     >
-//       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => router.back()} disabled={loading}>
-//           <Text style={styles.backText}>←</Text>
-//         </TouchableOpacity>
-//         <Text style={styles.progress}>7/8</Text>
-//         <TouchableOpacity onPress={() => router.push('/onboarding/partner-invite')} disabled={loading}>
-//           <Text style={styles.closeText}>✕</Text>
-//         </TouchableOpacity>
-//       </View>
+//     <OnboardingLayout progress={0.14} showBackButton={true}>
+//       <KeyboardAvoidingView 
+//         style={styles.container}
+//         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//       >
+//         <ScrollView 
+//           style={styles.scrollView}
+//           contentContainerStyle={styles.content}
+//           keyboardShouldPersistTaps="handled"
+//           showsVerticalScrollIndicator={false}
+//         >
+//           {/* Heading: Inter Tight Semi Bold, 28, Line Height 36, Centered */}
+//           <Text style={styles.heading}>Create an account</Text>
 
-//       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-//         <Text style={styles.title}>You're almost ready to start</Text>
-//         <Text style={styles.subtitle}>Create your account to save your progress</Text>
-
-//         <View style={styles.form}>
-//           <TextInput
-//             style={styles.input}
-//             placeholder="Name"
-//             placeholderTextColor="#999"
-//             value={name}
-//             onChangeText={setName}
-//             editable={!loading}
-//           />
-
-//           <TextInput
-//             style={styles.input}
-//             placeholder="Email"
-//             placeholderTextColor="#999"
-//             value={email}
-//             onChangeText={setEmail}
-//             keyboardType="email-address"
-//             autoCapitalize="none"
-//             editable={!loading}
-//           />
-
-//           <View style={styles.passwordContainer}>
+//           {/* Email Input Field: 358x64, Corner Radius 16 */}
+//           <View style={[
+//             styles.inputContainer,
+//             emailFocused && styles.inputFocused
+//           ]}>
 //             <TextInput
-//               style={styles.passwordInput}
+//               style={styles.input}
+//               placeholder="Email"
+//               placeholderTextColor={Colors.darkGrey}
+//               value={email}
+//               onChangeText={setEmail}
+//               keyboardType="email-address"
+//               autoCapitalize="none"
+//               autoComplete="email"
+//               onFocus={() => setEmailFocused(true)}
+//               onBlur={() => setEmailFocused(false)}
+//             />
+//             <Ionicons name="create-outline" size={20} color={Colors.inputText} />
+//           </View>
+
+//           {/* Password Input Field: 358x64, Corner Radius 16 */}
+//           <View style={[
+//             styles.inputContainer,
+//             passwordFocused && styles.inputFocused
+//           ]}>
+//             <TextInput
+//               style={styles.input}
 //               placeholder="Password"
-//               placeholderTextColor="#999"
+//               placeholderTextColor={Colors.darkGrey}
 //               value={password}
 //               onChangeText={setPassword}
 //               secureTextEntry={!showPassword}
 //               autoCapitalize="none"
-//               editable={!loading}
+//               onFocus={() => setPasswordFocused(true)}
+//               onBlur={() => setPasswordFocused(false)}
 //             />
-//             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} disabled={loading}>
-//               <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+//             <TouchableOpacity 
+//               onPress={() => {
+//                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+//                 setShowPassword(!showPassword);
+//               }}
+//             >
+//               <Ionicons 
+//                 name={showPassword ? "eye-outline" : "eye-off-outline"} 
+//                 size={20} 
+//                 color={Colors.inputText} 
+//               />
 //             </TouchableOpacity>
 //           </View>
-//         </View>
 
-//         <TouchableOpacity
-//           style={[styles.createButton, loading && styles.buttonDisabled]}
-//           onPress={handleEmailSignUp}
-//           disabled={loading}
-//         >
-//           {loading ? (
-//             <ActivityIndicator color="#FFFFFF" />
-//           ) : (
-//             <Text style={styles.createButtonText}>Create Account</Text>
-//           )}
-//         </TouchableOpacity>
+//           {/* Save Password Toggle: SF Pro Display Medium, 16, Line Height 24, Left Align */}
+//           <View style={styles.toggleRow}>
+//             <Text style={styles.toggleText}>Save Password</Text>
+//             <Switch
+//               value={savePassword}
+//               onValueChange={(value) => {
+//                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+//                 setSavePassword(value);
+//               }}
+//               trackColor={{ false: Colors.mediumGrey, true: Colors.lightOrange }}
+//               thumbColor={Colors.white}
+//               ios_backgroundColor={Colors.mediumGrey}
+//             />
+//           </View>
 
-//         <Text style={styles.orText}>or</Text>
+//           {/* OR Divider */}
+//           <View style={styles.dividerContainer}>
+//             <View style={styles.divider} />
+//             <Text style={styles.dividerText}>OR</Text>
+//             <View style={styles.divider} />
+//           </View>
 
-//         {appleAuthAvailable && (
-//           <AppleAuthentication.AppleAuthenticationButton
-//             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-//             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-//             cornerRadius={12}
-//             style={styles.appleButton}
-//             onPress={() => {
-//               if (!loading) {
-//                 void handleAppleSignIn();
-//               }
-//             }}
-//           />
-//         )}
+//           {/* Google Sign In Button */}
+//           <TouchableOpacity 
+//             style={styles.googleButton}
+//             onPress={handleGoogleSignIn}
+//             disabled={!request || loading}
+//             activeOpacity={0.8}
+//           >
+//             <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
+//             <Text style={styles.googleButtonText}>Sign in with Google</Text>
+//           </TouchableOpacity>
 
-//         <TouchableOpacity 
-//           style={[styles.googleButton, loading && styles.buttonDisabled]} 
-//           onPress={handleGoogleSignIn}
-//           disabled={loading || !request}
-//         >
-//           {loading ? (
-//             <ActivityIndicator color="#2C2C2C" />
-//           ) : (
-//             <>
-//               <Text style={styles.googleIcon}>G</Text>
-//               <Text style={styles.googleButtonText}>Sign Up with Google</Text>
-//             </>
-//           )}
-//         </TouchableOpacity>
-//       </ScrollView>
-//     </LinearGradient>
+//           {/* Spacer */}
+//           <View style={{ flex: 1, minHeight: Spacing.xl }} />
+
+//           {/* Create Account Button: 358x65, Corner Radius 32, Dark Orange */}
+//           <TouchableOpacity 
+//             style={[
+//               styles.button,
+//               loading && styles.buttonDisabled
+//             ]}
+//             onPress={handleCreateAccount}
+//             disabled={loading}
+//             activeOpacity={0.8}
+//           >
+//             <Text style={styles.buttonText}>
+//               {loading ? 'Creating...' : 'Create account'}
+//             </Text>
+//           </TouchableOpacity>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+//     </OnboardingLayout>
 //   );
 // }
 
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     paddingTop: 60,
 //   },
-//   header: {
+//   scrollView: {
+//     flex: 1,
+//   },
+//   content: {
+//     flexGrow: 1,
+//     paddingTop: Spacing.lg,
+//     paddingBottom: Spacing.xl,
+//     alignItems: 'center', // Center all content
+//   },
+//   // Heading: Inter Tight Semi Bold, 28, Line Height 36, CENTERED
+//   heading: {
+//     fontFamily: 'InterTight-SemiBold',
+//     fontSize: FontSizes.heading,
+//     lineHeight: 36,
+//     fontWeight: FontWeights.semibold,
+//     color: Colors.black,
+//     marginBottom: Spacing.xl + Spacing.md, // 40pt spacing below heading
+//     letterSpacing: 0,
+//     textAlign: 'center', // Center the heading
+//     width: '100%',
+//   },
+//   // Input Field: 358x64, Padding 20, Corner Radius 16
+//   inputContainer: {
+//     ...ComponentSizes.inputField,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: Colors.inputFill,
+//     marginBottom: Spacing.md, // 16pt spacing between fields
+//     borderWidth: 1,
+//     borderColor: 'transparent',
+//   },
+//   inputFocused: {
+//     borderColor: Colors.lightOrange,
+//     backgroundColor: Colors.white,
+//   },
+//   // Form Input Field: SF Pro Display Regular, 16, Line Height 24
+//   input: {
+//     flex: 1,
+//     fontFamily: 'SFProDisplay-Regular',
+//     fontSize: FontSizes.input,
+//     lineHeight: 24,
+//     fontWeight: FontWeights.regular,
+//     color: Colors.inputText,
+//     letterSpacing: 0,
+//   },
+//   // Toggle Row: SF Pro Display Medium, 16, Line Height 24
+//   toggleRow: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     alignItems: 'center',
-//     paddingHorizontal: 24,
-//     paddingBottom: 16,
+//     width: ComponentSizes.inputField.width,
+//     marginTop: Spacing.sm,
+//     marginBottom: Spacing.lg,
 //   },
-//   backText: {
-//     fontSize: 28,
-//     color: '#2C2C2C',
+//   toggleText: {
+//     fontFamily: 'SFProDisplay-Medium',
+//     fontSize: FontSizes.input,
+//     lineHeight: 24,
+//     fontWeight: FontWeights.medium,
+//     color: Colors.black,
+//     letterSpacing: 0,
 //   },
-//   progress: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   closeText: {
-//     fontSize: 24,
-//     color: '#2C2C2C',
-//   },
-//   content: {
-//     flex: 1,
-//   },
-//   contentContainer: {
-//     paddingHorizontal: 24,
-//     paddingBottom: 50,
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     color: '#2C2C2C',
-//     marginBottom: 8,
-//   },
-//   subtitle: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 32,
-//   },
-//   form: {
-//     gap: 16,
-//     marginBottom: 24,
-//   },
-//   input: {
-//     backgroundColor: '#FFFFFF',
-//     borderRadius: 12,
-//     padding: 18,
-//     fontSize: 16,
-//     color: '#2C2C2C',
-//     borderWidth: 1,
-//     borderColor: '#E0E0E0',
-//   },
-//   passwordContainer: {
+//   // OR Divider
+//   dividerContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
-//     backgroundColor: '#FFFFFF',
-//     borderRadius: 12,
-//     paddingRight: 18,
-//     borderWidth: 1,
-//     borderColor: '#E0E0E0',
+//     width: ComponentSizes.inputField.width,
+//     marginVertical: Spacing.lg,
 //   },
-//   passwordInput: {
+//   divider: {
 //     flex: 1,
-//     padding: 18,
-//     fontSize: 16,
-//     color: '#2C2C2C',
+//     height: 1,
+//     backgroundColor: Colors.mediumGrey,
 //   },
-//   eyeIcon: {
-//     fontSize: 20,
+//   dividerText: {
+//     fontFamily: 'InterTight-Medium',
+//     fontSize: FontSizes.medium,
+//     fontWeight: FontWeights.medium,
+//     color: Colors.darkGrey,
+//     marginHorizontal: Spacing.md,
+//     letterSpacing: 0,
 //   },
-//   createButton: {
-//     backgroundColor: '#FF9B7A',
-//     paddingVertical: 18,
-//     borderRadius: 30,
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   createButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 18,
-//     fontWeight: '600',
-//   },
-//   buttonDisabled: {
-//     opacity: 0.5,
-//   },
-//   orText: {
-//     textAlign: 'center',
-//     color: '#666',
-//     fontSize: 14,
-//     marginBottom: 16,
-//   },
-//   appleButton: {
-//     height: 50,
-//     marginBottom: 12,
-//   },
+//   // Google Button: 358x65, Corner Radius 32, White with border
 //   googleButton: {
-//     backgroundColor: '#FFFFFF',
-//     paddingVertical: 16,
-//     borderRadius: 12,
+//     ...ComponentSizes.buttonLarge,
+//     backgroundColor: Colors.white,
 //     flexDirection: 'row',
-//     alignItems: 'center',
 //     justifyContent: 'center',
+//     alignItems: 'center',
 //     borderWidth: 1,
-//     borderColor: '#E0E0E0',
-//     gap: 8,
-//     height: 50,
+//     borderColor: Colors.mediumGrey,
+//     marginBottom: Spacing.md,
 //   },
-//   googleIcon: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
+//   buttonIcon: {
+//     marginRight: Spacing.sm,
 //   },
 //   googleButtonText: {
-//     color: '#2C2C2C',
-//     fontSize: 16,
-//     fontWeight: '600',
+//     fontFamily: 'InterTight-SemiBold',
+//     color: Colors.black,
+//     fontSize: FontSizes.buttonLarge,
+//     lineHeight: 28,
+//     fontWeight: FontWeights.semibold,
+//     letterSpacing: 0.45,
+//     textAlign: 'center',
+//   },
+//   // Button CTA: 358x65, Corner Radius 32
+//   button: {
+//     ...ComponentSizes.buttonLarge,
+//     backgroundColor: Colors.darkOrange,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     shadowColor: Colors.black,
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.1,
+//     shadowRadius: 8,
+//     elevation: 3,
+//   },
+//   buttonDisabled: {
+//     opacity: 0.6,
+//   },
+//   buttonText: {
+//     fontFamily: 'InterTight-SemiBold',
+//     color: Colors.white,
+//     fontSize: FontSizes.buttonLarge,
+//     lineHeight: 28,
+//     fontWeight: FontWeights.semibold,
+//     letterSpacing: 0.45, // 2.5%
+//     textAlign: 'center',
 //   },
 // });
-
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Switch, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useAuth } from '@/context/auth_context';
-
-WebBrowser.maybeCompleteAuthSession();
+import { useGoogleAuth, processGoogleSignIn, signInWithApple } from '@/services/auth_service';
+import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '../../theme/constants';
 
 export default function AccountCreationScreen() {
   const router = useRouter();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signIn, signOut, user } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [savePassword, setSavePassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
-  // Google Sign In configuration
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: 'YOUR_ANDROID_CLIENT_ID',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
-    webClientId: 'YOUR_WEB_CLIENT_ID',
-  });
+  // Google Sign In (for Android)
+  const { request, response, promptAsync } = useGoogleAuth();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (response?.type === 'success') {
-      const { authentication } = response;
-      handleGoogleSignIn(authentication?.accessToken);
+      handleGoogleResponse(response);
     }
   }, [response]);
 
-  const handleGoogleSignIn = async (token: string | undefined) => {
-    if (!token) return;
-    
+  const handleGoogleResponse = async (googleResponse: any) => {
     setLoading(true);
     try {
-      await signInWithGoogle(token);
+      const user = await processGoogleSignIn(googleResponse);
+      await signIn(user);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push('/onboarding/privacy');
     } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await promptAsync();
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to initiate Google sign in');
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const user = await signInWithApple();
+      await signIn(user);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push('/onboarding/privacy');
+    } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to sign in with Apple');
     } finally {
       setLoading(false);
     }
@@ -406,196 +441,435 @@ export default function AccountCreationScreen() {
       return;
     }
 
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
+    
     try {
       await signUp(email, password);
-      router.push('/onboarding/privacy');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/onboarding/privacy');
     } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await signOut();
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSkip = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/onboarding/privacy');
+  };
+
+  // If user is already logged in, show forward arrow
+  const showForwardArrow = !!user;
+
   return (
-    <OnboardingLayout progress={0.14}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Create an account</Text>
-
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
-          <Ionicons name="create-outline" size={20} color="#999" style={styles.inputIcon} />
-        </View>
-
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.inputIcon}
-          >
-            <Ionicons 
-              name={showPassword ? "eye-outline" : "eye-off-outline"} 
-              size={20} 
-              color="#999" 
-            />
+    <OnboardingLayout 
+      progress={0.14} 
+      showBackButton={true}
+      rightButton={
+        showForwardArrow ? (
+          <TouchableOpacity onPress={handleSkip}>
+            <Ionicons name="arrow-forward" size={24} color={Colors.black} />
           </TouchableOpacity>
-        </View>
-
-        {/* Save Password Toggle */}
-        <View style={styles.savePasswordContainer}>
-          <Text style={styles.savePasswordText}>Save Password</Text>
-          <Switch
-            value={savePassword}
-            onValueChange={setSavePassword}
-            trackColor={{ false: '#E0D0B8', true: '#D97E5A' }}
-            thumbColor="#FFF"
-          />
-        </View>
-
-        {/* OR Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.divider} />
-        </View>
-
-        {/* Google Sign In Button */}
-        <TouchableOpacity 
-          style={styles.googleButton}
-          onPress={() => promptAsync()}
-          disabled={!request || loading}
+        ) : (
+          <TouchableOpacity onPress={handleSkip}>
+            <Text style={styles.skipText}>Skip</Text>
+          </TouchableOpacity>
+        )
+      }
+    >
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons name="logo-google" size={20} color="#000" style={styles.buttonIcon} />
-          <Text style={styles.googleButtonText}>Sign in with Google</Text>
-        </TouchableOpacity>
-
-        {/* Spacer */}
-        <View style={{ flex: 1 }} />
-
-        {/* Create Account Button */}
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleCreateAccount}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Creating...' : 'Create account'}
+          {/* Heading */}
+          <Text style={styles.heading}>
+            {user ? 'Welcome back!' : 'Create an account'}
           </Text>
-        </TouchableOpacity>
-      </View>
+
+          {user ? (
+            // Logged in state
+            <View style={styles.loggedInContainer}>
+              <View style={styles.userInfoCard}>
+                <Ionicons name="person-circle-outline" size={48} color={Colors.darkOrange} />
+                <Text style={styles.userName}>{user.name}</Text>
+                <Text style={styles.userEmail}>{user.email}</Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.continueButton}
+                onPress={handleSkip}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buttonText}>Continue to next step</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.logoutButton}
+                onPress={handleLogout}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="log-out-outline" size={20} color={Colors.darkOrange} />
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {/* Email Input Field */}
+              <View style={[
+                styles.inputContainer,
+                emailFocused && styles.inputFocused
+              ]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={Colors.darkGrey}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+                <Ionicons name="create-outline" size={20} color={Colors.inputText} />
+              </View>
+
+              {/* Password Input Field */}
+              <View style={[
+                styles.inputContainer,
+                passwordFocused && styles.inputFocused
+              ]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.darkGrey}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                />
+                <TouchableOpacity 
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowPassword(!showPassword);
+                  }}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                    size={20} 
+                    color={Colors.inputText} 
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Save Password Toggle */}
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleText}>Save Password</Text>
+                <Switch
+                  value={savePassword}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSavePassword(value);
+                  }}
+                  trackColor={{ false: Colors.mediumGrey, true: Colors.lightOrange }}
+                  thumbColor={Colors.white}
+                  ios_backgroundColor={Colors.mediumGrey}
+                />
+              </View>
+
+              {/* OR Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.divider} />
+              </View>
+
+              {/* Platform-specific Auth Button */}
+              {Platform.OS === 'ios' ? (
+                <TouchableOpacity 
+                  style={styles.authButton}
+                  onPress={handleAppleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-apple" size={20} color={Colors.black} style={styles.buttonIcon} />
+                  <Text style={styles.authButtonText}>Sign in with Apple</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.authButton}
+                  onPress={handleGoogleSignIn}
+                  disabled={!request || loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
+                  <Text style={styles.authButtonText}>Sign in with Google</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Spacer */}
+              <View style={{ flex: 1, minHeight: Spacing.xl }} />
+
+              {/* Create Account Button */}
+              <TouchableOpacity 
+                style={[
+                  styles.button,
+                  loading && styles.buttonDisabled
+                ]}
+                onPress={handleCreateAccount}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Creating...' : 'Create account'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Already have account */}
+              <TouchableOpacity 
+                style={styles.loginLink}
+                onPress={() => router.push('/onboarding/login')}
+              >
+                <Text style={styles.loginLinkText}>
+                  Already have an account? <Text style={styles.loginLinkBold}>Sign in</Text>
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     flex: 1,
-    paddingTop: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 40,
+  scrollView: {
+    flex: 1,
   },
-  inputContainer: {
+  content: {
+    flexGrow: 1,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    alignItems: 'center',
+  },
+  heading: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.heading,
+    lineHeight: 36,
+    fontWeight: FontWeights.semibold,
+    color: Colors.black,
+    marginBottom: Spacing.xl + Spacing.md,
+    letterSpacing: 0,
+    textAlign: 'center',
+    width: '100%',
+  },
+  skipText: {
+    fontFamily: 'InterTight-Medium',
+    fontSize: FontSizes.medium,
+    color: Colors.darkOrange,
+    fontWeight: FontWeights.medium,
+  },
+  // Logged in state
+  loggedInContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  userInfoCard: {
+    backgroundColor: Colors.veryLightOrange,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    width: ComponentSizes.inputField.width,
+    gap: Spacing.sm,
+  },
+  userName: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.semibold,
+    color: Colors.black,
+  },
+  userEmail: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.medium,
+    color: Colors.inputText,
+  },
+  continueButton: {
+    ...ComponentSizes.buttonLarge,
+    backgroundColor: Colors.darkOrange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    marginBottom: 20,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: '#E0D0B8',
+    borderColor: Colors.darkOrange,
+    backgroundColor: Colors.white,
+  },
+  logoutButtonText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.darkOrange,
+  },
+  // Input fields
+  inputContainer: {
+    ...ComponentSizes.inputField,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.inputFill,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputFocused: {
+    borderColor: Colors.lightOrange,
+    backgroundColor: Colors.white,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    paddingVertical: 12,
-    color: '#000',
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.input,
+    lineHeight: 24,
+    fontWeight: FontWeights.regular,
+    color: Colors.inputText,
+    letterSpacing: 0,
   },
-  inputIcon: {
-    padding: 5,
-  },
-  savePasswordContainer: {
+  toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 30,
+    width: ComponentSizes.inputField.width,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
-  savePasswordText: {
-    fontSize: 16,
-    color: '#000',
+  toggleText: {
+    fontFamily: 'SFProDisplay-Medium',
+    fontSize: FontSizes.input,
+    lineHeight: 24,
+    fontWeight: FontWeights.medium,
+    color: Colors.black,
+    letterSpacing: 0,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    width: ComponentSizes.inputField.width,
+    marginVertical: Spacing.lg,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0D0B8',
+    backgroundColor: Colors.mediumGrey,
   },
   dividerText: {
-    marginHorizontal: 15,
-    fontSize: 14,
-    color: '#999',
-    fontWeight: '500',
+    fontFamily: 'InterTight-Medium',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.darkGrey,
+    marginHorizontal: Spacing.md,
+    letterSpacing: 0,
   },
-  googleButton: {
-    backgroundColor: '#FFF',
-    borderRadius: 25,
-    paddingVertical: 16,
+  authButton: {
+    ...ComponentSizes.buttonLarge,
+    backgroundColor: Colors.white,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0D0B8',
-    marginBottom: 20,
+    borderColor: Colors.mediumGrey,
+    marginBottom: Spacing.md,
   },
   buttonIcon: {
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
-  googleButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
+  authButtonText: {
+    fontFamily: 'InterTight-SemiBold',
+    color: Colors.black,
+    fontSize: FontSizes.buttonLarge,
+    lineHeight: 28,
+    fontWeight: FontWeights.semibold,
+    letterSpacing: 0.45,
+    textAlign: 'center',
   },
   button: {
-    backgroundColor: '#D97E5A',
-    borderRadius: 25,
-    paddingVertical: 16,
+    ...ComponentSizes.buttonLarge,
+    backgroundColor: Colors.darkOrange,
     alignItems: 'center',
-    marginBottom: 30,
+    justifyContent: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'InterTight-SemiBold',
+    color: Colors.white,
+    fontSize: FontSizes.buttonLarge,
+    lineHeight: 28,
+    fontWeight: FontWeights.semibold,
+    letterSpacing: 0.45,
+    textAlign: 'center',
+  },
+  loginLink: {
+    marginTop: Spacing.md,
+  },
+  loginLinkText: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.medium,
+    color: Colors.inputText,
+    textAlign: 'center',
+  },
+  loginLinkBold: {
+    fontFamily: 'SFProDisplay-Semibold',
+    fontWeight: FontWeights.semibold,
+    color: Colors.darkOrange,
   },
 });

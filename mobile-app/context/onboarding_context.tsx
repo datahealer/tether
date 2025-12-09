@@ -111,15 +111,20 @@ const ONBOARDING_STORAGE_KEY = '@tether_onboarding_data';
 
 export const OnboardingProvider = ({ children }: { children: React.ReactNode }) => {
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
-    relationshipStatus: undefined,
-    relationshipDuration: undefined,
-    livingType: [],
-    goals: [],
-    emotionalNeeds: [],
-    rhythm: undefined,
-    tone: undefined,
-    packPreferences: [],
-  });
+  firstName: undefined,
+  partnerFirstName: undefined,
+  dateOfBirth: undefined,
+  gender: undefined,
+  relationshipStatus: undefined,
+  relationshipDuration: undefined,
+  livingType: [],
+  hasChildren: undefined, // Add this
+  goals: [],
+  emotionalNeeds: [],
+  rhythm: undefined,
+  tone: undefined,
+  packPreferences: [],
+});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAuthToken, setHasAuthToken] = useState(false);

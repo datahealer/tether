@@ -210,7 +210,12 @@ export const verifyAppleToken = async (identityToken: string): Promise<AppleToke
 /**
  * Generate JWT for authenticated user
  */
-export const generateAuthToken = (userId: string): string => {
+// ...existing code...
+
+/**
+ * Generate JWT for authenticated user
+ */
+export const generateAuthToken = (userId: string, type: 'user' | 'admin' = 'user'): string => {
   const secret: Secret = process.env.JWT_SECRET || 'fallback_secret_key';
   const expiresInEnv = process.env.JWT_EXPIRES_IN;
   const expiresIn: SignOptions['expiresIn'] = expiresInEnv
@@ -221,9 +226,11 @@ export const generateAuthToken = (userId: string): string => {
     expiresIn: expiresIn
   };
   
-  return jwt.sign({ userId }, secret, options);
+  // Include type in payload for consistency
+  return jwt.sign({ userId, type }, secret, options);
 };
 
+// ...existing code...
 /**
  * Verify JWT token
  */

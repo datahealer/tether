@@ -18,8 +18,9 @@ const generateInviteCode = (): string => {
  */
 export const updateOnboarding = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = ((req.user as any)?.userId) ?? ((req.user as IUser)?._id?.toString());
-    
+    const userId = (req.user as any)?.userId || (req.user as IUser)?._id?.toString();
+    console.log('🔍 User ID from request:', userId);
+    console.log('🔍 Request user object:', req.user);
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
@@ -39,7 +40,7 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
     const user = await User.findById(userId);
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not foundono user id' });
       return;
     }
 

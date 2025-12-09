@@ -14,75 +14,68 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 
-type RhythmOption = 'Every day' | 'A few times a week' | 'Once a week' | "We'll decide as we go";
+type ChildrenAnswer = 'Yes' | 'No';
 
-export default function RhythmScreen() {
+export default function ChildrenScreen() {
   const router = useRouter();
-  const { updateField, onboardingData } = useOnboarding();
-  const [selectedRhythm, setSelectedRhythm] = useState<RhythmOption | null>(null);
+  const { updateField } = useOnboarding();
+  const [selectedAnswer, setSelectedAnswer] = useState<ChildrenAnswer | null>(null);
 
-  const rhythms: RhythmOption[] = [
-    'Every day',
-    'A few times a week',
-    'Once a week',
-    "We'll decide as we go",
-  ];
+  const answers: ChildrenAnswer[] = ['Yes', 'No'];
 
-  const handleSelect = (rhythm: RhythmOption) => {
+  const handleSelect = (answer: ChildrenAnswer) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedRhythm(rhythm);
+    setSelectedAnswer(answer);
   };
 
   const handleContinue = async () => {
-    if (!selectedRhythm) {
-      Alert.alert('Required', 'Please select a rhythm');
-      return;
-    }
+  if (!selectedAnswer) {
+    Alert.alert('Required', 'Please select an answer');
+    return;
+  }
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    try {
-      updateField('rhythm', selectedRhythm);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      // Show notification permission modal
-      router.push('/onboarding/notification-permission');
-    } catch (error) {
-      console.error('Error saving rhythm:', error);
-      Alert.alert('Error', 'Failed to save rhythm');
-    }
-  };
+  try {
+    // Now we can use hasChildren field directly
+    updateField('hasChildren', selectedAnswer === 'Yes');
+
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.push('/onboarding/goals');
+  } catch (error) {
+    console.error('Error saving children info:', error);
+    Alert.alert('Error', 'Failed to save information');
+  }
+};
 
   return (
-    <OnboardingLayout progress={0.77} showBackButton={true}>
+    <OnboardingLayout progress={0.63} showBackButton={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Heading */}
-        <Text style={styles.heading}>
-          Choose how often you{'\n'}would like to be Tethered
-        </Text>
+        <Text style={styles.heading}>Do either of you have kids?</Text>
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Set a rhythm that fits your relationship.
+          Be it together or from previous relationships.
         </Text>
 
         {/* Options */}
         <View style={styles.optionsContainer}>
-          {rhythms.map((rhythm) => {
-            const isSelected = selectedRhythm === rhythm;
+          {answers.map((answer) => {
+            const isSelected = selectedAnswer === answer;
             
             return (
               <TouchableOpacity
-                key={rhythm}
+                key={answer}
                 style={[
                   styles.optionButton,
                   isSelected && styles.optionButtonSelected,
                 ]}
-                onPress={() => handleSelect(rhythm)}
+                onPress={() => handleSelect(answer)}
                 activeOpacity={0.7}
               >
                 <Text
@@ -91,7 +84,7 @@ export default function RhythmScreen() {
                     isSelected && styles.optionTextSelected,
                   ]}
                 >
-                  {rhythm}
+                  {answer}
                 </Text>
                 {isSelected && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
@@ -102,19 +95,19 @@ export default function RhythmScreen() {
         </View>
 
         {/* Spacer */}
-        <View style={{ flex: 1, minHeight: Spacing.xxl }} />
+        <View style={{ flex: 1, minHeight: Spacing.xxl * 2 }} />
 
         {/* Continue Button */}
         <TouchableOpacity
           style={[
             styles.continueButton,
-            !selectedRhythm && styles.continueButtonDisabled,
+            !selectedAnswer && styles.continueButtonDisabled,
           ]}
           onPress={handleContinue}
-          disabled={!selectedRhythm}
+          disabled={!selectedAnswer}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Set Our Rhythm</Text>
+          <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
       </ScrollView>
     </OnboardingLayout>

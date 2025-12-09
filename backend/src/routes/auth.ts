@@ -1,14 +1,14 @@
-import { Router } from 'express';
-import { googleAuth, appleAuth } from '../controllers/auth';
+import express from 'express';
+import { appleAuth, googleAuth, emailSignup, emailLogin } from '../controllers/auth';
 
-const router = Router();
+const router = express.Router();
 
-// OAuth routes for mobile app
-router.post('/google', googleAuth);
+// Social Auth
 router.post('/apple', appleAuth);
+router.post('/google', googleAuth);
 
-// If you want email/password for mobile app, add here:
-// router.post('/signup', mobileSignup);
-// router.post('/login', mobileLogin);
+// Email Auth
+router.post('/signup', emailSignup);
+router.post('/login', emailLogin);
 
 export default router;

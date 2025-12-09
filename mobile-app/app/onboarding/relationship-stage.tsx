@@ -3,18 +3,16 @@
 // import { useRouter } from 'expo-router';
 // import { useState } from 'react';
 
-// const durationOptions = [
-//   { id: 'just-started', label: 'Just started' },
-//   { id: '6-12-months', label: '6–12 months' },
-//   { id: '1-3-years', label: '1–3 years' },
-//   { id: '3-5-years', label: '3–5 years' },
-//   { id: '5-10-years', label: '5–10 years' },
-//   { id: '10-plus', label: '10+ years' },
+// const relationshipOptions = [
+//   { id: 'dating', label: 'Dating', emoji: '💕' },
+//   { id: 'engaged', label: 'Engaged', emoji: '💍' },
+//   { id: 'married', label: 'Married', emoji: '💑' },
+//   { id: 'something-else', label: 'Something Else', emoji: '' },
 // ];
 
-// export default function RelationshipDurationScreen() {
+// export default function RelationshipStatusScreen() {
 //   const router = useRouter();
-//   const [selected, setSelected] = useState('1-3-years');
+//   const [selected, setSelected] = useState('');
 
 //   return (
 //     <LinearGradient
@@ -25,28 +23,28 @@
 //         <TouchableOpacity onPress={() => router.back()}>
 //           <Text style={styles.backText}>←</Text>
 //         </TouchableOpacity>
-//         <Text style={styles.progress}>2/8</Text>
-//         <TouchableOpacity onPress={() => router.push('/onboarding/goals')}>
+//         <Text style={styles.progress}>1/8</Text>
+//         <TouchableOpacity onPress={() => router.push('/onboarding/relationship-duration')}>
 //           <Text style={styles.closeText}>✕</Text>
 //         </TouchableOpacity>
 //       </View>
 
 //       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-//         <Text style={styles.title}>How long have you been together?</Text>
-//         <Text style={styles.subtitle}>It helps us choose the right mix of questions</Text>
+//         <Text style={styles.title}>What best describes your relationship right now?</Text>
+//         <Text style={styles.subtitle}>This helps us tailor your questions</Text>
 
 //         <View style={styles.optionsContainer}>
-//           {durationOptions.map((option) => (
+//           {relationshipOptions.map((option) => (
 //             <TouchableOpacity
 //               key={option.id}
 //               style={[
-//                 styles.optionItem,
-//                 selected === option.id && styles.optionItemSelected,
+//                 styles.optionCard,
+//                 selected === option.id && styles.optionCardSelected,
 //               ]}
 //               onPress={() => setSelected(option.id)}
 //             >
+//               {option.emoji && <Text style={styles.optionEmoji}>{option.emoji}</Text>}
 //               <Text style={styles.optionLabel}>{option.label}</Text>
-//               {selected === option.id && <Text style={styles.checkmark}>✓</Text>}
 //             </TouchableOpacity>
 //           ))}
 //         </View>
@@ -54,10 +52,15 @@
 
 //       <View style={styles.bottomContainer}>
 //         <TouchableOpacity
-//           style={styles.primaryButton}
-//           onPress={() => router.push('/onboarding/goals')}
+//           style={[styles.primaryButton, !selected && styles.buttonDisabled]}
+//           disabled={!selected}
+//           onPress={() => router.push('/onboarding/relationship-duration')}
 //         >
 //           <Text style={styles.primaryButtonText}>Continue</Text>
+//         </TouchableOpacity>
+
+//         <TouchableOpacity onPress={() => router.push('/onboarding/relationship-duration')}>
+//           <Text style={styles.linkText}>Skip For Now</Text>
 //         </TouchableOpacity>
 //       </View>
 //     </LinearGradient>
@@ -106,32 +109,32 @@
 //     marginBottom: 32,
 //   },
 //   optionsContainer: {
-//     gap: 12,
+//     gap: 16,
 //   },
-//   optionItem: {
+//   optionCard: {
 //     backgroundColor: '#FFFFFF',
-//     borderRadius: 12,
-//     padding: 20,
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
+//     borderRadius: 16,
+//     padding: 24,
 //     alignItems: 'center',
 //     borderWidth: 2,
 //     borderColor: 'transparent',
 //   },
-//   optionItemSelected: {
+//   optionCardSelected: {
 //     borderColor: '#FF9B7A',
+//   },
+//   optionEmoji: {
+//     fontSize: 40,
+//     marginBottom: 8,
 //   },
 //   optionLabel: {
 //     fontSize: 16,
+//     fontWeight: '600',
 //     color: '#2C2C2C',
-//   },
-//   checkmark: {
-//     fontSize: 20,
-//     color: '#FF9B7A',
 //   },
 //   bottomContainer: {
 //     paddingHorizontal: 24,
 //     paddingBottom: 50,
+//     gap: 16,
 //   },
 //   primaryButton: {
 //     backgroundColor: '#FF9B7A',
@@ -139,12 +142,31 @@
 //     borderRadius: 30,
 //     alignItems: 'center',
 //   },
+//   buttonDisabled: {
+//     opacity: 0.5,
+//   },
 //   primaryButtonText: {
 //     color: '#FFFFFF',
 //     fontSize: 18,
 //     fontWeight: '600',
 //   },
+//   linkText: {
+//     fontSize: 16,
+//     color: '#2C2C2C',
+//     textAlign: 'center',
+//     fontWeight: '500',
+//   },
 // });
+
+
+
+
+
+
+
+
+
+
 
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -152,33 +174,33 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useOnboarding } from '@/context/onboarding_context';
 
-const durationOptions = [
-  { id: 'just-started', label: 'Just started' },
-  { id: '6-12-months', label: '6–12 months' },
-  { id: '1-3-years', label: '1–3 years' },
-  { id: '3-5-years', label: '3–5 years' },
-  { id: '5-10-years', label: '5–10 years' },
-  { id: '10-plus', label: '10+ years' },
+const relationshipOptions = [
+  { id: 'dating', label: 'Dating', emoji: '💕' },
+  { id: 'engaged', label: 'Engaged', emoji: '💍' },
+  { id: 'married', label: 'Married', emoji: '💑' },
+  { id: 'something-else', label: 'Something Else', emoji: '' },
 ];
 
-export default function RelationshipDurationScreen() {
+export default function RelationshipStatusScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
-  const [selected, setSelected] = useState<string>(onboardingData.relationshipDuration || '1-3-years');
+  const [selected, setSelected] = useState<string | undefined>(onboardingData.relationshipStatus);
 
   useEffect(() => {
-    if (onboardingData.relationshipDuration) {
-      setSelected(onboardingData.relationshipDuration);
+    if (onboardingData.relationshipStatus) {
+      setSelected(onboardingData.relationshipStatus);
     }
   }, []);
 
   const handleSelect = (id: string) => {
     setSelected(id);
-    updateField('relationshipDuration', id);
+    updateField('relationshipStatus', id);
   };
 
   const handleContinue = () => {
-    router.push('/onboarding/goals');
+    if (selected) {
+      router.push('/onboarding/relationship-length');
+    }
   };
 
   return (
@@ -190,28 +212,28 @@ export default function RelationshipDurationScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.progress}>2/8</Text>
-        <TouchableOpacity onPress={() => router.push('/onboarding/goals')}>
+        <Text style={styles.progress}>1/8</Text>
+        <TouchableOpacity onPress={() => router.push('/onboarding/relationship-length')}>
           <Text style={styles.closeText}>✕</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.title}>How long have you been together?</Text>
-        <Text style={styles.subtitle}>It helps us choose the right mix of questions</Text>
+        <Text style={styles.title}>What best describes your relationship right now?</Text>
+        <Text style={styles.subtitle}>This helps us tailor your questions</Text>
 
         <View style={styles.optionsContainer}>
-          {durationOptions.map((option) => (
+          {relationshipOptions.map((option) => (
             <TouchableOpacity
               key={option.id}
               style={[
-                styles.optionItem,
-                selected === option.id && styles.optionItemSelected,
+                styles.optionCard,
+                selected === option.id && styles.optionCardSelected,
               ]}
               onPress={() => handleSelect(option.id)}
             >
+              {option.emoji && <Text style={styles.optionEmoji}>{option.emoji}</Text>}
               <Text style={styles.optionLabel}>{option.label}</Text>
-              {selected === option.id && <Text style={styles.checkmark}>✓</Text>}
             </TouchableOpacity>
           ))}
         </View>
@@ -219,10 +241,15 @@ export default function RelationshipDurationScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.primaryButton, !selected && styles.buttonDisabled]}
+          disabled={!selected}
           onPress={handleContinue}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push('/onboarding/relationship-length')}>
+          <Text style={styles.linkText}>Skip For Now</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
@@ -271,32 +298,32 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   optionsContainer: {
-    gap: 12,
+    gap: 16,
   },
-  optionItem: {
+  optionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  optionItemSelected: {
+  optionCardSelected: {
     borderColor: '#FF9B7A',
+  },
+  optionEmoji: {
+    fontSize: 40,
+    marginBottom: 8,
   },
   optionLabel: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#2C2C2C',
-  },
-  checkmark: {
-    fontSize: 20,
-    color: '#FF9B7A',
   },
   bottomContainer: {
     paddingHorizontal: 24,
     paddingBottom: 50,
+    gap: 16,
   },
   primaryButton: {
     backgroundColor: '#FF9B7A',
@@ -304,9 +331,18 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  linkText: {
+    fontSize: 16,
+    color: '#2C2C2C',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

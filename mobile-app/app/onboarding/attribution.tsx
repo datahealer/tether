@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   ScrollView,
   Alert,
 } from 'react-native';
@@ -14,75 +15,103 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 
-type RhythmOption = 'Every day' | 'A few times a week' | 'Once a week' | "We'll decide as we go";
+type AttributionSource = 
+  | 'TikTok'
+  | 'Instagram'
+  | 'Partner'
+  | 'Friend or family'
+  | 'App Store'
+  | 'Facebook'
+  | 'Other';
 
-export default function RhythmScreen() {
+export default function AttributionScreen() {
   const router = useRouter();
-  const { updateField, onboardingData } = useOnboarding();
-  const [selectedRhythm, setSelectedRhythm] = useState<RhythmOption | null>(null);
+  const { updateField } = useOnboarding();
+  const [selectedSource, setSelectedSource] = useState<AttributionSource | null>(null);
+  const [otherText, setOtherText] = useState('');
+  const [otherTextFocused, setOtherTextFocused] = useState(false);
 
-  const rhythms: RhythmOption[] = [
-    'Every day',
-    'A few times a week',
-    'Once a week',
-    "We'll decide as we go",
+  const sources: AttributionSource[] = [
+    'TikTok',
+    'Instagram',
+    'Partner',
+    'Friend or family',
+    'App Store',
+    'Facebook',
+    'Other',
   ];
 
-  const handleSelect = (rhythm: RhythmOption) => {
+  const handleSelect = (source: AttributionSource) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedRhythm(rhythm);
+    setSelectedSource(source);
   };
 
-  const handleContinue = async () => {
-    if (!selectedRhythm) {
-      Alert.alert('Required', 'Please select a rhythm');
+  const handleFinishSetup = async () => {
+    if (!selectedSource) {
+      Alert.alert('Required', 'Please select how you heard about Tether');
+      return;
+    }
+
+    if (selectedSource === 'Other' && !otherText.trim()) {
+      Alert.alert('Required', 'Please specify how you heard about us');
       return;
     }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      updateField('rhythm', selectedRhythm);
+      // Save attribution data
+      const attributionValue = selectedSource === 'Other' ? otherText : selectedSource;
+      updateField('emotionalNeeds', [
+        ...([] as string[]),
+        JSON.stringify({ attribution: attributionValue })
+      ]);
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      // Show notification permission modal
-      router.push('/onboarding/notification-permission');
+      router.push('/onboarding/first-tether');
     } catch (error) {
-      console.error('Error saving rhythm:', error);
-      Alert.alert('Error', 'Failed to save rhythm');
+      console.error('Error saving attribution:', error);
+      Alert.alert('Error', 'Failed to save information');
     }
   };
 
   return (
-    <OnboardingLayout progress={0.77} showBackButton={true}>
+    <OnboardingLayout 
+      progress={0.95} 
+      showBackButton={true}
+      rightAction={{
+        icon: 'close',
+        onPress: () => router.push('/onboarding/first-tether'),
+      }}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Heading */}
-        <Text style={styles.heading}>
-          Choose how often you{'\n'}would like to be Tethered
-        </Text>
+        <Text style={styles.heading}>Just before we begin</Text>
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Set a rhythm that fits your relationship.
+          How did you first hear about Tether? It helps us{'\n'}
+          understand how couples find us.
         </Text>
 
         {/* Options */}
         <View style={styles.optionsContainer}>
-          {rhythms.map((rhythm) => {
-            const isSelected = selectedRhythm === rhythm;
+          {sources.map((source) => {
+            const isSelected = selectedSource === source;
             
             return (
               <TouchableOpacity
-                key={rhythm}
+                key={source}
                 style={[
                   styles.optionButton,
                   isSelected && styles.optionButtonSelected,
                 ]}
-                onPress={() => handleSelect(rhythm)}
+                onPress={() => handleSelect(source)}
                 activeOpacity={0.7}
               >
                 <Text
@@ -91,7 +120,7 @@ export default function RhythmScreen() {
                     isSelected && styles.optionTextSelected,
                   ]}
                 >
-                  {rhythm}
+                  {source}
                 </Text>
                 {isSelected && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
@@ -101,20 +130,41 @@ export default function RhythmScreen() {
           })}
         </View>
 
-        {/* Spacer */}
-        <View style={{ flex: 1, minHeight: Spacing.xxl }} />
+        {/* Other Input */}
+        {selectedSource === 'Other' && (
+          <View
+            style={[
+              styles.inputContainer,
+              otherTextFocused && styles.inputFocused,
+            ]}
+          >
+            <TextInput
+              style={styles.input}
+              placeholder="Type your response..."
+              placeholderTextColor={Colors.darkGrey}
+              value={otherText}
+              onChangeText={setOtherText}
+              onFocus={() => setOtherTextFocused(true)}
+              onBlur={() => setOtherTextFocused(false)}
+            />
+            <Ionicons name="create-outline" size={20} color={Colors.inputText} />
+          </View>
+        )}
 
-        {/* Continue Button */}
+        {/* Spacer */}
+        <View style={{ flex: 1, minHeight: Spacing.xl }} />
+
+        {/* Finish Setup Button */}
         <TouchableOpacity
           style={[
-            styles.continueButton,
-            !selectedRhythm && styles.continueButtonDisabled,
+            styles.finishButton,
+            !selectedSource && styles.finishButtonDisabled,
           ]}
-          onPress={handleContinue}
-          disabled={!selectedRhythm}
+          onPress={handleFinishSetup}
+          disabled={!selectedSource}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Set Our Rhythm</Text>
+          <Text style={styles.buttonText}>Finish Setup</Text>
         </TouchableOpacity>
       </ScrollView>
     </OnboardingLayout>
@@ -178,7 +228,31 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.darkOrange,
   },
-  continueButton: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.inputFill,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputFocused: {
+    borderColor: Colors.lightOrange,
+    backgroundColor: Colors.white,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.input,
+    lineHeight: 24,
+    fontWeight: FontWeights.regular,
+    color: Colors.inputText,
+    letterSpacing: 0,
+  },
+  finishButton: {
     backgroundColor: Colors.darkOrange,
     borderRadius: BorderRadius.xl,
     paddingVertical: 18,
@@ -190,7 +264,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginTop: Spacing.lg,
   },
-  continueButtonDisabled: {
+  finishButtonDisabled: {
     opacity: 0.5,
   },
   buttonText: {

@@ -4,9 +4,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 
 export interface OnboardingData {
+  // Personal Info (new fields)
+  firstName?: string;
+  partnerFirstName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  
+  // Existing fields
   relationshipStatus?: string;
   relationshipDuration?: string;
   livingType?: string[];
+  hasChildren?: boolean; // Add this field
   goals?: string[];
   emotionalNeeds?: string[];
   rhythm?: string;
@@ -35,9 +43,14 @@ const getAuthToken = async (): Promise<string | null> => {
 /**
  * Update onboarding data
  */
-export const updateOnboardingData = async (data: Partial<OnboardingData>): Promise<void> => {
+// ...existing code...
+
+export const updateOnboardingData = async (data: any) => {
   try {
-    const token = await getAuthToken();
+    const token = await AsyncStorage.getItem('authToken');
+    
+    console.log('🔑 Token available:', !!token);
+    console.log('📤 Sending onboarding data to backend:', data);
 
     if (!token) {
       throw new Error('No auth token found');
@@ -52,18 +65,22 @@ export const updateOnboardingData = async (data: Partial<OnboardingData>): Promi
       body: JSON.stringify(data),
     });
 
+    console.log('📥 Response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json();
+      console.log('❌ Error response:', error);
       throw new Error(error.error || 'Failed to update onboarding data');
     }
 
     const result = await response.json();
-    console.log('✅ Onboarding data updated:', result);
-  } catch (error: any) {
-    console.error('❌ Update onboarding error:', error);
+    return result;
+  } catch (error) {
+    console.error('❌ Onboarding submission error:', error);
     throw error;
   }
 };
+
 
 /**
  * Complete onboarding

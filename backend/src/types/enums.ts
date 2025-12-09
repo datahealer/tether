@@ -1,12 +1,13 @@
 export enum Provider {
-  APPLE = 'apple',
   GOOGLE = 'google',
+  APPLE = 'apple',
+  EMAIL = 'email', // Add this
 }
 
 export enum AuthProvider {
-  EMAIL = 'email',
   GOOGLE = 'google',
   APPLE = 'apple',
+  EMAIL = 'email', // Add this
 }
 
 export enum Platform {

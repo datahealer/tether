@@ -79,9 +79,12 @@ export const Login: React.FC = () => {
 
         <p className="text-center text-purple-200 mt-6">
           Don't have an account?{' '}
-          <Link to="/signup" as any className="text-purple-400 hover:text-purple-300 font-medium">
-            Sign up
-          </Link>
+          <Link 
+  to="/signup" 
+  className="text-purple-400 hover:text-purple-300 transition-colors"
+>
+  Sign up
+</Link>
         </p>
       </div>
     </div>

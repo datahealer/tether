@@ -202,144 +202,270 @@
 // };
 
 import { Request, Response } from 'express';
-import { verifyGoogleToken, verifyGoogleAccessToken, verifyAppleToken, generateAuthToken } from '../services/auth';
+import bcrypt from 'bcryptjs';
+import { verifyGoogleToken, verifyAppleToken, generateAuthToken, verifyGoogleAccessToken } from '../services/auth';
 import { createOrUpdateUser } from '../services/user';
 import { Provider, Platform } from '../types/enums';
+import User from '../models/User';
 
 /**
- * POST /auth/google
+ * POST /api/auth/google
+ * Authenticate with Google
  */
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('📨 Received Google auth request');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-
-    const { idToken, accessToken, user } = req.body;
+    const { idToken, accessToken, platform = 'ios' } = req.body;
 
     if (!idToken && !accessToken) {
-      console.error('❌ No tokens provided');
       res.status(400).json({ error: 'ID token or access token is required' });
       return;
     }
 
     let googleUser;
-
-    // Try ID token first (more secure)
-    if (idToken) {
-      try {
-        console.log('🔍 Verifying Google ID token...');
+    
+    try {
+      // Try ID token first (preferred)
+      if (idToken) {
+        console.log('🔐 Attempting Google ID token verification...');
         googleUser = await verifyGoogleToken(idToken);
-        console.log('✅ ID Token verified:', googleUser);
-      } catch (error) {
-        console.log('⚠️ ID token verification failed, trying access token...');
-        if (accessToken) {
-          googleUser = await verifyGoogleAccessToken(accessToken);
-        } else {
-          throw error;
-        }
       }
-    } else if (accessToken) {
-      console.log('🔍 Verifying Google access token...');
-      googleUser = await verifyGoogleAccessToken(accessToken);
-      console.log('✅ Access Token verified:', googleUser);
+    } catch (idTokenError) {
+      console.log('⚠️ ID token verification failed, trying access token...');
+      
+      // Fallback to access token
+      if (accessToken) {
+        try {
+          googleUser = await verifyGoogleAccessToken(accessToken);
+        } catch (accessTokenError) {
+          console.error('❌ Both token verifications failed');
+          res.status(401).json({ error: 'Invalid Google credentials' });
+          return;
+        }
+      } else {
+        res.status(401).json({ error: 'Invalid Google ID token and no access token provided' });
+        return;
+      }
     }
 
     if (!googleUser) {
-      throw new Error('Failed to verify Google token');
+      res.status(401).json({ error: 'Failed to verify Google credentials' });
+      return;
     }
 
-    // Determine platform
-    const platform = req.body.platform || Platform.IOS;
+    console.log('✅ Google user verified:', googleUser.email);
 
-    console.log('💾 Creating/updating user...');
     // Create or update user
-    const dbUser = await createOrUpdateUser({
+    const user = await createOrUpdateUser({
       email: googleUser.email,
-      name: googleUser.name || user?.name || 'User',
+      name: googleUser.name,
       provider: Provider.GOOGLE,
       providerId: googleUser.sub,
-      picture: googleUser.picture || user?.photo,
+      picture: googleUser.picture,
       platform,
     });
-    console.log('✅ User created/updated:', dbUser._id);
 
     // Generate JWT
-    const token = generateAuthToken(dbUser._id.toString());
+    const token = generateAuthToken(user._id.toString());
 
-    console.log('✅ Auth successful, sending response');
     res.status(200).json({
       success: true,
-      user: {
-        id: dbUser._id,
-        email: dbUser.email,
-        name: dbUser.name,
-        provider: dbUser.provider,
-        avatar: dbUser.avatar,
-        onboarded: dbUser.onboarded,
-      },
       token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+      },
     });
   } catch (error: any) {
     console.error('❌ Google auth error:', error);
-    res.status(401).json({
-      success: false,
+    res.status(500).json({
       error: error.message || 'Authentication failed',
     });
   }
 };
 
 /**
- * POST /auth/apple
+ * POST /api/auth/apple
+ * Authenticate with Apple
  */
 export const appleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { identityToken, user, email, fullName } = req.body;
+    const { identityToken, user: appleUserData, platform = 'ios' } = req.body;
 
     if (!identityToken) {
       res.status(400).json({ error: 'Identity token is required' });
       return;
     }
 
-    // Verify Apple token
     const appleUser = await verifyAppleToken(identityToken);
 
-    // Apple only provides name on first sign-in
-    const userName = fullName
-      ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim()
-      : 'User';
-
-    // Determine platform
-    const platform = req.body.platform || Platform.IOS;
-
-    // Create or update user
-    const dbUser = await createOrUpdateUser({
-      email: email || appleUser.email,
-      name: userName,
+    const userData = {
+      email: appleUser.email,
+      name: appleUserData?.fullName?.givenName 
+        ? `${appleUserData.fullName.givenName} ${appleUserData.fullName.familyName || ''}`.trim()
+        : appleUser.email.split('@')[0],
       provider: Provider.APPLE,
       providerId: appleUser.sub,
       platform,
-    });
+    };
 
-    // Generate JWT
-    const token = generateAuthToken(dbUser._id.toString());
+    const user = await createOrUpdateUser(userData);
+    const token = generateAuthToken(user._id.toString());
 
     res.status(200).json({
       success: true,
-      user: {
-        id: dbUser._id,
-        email: dbUser.email,
-        name: dbUser.name,
-        provider: dbUser.provider,
-        avatar: dbUser.avatar,
-        onboarded: dbUser.onboarded,
-      },
       token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+      },
     });
   } catch (error: any) {
     console.error('Apple auth error:', error);
-    res.status(401).json({
-      success: false,
+    res.status(500).json({
       error: error.message || 'Authentication failed',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/signup
+ * Email/Password Signup
+ */
+export const emailSignup = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password, name, platform = 'ios' } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      res.status(400).json({ error: 'User with this email already exists' });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await User.create({
+      email: email.toLowerCase(),
+      name: name || email.split('@')[0],
+      password: hashedPassword,
+      provider: Provider.EMAIL,
+      platform: platform as Platform,
+      onboarded: false,
+      onboardingData: {
+        livingType: [],
+        goals: [],
+        emotionalNeeds: [],
+        packPreferences: [],
+      },
+      fcmTokens: [],
+    });
+
+    // Generate JWT
+    const token = generateAuthToken(user._id.toString());
+
+    console.log('✅ Email signup successful:', email);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Email signup error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to create account',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/login
+ * Email/Password Login
+ */
+export const emailLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    // Check if user signed up with email
+    if (user.provider !== Provider.EMAIL) {
+      res.status(400).json({
+        error: `This email is associated with ${user.provider} sign-in. Please use ${user.provider} to login.`,
+      });
+      return;
+    }
+
+    // Verify password
+    if (!user.password) {
+      res.status(500).json({ error: 'Password not set for this account' });
+      return;
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    // Generate JWT
+    const token = generateAuthToken(user._id.toString());
+
+    console.log('✅ Email login successful:', email);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Email login error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to login',
     });
   }
 };

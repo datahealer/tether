@@ -15,10 +15,10 @@ export const QuestionsTable: React.FC<QuestionsTableProps> = ({
   onDelete,
   onView,
 }) => {
-  const getDifficultyColor = (isPremium: boolean) => {
-    return isPremium
-      ? 'bg-orange-500/20 text-orange-300'
-      : 'bg-green-500/20 text-green-300';
+  const getStatusColor = (status: string) => {
+    return status === 'Published'
+      ? 'bg-green-500/20 text-green-300'
+      : 'bg-orange-500/20 text-orange-300';
   };
 
   const formatDate = (dateString: string) => {
@@ -59,7 +59,7 @@ export const QuestionsTable: React.FC<QuestionsTableProps> = ({
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`px-3 py-1 rounded-lg text-sm ${getDifficultyColor(q.isPremium)}`}
+                    className={`px-3 py-1 rounded-lg text-sm ${getStatusColor(q.status)}`}
                   >
                     {q.status}
                   </span>

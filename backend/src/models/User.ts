@@ -39,25 +39,36 @@
 
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { Provider, Platform } from '../types/enums';
+import { Provider, Platform,Tone,Rhythm } from '../types/enums';
 
 export interface IUser extends Document {
   googleSub?: string;
   appleSub?: string;
   email: string;
   name: string;
+  password?: string; // Add password field for email auth
   avatar?: string;
   provider: Provider;
   platform: Platform;
   onboarded: boolean;
   onboardingData: {
+    // Personal Info
+    firstName?: string;
+    partnerFirstName?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    
+    // Relationship Info
     relationshipStatus?: 'single' | 'dating' | 'engaged' | 'married' | 'its-complicated';
     relationshipDuration?: string;
     livingType?: string[];
+    hasChildren?: boolean;
+    
+    // Preferences
     goals?: string[];
     emotionalNeeds?: string[];
-    rhythm?: 'Every day'| 'A few times a week'| 'Once a week' | "We'll decide as we go";
-    tone?: 'playful'| 'romantic'| 'reflective'|'deep';
+    rhythm?: Rhythm;
+    tone?: Tone;
     packPreferences?: string[];
   };
   coupleId?: mongoose.Types.ObjectId;
@@ -77,26 +88,45 @@ const UserSchema: Schema = new Schema(
     appleSub: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     name: { type: String, required: true },
+    password: { type: String }, // Add password field
     avatar: { type: String },
-    provider: { type: String, enum: Object.values(Provider), required: true },
-    platform: { type: String, enum: Object.values(Platform), required: true },
+    provider: { 
+      type: String, 
+      enum: Object.values(Provider),
+      required: true 
+    },
+    platform: { 
+      type: String, 
+      enum: Object.values(Platform),
+      required: true 
+    },
     onboarded: { type: Boolean, default: false },
     onboardingData: {
-      relationshipStatus: {
+      // Personal Info
+      firstName: { type: String },
+      partnerFirstName: { type: String },
+      dateOfBirth: { type: String },
+      gender: { type: String },
+      
+      // Relationship Info
+      relationshipStatus: { 
         type: String,
-        enum: ['single', 'dating', 'engaged', 'married', 'its-complicated'],
+        enum: ['single', 'dating', 'engaged', 'married', 'its-complicated']
       },
       relationshipDuration: { type: String },
       livingType: [{ type: String }],
+      hasChildren: { type: Boolean },
+      
+      // Preferences
       goals: [{ type: String }],
       emotionalNeeds: [{ type: String }],
-      rhythm: {
+      rhythm: { 
         type: String,
-        enum: ['Every day', 'A few times a week', 'Once a week', "We'll decide as we go"],
+        enum: Object.values(Rhythm)
       },
-      tone: {
+      tone: { 
         type: String,
-        enum: ['playful', 'romantic', 'reflective','deep'],
+        enum: Object.values(Tone)
       },
       packPreferences: [{ type: String }],
     },

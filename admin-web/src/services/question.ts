@@ -4,6 +4,7 @@ import { authService } from './auth';
 const API_URL = import.meta.env['VITE_API_URL'] || 'http://localhost:3000';
 
 export interface Question {
+  isPremium(isPremium: any): unknown;
   _id: string;
   questionId: string;
   question: string; // Changed from 'text'

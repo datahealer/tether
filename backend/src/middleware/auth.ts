@@ -50,7 +50,7 @@ export const adminAuth = async (
         return;
       }
 
-      req.user = {
+      (req as any).user = {
         id: admin._id.toString(),
         email: admin.email,
       };
@@ -92,13 +92,21 @@ export const superAdminAuth = async (
   }
 };
 
+// ...existing code...
+
 export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.substring(7);
 
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
@@ -106,17 +114,28 @@ export const authMiddleware = async (
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
+      type?: string;
     };
+
+    // Check if it's a user token (not admin)
+    if (decoded.type === 'admin') {
+      return res.status(403).json({ error: 'Invalid token type' });
+    }
+
     const user = await User.findById(decoded.userId);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid token - user not found' });
     }
 
-    // convert mongoose document to a plain object and cast to any to satisfy the Request type
-    req.user = (user && (user as any).toObject ? (user as any).toObject() : user) as any;
+    // Attach user to request - use consistent format
+    req.user = user.toObject() as any;
+    (req.user as any).userId = user._id.toString();
+
     next();
-  } catch (err) {
-    res.status(401).json({ error: 'Unauthorized' });
+  } catch (err: any) {
+    console.error('Auth middleware error:', err.message);
+    res.status(401).json({ error: 'Unauthorized - ' + err.message });
   }
 };
+

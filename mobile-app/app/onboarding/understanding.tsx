@@ -116,12 +116,12 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '@/theme/constants';
 
-export default function PrivacyScreen() {
+export default function UnderstandingScreen() {
   const router = useRouter();
 
   const handleContinue = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/onboarding/about-you');
+    router.push('/onboarding/relationship-stage');
   };
 
   return (
@@ -139,13 +139,14 @@ export default function PrivacyScreen() {
 
         {/* Title */}
         <Text style={styles.title}>
-          We want your Tethers{'\n'}to feel personal
+          Your answers stay{'\n'}between you both
         </Text>
 
         {/* Description */}
         <Text style={styles.description}>
           Everything you share stays private and{'\n'}completely under your control.
         </Text>
+          
 
         {/* Spacer to push button to bottom */}
         <View style={{ flex: 1 }} />
@@ -156,7 +157,7 @@ export default function PrivacyScreen() {
           onPress={handleContinue}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>I Understand</Text>
         </TouchableOpacity>
       </View>
     </OnboardingLayout>
