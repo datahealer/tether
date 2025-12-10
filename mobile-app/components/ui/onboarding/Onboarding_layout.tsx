@@ -176,6 +176,7 @@ import { View, StyleSheet, SafeAreaView, ImageBackground, TouchableOpacity, Imag
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing } from '../../../theme/constants';
 
 interface OnboardingLayoutProps {
@@ -187,7 +188,8 @@ interface OnboardingLayoutProps {
     icon: string;
     onPress: () => void;
   };
-  progress?: number; // 0 to 1
+  progress?: number;
+  showSettingsIcon?: boolean; // New prop
 }
 
 export default function OnboardingLayout({ 
@@ -196,9 +198,14 @@ export default function OnboardingLayout({
   showLogo = true,
   progress,
   rightButton,
-  rightAction
+  rightAction,
+  showSettingsIcon = false
 }: OnboardingLayoutProps) {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Show settings icon if user is logged in and showSettingsIcon is true
+  const shouldShowSettings = user && showSettingsIcon;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -237,22 +244,23 @@ export default function OnboardingLayout({
             <View style={styles.logoPlaceholder} />
           )}
 
-          <View style={styles.placeholder} />
-
-
-           {rightButton ? (
-      <View style={styles.rightButton}>{rightButton}</View>
-    ) : rightAction ? (
-      <TouchableOpacity style={styles.rightButton} onPress={rightAction.onPress}>
-        <Ionicons name={rightAction.icon as any} size={24} color={Colors.black} />
-      </TouchableOpacity>
-    ) : (
-      <View style={styles.placeholder} />
-    )}
+          {shouldShowSettings ? (
+            <TouchableOpacity 
+              style={styles.rightButton} 
+              onPress={() => router.push('/onboarding/settings/settings')}
+            >
+              <Ionicons name="settings-outline" size={24} color={Colors.black} />
+            </TouchableOpacity>
+          ) : rightButton ? (
+            <View style={styles.rightButton}>{rightButton}</View>
+          ) : rightAction ? (
+            <TouchableOpacity style={styles.rightButton} onPress={rightAction.onPress}>
+              <Ionicons name={rightAction.icon as any} size={24} color={Colors.black} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.placeholder} />
+          )}
         </View>
-
-
-      
 
         {/* Progress Bar */}
         {typeof progress === 'number' && (
@@ -262,8 +270,6 @@ export default function OnboardingLayout({
             </View>
           </View>
         )}
-
-
 
         {/* Content */}
         <View style={styles.content}>
@@ -351,9 +357,9 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   rightButton: {
-  width: 40,
-  height: 40,
-  justifyContent: 'center',
-  alignItems: 'flex-end',
-},
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
 });

@@ -19,6 +19,9 @@
       "usesAppleSignIn": true,
       "appleTeamId": "K9SD42GFJG",
       "infoPlist": {
+        "NSCameraUsageDescription": "Tether needs access to your camera to take profile photos.",
+        "NSPhotoLibraryUsageDescription": "Tether needs access to your photo library to select profile photos.",
+        "NSPhotoLibraryAddUsageDescription": "Tether needs permission to save photos to your library.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": ["tether"]
@@ -32,6 +35,12 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ],
       "package": "com.tether.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -55,7 +64,14 @@
       "expo-router",
       "expo-font",
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Tether needs access to your photos to set your profile picture.",
+          "cameraPermission": "Tether needs access to your camera to take profile photos."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

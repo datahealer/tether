@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         id: data.user.id,
         email: data.user.email,
         name: data.user.name,
-        provider: 'google',
+        provider: data.user.provider || 'email',
         token: data.token,
       };
       

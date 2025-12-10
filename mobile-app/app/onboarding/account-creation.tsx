@@ -456,24 +456,24 @@ export default function AccountCreationScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            await signOut();
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]
-    );
-  };
+  // const handleLogout = async () => {
+  //   Alert.alert(
+  //     'Logout',
+  //     'Are you sure you want to logout?',
+  //     [
+  //       { text: 'Cancel', style: 'cancel' },
+  //       {
+  //         text: 'Logout',
+  //         style: 'destructive',
+  //         onPress: async () => {
+  //           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  //           await signOut();
+  //           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  //         },
+  //       },
+  //     ]
+  //   );
+  // };
 
   const handleSkip = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -487,16 +487,13 @@ export default function AccountCreationScreen() {
     <OnboardingLayout 
       progress={0.14} 
       showBackButton={true}
+      showSettingsIcon={true}
       rightButton={
-        showForwardArrow ? (
-          <TouchableOpacity onPress={handleSkip}>
-            <Ionicons name="arrow-forward" size={24} color={Colors.black} />
-          </TouchableOpacity>
-        ) : (
+        !user ? (
           <TouchableOpacity onPress={handleSkip}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
-        )
+        ) : undefined
       }
     >
       <KeyboardAvoidingView 
@@ -514,32 +511,16 @@ export default function AccountCreationScreen() {
             {user ? 'Welcome back!' : 'Create an account'}
           </Text>
 
+
           {user ? (
-            // Logged in state
-            <View style={styles.loggedInContainer}>
-              <View style={styles.userInfoCard}>
-                <Ionicons name="person-circle-outline" size={48} color={Colors.darkOrange} />
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userEmail}>{user.email}</Text>
-              </View>
-
-              <TouchableOpacity 
-                style={styles.continueButton}
-                onPress={handleSkip}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.buttonText}>Continue to next step</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.logoutButton}
-                onPress={handleLogout}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="log-out-outline" size={20} color={Colors.darkOrange} />
-                <Text style={styles.logoutButtonText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
+            // Just show continue button if logged in
+            <TouchableOpacity 
+              style={styles.continueButton}
+              onPress={handleSkip}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
           ) : (
             <>
               {/* Email Input Field */}
