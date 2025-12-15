@@ -107,11 +107,11 @@ export default function LoginScreen() {
     <OnboardingLayout 
       progress={0.14} 
       showBackButton={true}
-      rightButton={
-        <TouchableOpacity onPress={() => router.push('/onboarding/privacy')}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-      }
+      // rightButton={
+      //   <TouchableOpacity onPress={() => router.push('/onboarding/privacy')}>
+      //     <Text style={styles.skipText}>Skip</Text>
+      //   </TouchableOpacity>
+      // }
     >
       <KeyboardAvoidingView 
         style={styles.container}
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    lineHeight: 24,
+    // lineHeight: 24,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     letterSpacing: 0,

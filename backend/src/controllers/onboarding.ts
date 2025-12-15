@@ -18,7 +18,7 @@ const generateInviteCode = (): string => {
  */
 export const updateOnboarding = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req.user as any)?.userId || (req.user as IUser)?._id?.toString();
+    const userId = (req.user as any)?.userId || (req.user as any)?.id || req.user?._id?.toString();
     console.log('🔍 User ID from request:', userId);
     console.log('🔍 Request user object:', req.user);
     if (!userId) {
@@ -82,7 +82,7 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
  */
 export const completeOnboarding = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = ((req.user as any)?.userId) ?? ((req.user as IUser)?._id?.toString());
+    const userId = ((req.user as any)?.userId) ?? ((req.user as any)?.id || req.user?._id?.toString());
 
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -123,7 +123,7 @@ export const completeOnboarding = async (req: Request, res: Response): Promise<v
  */
 export const generateInvite = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = ((req.user as any)?.userId) ?? ((req.user as IUser)?._id?.toString());
+    const userId = ((req.user as any)?.userId) ?? ((req.user as any)?.id || req.user?._id?.toString());
 
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -184,7 +184,7 @@ export const generateInvite = async (req: Request, res: Response): Promise<void>
  */
 export const acceptInvite = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = ((req.user as any)?.userId) ?? ((req.user as IUser)?._id?.toString());
+    const userId = ((req.user as any)?.userId) ?? ((req.user as any)?.id || req.user?._id?.toString());
     const { inviteCode } = req.body;
 
     if (!userId) {
@@ -291,7 +291,7 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
  */
 export const getCoupleInfo = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = ((req.user as any)?.userId) ?? ((req.user as IUser)?._id?.toString());
+    const userId = ((req.user as any)?.userId) ?? ((req.user as any)?.id || req.user?._id?.toString());
 
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });

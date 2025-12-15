@@ -235,7 +235,7 @@ export default function GoalsScreen() {
 
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/onboarding/tone');
+      router.push('/onboarding/rhythm');
     } catch (error) {
       console.error('Error saving goals:', error);
       Alert.alert('Error', 'Failed to save information');
@@ -243,7 +243,7 @@ export default function GoalsScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.75} showBackButton={true}>
+    <OnboardingLayout progress={0.75} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

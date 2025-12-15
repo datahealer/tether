@@ -18,10 +18,13 @@ import EditableField from '@/components/ui/profile/EditableField';
 import PhotoPickerModal from '@/components/ui/profile/PhotoPickerModal';
 import DatePickerModal from '@/components/ui/onboarding/DatePickerModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { uploadProfilePhoto } from '@/services/upload_service';
+import { authenticatedFetch } from '@/services/auth_service';
+import Constants from 'expo-constants';
 
 export default function ProfileDetailsScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user,signIn } = useAuth();
 
   // State
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -69,51 +72,53 @@ export default function ProfileDetailsScreen() {
 
       if (!result.canceled && result.assets[0]) {
         setUploadStatus('uploading');
-        // Simulate upload
-        setTimeout(() => {
-          setProfilePhoto(result.assets[0].uri);
-          setUploadStatus('success');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => setUploadStatus('idle'), 2000);
-        }, 1500);
+        
+        // Upload to server
+        const photoUrl = await uploadProfilePhoto(result.assets[0].uri);
+        
+        // Update local state
+        setProfilePhoto(photoUrl);
+        setUploadStatus('success');
+        
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setTimeout(() => setUploadStatus('idle'), 2000);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      console.error('Error uploading photo:', error);
+      Alert.alert('Error', 'Failed to upload photo');
       setUploadStatus('idle');
     }
   };
-
   // Choose from gallery
   const handleChooseGallery = async () => {
     const hasPermission = await requestGalleryPermission();
     if (!hasPermission) return;
 
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+  if (!result.canceled && result.assets[0]) {
+    const localUri = result.assets[0].uri;
+    
+    // Show local image immediately (optimistic update)
+    setProfilePhoto(localUri);
+    setUploadStatus('uploading');
+    
+    // Upload in background
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setUploadStatus('uploading');
-        // Simulate upload
-        setTimeout(() => {
-          setProfilePhoto(result.assets[0].uri);
-          setUploadStatus('success');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => setUploadStatus('idle'), 2000);
-        }, 1500);
-      }
+      const photoUrl = await uploadProfilePhoto(localUri);
+      setProfilePhoto(photoUrl); // Replace with CDN URL
+      setUploadStatus('success');
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to select image');
-      setUploadStatus('idle');
+      setProfilePhoto(user?.profilePicture || null); // Revert on error
+      Alert.alert('Error', 'Failed to upload image');
     }
-  };
-
+  }
+};
   // Remove photo
   const handleRemovePhoto = () => {
     Alert.alert(
@@ -156,25 +161,76 @@ export default function ProfileDetailsScreen() {
     Alert.alert('Coming Soon', 'Gender selection will be implemented');
   };
 
-  // Save changes
+  
+
+
+  // Save changes - UPDATED
   const handleSaveChanges = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // TODO: Save to backend
-    Alert.alert(
-      'Success',
-      'Your profile has been updated',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
+    try {
+      const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+      
+      console.log('💾 Saving profile changes...');
+      
+      // Update user profile
+      const response = await authenticatedFetch(`${API_URL}/api/profile`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name,
+          dateOfBirth: dateOfBirth?.toISOString(),
+          gender,
+          profilePicture: profilePhoto,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Update failed:', errorData);
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      const data = await response.json();
+      
+      console.log('✅ Profile updated:', data);
+      
+      // Update auth context with new user data
+      await signIn({
+        ...user!,
+        id: data.user.id,
+        name: data.user.name,
+        profilePicture: data.user.avatar,
+        email: data.user.email,
+        provider: data.user.provider,
+        token: user!.token,
+        refreshToken: user!.refreshToken,
+        onboarded: data.user.onboarded,
+        subscribed: data.user.subscribed,
+      });
+
+      Alert.alert(
+        'Success',
+        'Your profile has been updated',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.back();
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to save changes'
+      );
+    }
   };
+
+  // ... rest of component ...
 
   const formatDate = (date: Date | null) => {
     if (!date) return '';
@@ -423,3 +479,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.45,
   },
 });
+
+function signIn(arg0: { name: any; profilePicture: any; subscribed?: boolean; onboarded?: boolean; id: string; email: string; provider: "apple" | "google" | "email"; providerId?: string; token: string; refreshToken?: string; }) {
+  throw new Error('Function not implemented.');
+}
+

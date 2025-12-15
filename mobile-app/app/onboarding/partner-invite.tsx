@@ -869,7 +869,7 @@ const styles = StyleSheet.create({
   input: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    lineHeight: 24,
+    // lineHeight: 24,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     letterSpacing: 1,

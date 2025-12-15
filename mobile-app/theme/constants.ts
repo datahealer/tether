@@ -9,7 +9,7 @@ export const Colors = {
   mediumGrey: '#EBE7DF',
   darkGrey: '#B8B7B4',
   inputText: '#626262',
-  inputFill: 'rgba(237, 234, 233, 0.3)',
+  inputFill: 'rgba(255, 255, 255, 1.0)',
   
   // Base Colors
   black: '#1F2935',
@@ -38,6 +38,16 @@ export const BorderRadius = {
   lg: 25,
   xl: 32,
   full: 120,
+};
+// Add to existing constants file
+
+export const Gradients = {
+  communication: ['#FF6B6B', '#FF8E53'],
+  intimacy: ['#A569BD', '#EC7063'],
+  conflict: ['#5DADE2', '#48C9B0'],
+  trust: ['#F39C12', '#E74C3C'],
+  planning: ['#16A085', '#27AE60'],
+  general: ['#D97E5A', '#E8A87C'],
 };
 
 export const FontSizes = {

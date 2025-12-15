@@ -1,27 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Platform,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
-import { useOnboarding } from '@/context/onboarding_context';
 
-export default function NotificationPermissionScreen() {
-  const router = useRouter();
-  const { onboardingData } = useOnboarding();
-  const [visible, setVisible] = useState(true);
+interface NotificationPermissionModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+  partnerName?: string;
+}
 
-  const partnerName = onboardingData.partnerFirstName || 'Partner';
-
+export default function NotificationPermissionModal({
+  visible,
+  onClose,
+  onContinue,
+  partnerName = 'Partner',
+}: NotificationPermissionModalProps) {
+  
   const requestNotificationPermission = async () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -30,29 +34,23 @@ export default function NotificationPermissionScreen() {
       
       if (status === 'granted') {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        handleContinue();
+        onContinue();
       } else {
         Alert.alert(
           'Notifications Disabled',
           'You can enable notifications later in settings.',
-          [{ text: 'OK', onPress: handleContinue }]
+          [{ text: 'OK', onPress: onContinue }]
         );
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error);
-      handleContinue();
+      onContinue();
     }
   };
 
   const handleMaybeLater = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    handleContinue();
-  };
-
-  const handleContinue = () => {
-    setVisible(false);
-    // Navigate to next screen (tone/pack selection/etc)
-    router.push('/onboarding/connect-tether-screen');
+    onContinue();
   };
 
   return (
@@ -60,7 +58,7 @@ export default function NotificationPermissionScreen() {
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={handleMaybeLater}
+      onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
@@ -206,7 +204,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: FontWeights.medium,
     color: Colors.inputText,
-    // textDecoration: 'underline',
     letterSpacing: 0,
   },
 });

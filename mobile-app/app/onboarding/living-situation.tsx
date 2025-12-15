@@ -53,7 +53,7 @@ export default function LivingSituationScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.56} showBackButton={true}>
+    <OnboardingLayout progress={0.56} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

@@ -479,6 +479,25 @@ export default function AccountCreationScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/onboarding/privacy');
   };
+  const handleLogout = async () => {
+      Alert.alert(
+        'Log Out',
+        'Are you sure you want to log out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Log Out',
+            style: 'destructive',
+            onPress: async () => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              await signOut();
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.replace('/onboarding/account-creation');
+            },
+          },
+        ]
+      );
+    };
 
   // If user is already logged in, show forward arrow
   const showForwardArrow = !!user;
@@ -487,14 +506,14 @@ export default function AccountCreationScreen() {
     <OnboardingLayout 
       progress={0.14} 
       showBackButton={true}
-      showSettingsIcon={true}
-      rightButton={
-        !user ? (
-          <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
-        ) : undefined
-      }
+      showLogoutAvatar={true}
+      // rightButton={
+      //   !user ? (
+      //     <TouchableOpacity onPress={handleSkip}>
+      //       <Text style={styles.skipText}>Skip</Text>
+      //     </TouchableOpacity>
+      //   ) : undefined
+      // }
     >
       <KeyboardAvoidingView 
         style={styles.container}
@@ -514,13 +533,33 @@ export default function AccountCreationScreen() {
 
           {user ? (
             // Just show continue button if logged in
-            <TouchableOpacity 
-              style={styles.continueButton}
-              onPress={handleSkip}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
+            <View style={styles.loggedInContainer}>
+    <View style={styles.userInfoCard}>
+      <View style={styles.avatarCircle}>
+        <Text style={styles.avatarText}>
+          {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <Text style={styles.userName}>{user.name || user.email}</Text>
+      <Text style={styles.userEmail}>{user.email}</Text>
+    </View>
+
+    <TouchableOpacity 
+      style={styles.continueButton}
+      onPress={handleSkip}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.buttonText}>Continue</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity 
+      style={styles.logoutButton}
+      onPress={handleLogout}
+    >
+      <Ionicons name="log-out-outline" size={20} color={Colors.darkOrange} />
+      <Text style={styles.logoutButtonText}>Logout</Text>
+    </TouchableOpacity>
+  </View>
           ) : (
             <>
               {/* Email Input Field */}
@@ -589,14 +628,14 @@ export default function AccountCreationScreen() {
               </View>
 
               {/* OR Divider */}
-              <View style={styles.dividerContainer}>
+              {/* <View style={styles.dividerContainer}>
                 <View style={styles.divider} />
                 <Text style={styles.dividerText}>OR</Text>
                 <View style={styles.divider} />
-              </View>
+              </View> */}
 
               {/* Platform-specific Auth Button */}
-              {Platform.OS === 'ios' ? (
+              {/* {Platform.OS === 'ios' ? (
                 <TouchableOpacity 
                   style={styles.authButton}
                   onPress={handleAppleSignIn}
@@ -616,7 +655,7 @@ export default function AccountCreationScreen() {
                   <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
                   <Text style={styles.authButtonText}>Sign in with Google</Text>
                 </TouchableOpacity>
-              )}
+              )} */}
 
               {/* Spacer */}
               <View style={{ flex: 1, minHeight: Spacing.xl }} />
@@ -697,6 +736,21 @@ const styles = StyleSheet.create({
     width: ComponentSizes.inputField.width,
     gap: Spacing.sm,
   },
+  avatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.darkOrange,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  avatarText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: 24,
+    fontWeight: FontWeights.semibold,
+    color: Colors.white,
+  },
   userName: {
     fontFamily: 'InterTight-SemiBold',
     fontSize: FontSizes.large,
@@ -745,6 +799,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: 'transparent',
+    
+   
   },
   inputFocused: {
     borderColor: Colors.lightOrange,
@@ -754,10 +810,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    lineHeight: 24,
+    // lineHeight: 24,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     letterSpacing: 0,
+    paddingVertical: 0, // Add this to prevent clipping
+    includeFontPadding: false, // Add this for Android
+    
   },
   toggleRow: {
     flexDirection: 'row',

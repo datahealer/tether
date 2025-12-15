@@ -16,6 +16,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173', 
     'http://localhost:3000',
+    'http://192.168.29.107:3000',
+    'http://192.168.29.107:8081',
  
     'https://dev.d3tt7e7nz4d0aw.amplifyapp.com'
   ],

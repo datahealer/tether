@@ -125,7 +125,7 @@ export default function PrivacyScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.28} showBackButton={true} showSettingsIcon={true}>
+    <OnboardingLayout progress={0.28} showBackButton={true} showLogoutAvatar={true}>
       <View style={styles.content}>
         {/* Heart Icon */}
         <View style={styles.iconContainer}>

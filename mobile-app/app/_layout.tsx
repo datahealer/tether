@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/auth_context';
 import { OnboardingProvider } from '@/context/onboarding_context';
 import SplashScreenComponent from '../components/splash';
+import { NavigationHandler } from '../components/NavigationHandler';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,13 +31,7 @@ export default function RootLayout() {
     // SF Pro Display fonts (Input fields, Body text)
     'SFProDisplay-Regular': require('../assets/fonts/SF-Pro-Display-Regular.ttf'),
     'SFProDisplay-Medium': require('../assets/fonts/SFProDisplay-Medium.ttf'),
-    // 'SFProDisplay-Semibold': require('../assets/fonts/SF-Pro-Display-Semibold.ttf'),
-    // 'SFProDisplay-Bold': require('../assets/fonts/SF-Pro-Display-Bold.ttf'),
     
-    // // SF Pro Text fonts (Alternative for smaller text)
-    // 'SFProText-Regular': require('../assets/fonts/SF-Pro-Text-Regular.ttf'),
-    // 'SFProText-Medium': require('../assets/fonts/SF-Pro-Text-Medium.ttf'),
-    // 'SFProText-Semibold': require('../assets/fonts/SF-Pro-Text-Semibold.ttf'),
   });
 
   useEffect(() => {
@@ -58,6 +53,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OnboardingProvider>
+        <NavigationHandler/>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
             <Stack.Screen name="onboarding/welcome" options={{ headerShown: false }} />
@@ -66,6 +62,13 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding/login" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/settings/settings" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/settings/profile-details" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/rhythm-settings" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/premium" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/privacy-control" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/delete-answers" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/manage-subscription" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/feedback" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/settings/send-message" options={{ headerShown: false }} />
 
             <Stack.Screen name="onboarding/privacy" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/about-you" options={{ headerShown: false }} />
@@ -82,9 +85,12 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding/first-tether" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/attribution" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/connect-tether-screen" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding/subscription" options={{ headerShown: false }} />
             
-            <Stack.Screen name="onboarding/notification-permission" options={{headerShown: false}}/>
+            
             <Stack.Screen name="onboarding/partner-invite" options={{ headerShown: false }} />
+            <Stack.Screen name="home/category-packs" options={{ headerShown: false }} />
+
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

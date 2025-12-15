@@ -303,6 +303,7 @@ import { useAuth } from '@/context/auth_context';
 import { Canvas, Path, Skia, Blur } from '@shopify/react-native-skia';
 import { useSharedValue, withRepeat, withTiming, Easing, useDerivedValue } from 'react-native-reanimated';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes } from '../../theme/constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -370,6 +371,8 @@ export default function WelcomeScreen() {
         name: data.user.name,
         provider: 'apple',
         token: data.token,
+        onboarded:data.user.onboarded,
+        subscribed:data.user.subscribed,
       });
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -452,6 +455,7 @@ export default function WelcomeScreen() {
   };
 
   return (
+    
     <OnboardingLayout showBackButton={false} showLogo={false}>
       {/* Animated Flowing Line */}
       <AnimatedFlowingLine />
@@ -526,6 +530,7 @@ export default function WelcomeScreen() {
         </Text>
       </View>
     </OnboardingLayout>
+
   );
 }
 

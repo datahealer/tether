@@ -44,6 +44,8 @@ import settingsRoutes from './settings';
 
 import adminAuthRoutes from './admin/auth';
 import adminQuestionRoutes from './admin/questions';
+import subscriptionRoutes from './subscription';
+import profileRoutes from './profile';
 
 const router = Router();
 
@@ -56,6 +58,8 @@ router.use('/settings', settingsRoutes);
 // Admin routes (correctly prefixed)
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/questions', adminQuestionRoutes);
+router.use('/subscription', subscriptionRoutes);
+router.use('/profile', profileRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
