@@ -604,6 +604,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import * as Clipboard from 'expo-clipboard';
+import { generateCoupleInvite,acceptCoupleInvite } from '@/services/onboarding_service';
 
 export default function PartnerInviteScreen() {
   const router = useRouter();
@@ -621,16 +622,42 @@ export default function PartnerInviteScreen() {
 
   const generateInviteCode = async () => {
     try {
-      // TODO: Call backend API to generate invite code
-      // For now, generate a random code
+      setLoading(true);
+      const invite = await generateCoupleInvite();
+      setInviteCode(invite.code);
+    } catch (error: any) {
+      console.error('Error generating invite code:', error);
+      Alert.alert('Error', error.message || 'Failed to generate invite code');
+      // Fallback to local code if API fails
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       setInviteCode(code);
+    } finally {
       setLoading(false);
-    } catch (error) {
-      console.error('Error generating invite code:', error);
-      Alert.alert('Error', 'Failed to generate invite code');
     }
   };
+
+  const handleTetherTogether = async () => {
+    if (!partnerCode.trim()) {
+      Alert.alert('Required', 'Please enter your partner\'s code');
+      return;
+    }
+
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLoading(true);
+
+    try {
+      await acceptCoupleInvite(partnerCode.trim());
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success!', 'You are now connected with your partner!');
+      router.push('/onboarding/attribution');
+    } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to connect with partner');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleCopyCode = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -653,28 +680,28 @@ export default function PartnerInviteScreen() {
     }
   };
 
-  const handleTetherTogether = async () => {
-    if (!partnerCode.trim()) {
-      Alert.alert('Required', 'Please enter your partner\'s code');
-      return;
-    }
+  // const handleTetherTogether = async () => {
+  //   if (!partnerCode.trim()) {
+  //     Alert.alert('Required', 'Please enter your partner\'s code');
+  //     return;
+  //   }
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLoading(true);
+  //   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  //   setLoading(true);
 
-    try {
-      // TODO: Call backend API to validate and connect with partner code
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+  //   try {
+  //     // TODO: Call backend API to validate and connect with partner code
+  //     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/onboarding/attribution');
-    } catch (error: any) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error.message || 'Failed to connect with partner');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  //     router.push('/onboarding/attribution');
+  //   } catch (error: any) {
+  //     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  //     Alert.alert('Error', error.message || 'Failed to connect with partner');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleContinue = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -682,7 +709,7 @@ export default function PartnerInviteScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.84} showBackButton={true}>
+    <OnboardingLayout progress={0.84} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

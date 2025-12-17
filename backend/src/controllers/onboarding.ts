@@ -141,7 +141,7 @@ export const generateInvite = async (req: Request, res: Response): Promise<void>
         success: true,
         invite: {
           code: existingInvite.inviteCode,
-          link: existingInvite.inviteLink,
+          // link: existingInvite.inviteLink,
           expiresAt: existingInvite.expiresAt,
         },
       });
@@ -166,7 +166,7 @@ export const generateInvite = async (req: Request, res: Response): Promise<void>
       success: true,
       invite: {
         code: invite.inviteCode,
-        link: invite.inviteLink,
+        // link: invite.inviteLink,
         expiresAt: invite.expiresAt,
       },
     });

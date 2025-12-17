@@ -26,8 +26,9 @@ export function NavigationHandler() {
     const inHome = segments[0] === 'home';
     const currentRoute = pathname;
 
-    // ✅ Allow navigation to settings screens
+    // ✅ Allow navigation to settings screens and home screens
     const isSettingsScreen = currentRoute.includes('/settings');
+    const isHomeScreen = currentRoute.includes('/home/');
 
     console.log('🔍 Navigation Check:', {
       user: user?.email,
@@ -36,7 +37,8 @@ export function NavigationHandler() {
       currentRoute,
       inAuth,
       inHome,
-      isSettingsScreen
+      isSettingsScreen,
+      isHomeScreen
     });
 
     if (!user) {
@@ -52,14 +54,14 @@ export function NavigationHandler() {
       // Logged in - determine where to go based on status
       if (!user.onboarded) {
         // Not onboarded - should be in onboarding flow
-        if (!inAuth && currentRoute !== '/onboarding/privacy' && !isSettingsScreen) {
+        if (!inAuth && currentRoute !== '/onboarding/privacy' && !isSettingsScreen && !isHomeScreen) {
           console.log('➡️ Redirecting to privacy (start of onboarding)');
           hasNavigated.current = true;
           router.replace('/onboarding/privacy');
         }
       } else if (!user.subscribed) {
         // Onboarded but not subscribed - go to subscription
-        if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen) {
+        if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
           console.log('➡️ Redirecting to subscription');
           hasNavigated.current = true;
           router.replace('/onboarding/subscription');

@@ -18,6 +18,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://192.168.29.107:3000',
     'http://192.168.29.107:8081',
+    'https://9l2k8cwj-3000.inc1.devtunnels.ms',
  
     'https://dev.d3tt7e7nz4d0aw.amplifyapp.com'
   ],
