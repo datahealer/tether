@@ -359,7 +359,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -579,7 +579,11 @@ export default function AccountCreationScreen() {
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
                 />
-                <Ionicons name="create-outline" size={20} color={Colors.inputText} />
+                <Image
+              source={require('../../assets/images/pencil.png')}
+              style={styles.inputIcon}
+              resizeMode="contain"
+            />
               </View>
 
               {/* Password Input Field */}
@@ -604,11 +608,11 @@ export default function AccountCreationScreen() {
                     setShowPassword(!showPassword);
                   }}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                    size={20} 
-                    color={Colors.inputText} 
-                  />
+                  <Image
+                source={require('../../assets/images/eye.png')}
+                style={styles.inputIcon}
+                resizeMode="contain"
+              />
                 </TouchableOpacity>
               </View>
 
@@ -817,6 +821,10 @@ const styles = StyleSheet.create({
     paddingVertical: 0, // Add this to prevent clipping
     includeFontPadding: false, // Add this for Android
     
+  },
+  inputIcon: {
+    width: 24,
+    height: 24,
   },
   toggleRow: {
     flexDirection: 'row',

@@ -8,7 +8,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -144,7 +145,11 @@ export default function LoginScreen() {
               onFocus={() => setEmailFocused(true)}
               onBlur={() => setEmailFocused(false)}
             />
-            <Ionicons name="mail-outline" size={20} color={Colors.inputText} />
+            <Image
+              source={require('../../assets/images/pencil.png')}
+              style={styles.inputIcon}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Password Input Field */}
@@ -169,10 +174,10 @@ export default function LoginScreen() {
                 setShowPassword(!showPassword);
               }}
             >
-              <Ionicons 
-                name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                size={20} 
-                color={Colors.inputText} 
+              <Image
+                source={require('../../assets/images/eye.png')}
+                style={styles.inputIcon}
+                resizeMode="contain"
               />
             </TouchableOpacity>
           </View>
@@ -295,10 +300,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.inputFill,
     marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   inputFocused: {
+    borderWidth: 1,
     borderColor: Colors.lightOrange,
     backgroundColor: Colors.white,
   },
@@ -310,6 +316,10 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     letterSpacing: 0,
+  },
+  inputIcon: {
+    width: 24,
+    height: 24,
   },
   forgotPasswordContainer: {
     width: ComponentSizes.inputField.width,

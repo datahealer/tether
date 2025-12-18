@@ -92,6 +92,8 @@ export default function RootLayout() {
             <Stack.Screen name="home/category-packs" options={{ headerShown: false }} />
             <Stack.Screen name="home/waiting-partner" options={{ headerShown: false }} />
             <Stack.Screen name="home/tether-history" options={{ headerShown: false }} />
+            <Stack.Screen name="home/question-expired" options={{ headerShown: false }} />
+            <Stack.Screen name="home/both-expired" options={{ headerShown: false }} />
             <Stack.Screen name="home/unlock-pack" options={{ headerShown: false }} />
             <Stack.Screen name="home/choose-second-pack" options={{ headerShown: false }} />
             <Stack.Screen name="home/category-question" options={{ headerShown: false }} />

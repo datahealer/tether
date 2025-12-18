@@ -78,19 +78,26 @@ export default function OnboardingLayout({
     }
 
     if (showBackButton) {
-      return (
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image
-            source={require('../../../assets/images/back-arrow.png')}
-            style={styles.backArrowImage}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      );
-    }
+    return (
+      <TouchableOpacity style={styles.backButton} onPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          // Fallback route - adjust to your app's home/default screen
+          router.replace('/onboarding/welcome');
+        }
+      }}>
+        <Image
+          source={require('../../../assets/images/back-arrow.png')}
+          style={styles.backArrowImage}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    );
+  }
 
-    return <View style={styles.backButton} />;
-  };
+  return <View style={styles.backButton} />;
+};
 
   const getRightComponent = () => {
     if (showLogoutAvatar && user) {
@@ -114,7 +121,7 @@ export default function OnboardingLayout({
           {showChatIcon && (
             <TouchableOpacity 
               style={styles.chatIconButton} 
-              onPress={onChatPress || (() => router.push('/home/tether-history'))}
+              onPress={onChatPress || (() => router.push('/home/both-expired'))}
             >
               <Image
                 source={require('../../../assets/images/Chat.png')}
