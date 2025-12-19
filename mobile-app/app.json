@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/Splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5E6D3"
     },
@@ -24,7 +24,9 @@
         "NSPhotoLibraryAddUsageDescription": "Tether needs permission to save photos to your library.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["tether"]
+            "CFBundleURLSchemes": [
+              "tether"
+            ]
           }
         ]
       }
@@ -39,7 +41,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.tether.app",
       "edgeToEdgeEnabled": true,
@@ -52,7 +55,10 @@
               "scheme": "tether"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -80,7 +86,13 @@
     "extra": {
       "googleWebClientId": "251990719722-0u7bqse5r4pkvklfbfgivihvmrh63uf6.apps.googleusercontent.com",
       "googleIosClientId": "251990719722-4339ehd9uphkoplb6fs0d96j3q38h1el.apps.googleusercontent.com",
-      "apiUrl": "https://9l2k8cwj-3000.inc1.devtunnels.ms"
+      "googleAndroidClientId": "251990719722-5jegc1q6gpthpmvttdh4ah13hlg4o25c.apps.googleusercontent.com",
+      
+      "apiUrl": "https://ftvg8elzse.execute-api.us-east-1.amazonaws.com",
+      "router": {},
+      "eas": {
+        "projectId": "2eb6e92a-7dbc-4bfb-b6fe-eee2f3c2a708"
+      }
     }
   }
 }

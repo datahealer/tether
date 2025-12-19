@@ -7,10 +7,14 @@ dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env
 
 const s3Client = new S3Client({ 
   region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  }
+  // ✅ Remove explicit credentials - Lambda uses IAM role automatically
+  // Only provide credentials if running locally
+  ...(process.env.AWS_LAMBDA_FUNCTION_NAME ? {} : {
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    }
+  })
 });
 
 // ✅ Helper to get userId consistently

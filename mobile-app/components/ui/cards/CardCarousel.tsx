@@ -544,17 +544,13 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../../theme/constants';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.72;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH * 0.75;
 const CARD_HEIGHT = CARD_WIDTH * 1.4;
-const SPACING = 20;
-const SIDE_CARD_SCALE = 0.98;
-const CARD_PERSPECTIVE = 1200;
-const ROTATION_ANGLE = 20;
+const SIDE_CARD_OFFSET = 35; // How much each card peeks out
 
 export interface CarouselCard {
   id: string;
@@ -584,16 +580,8 @@ export default function Card3DCarousel({
   waitingTetherCategoryId
 }: Card3DCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(controlledIndex || 0);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const panX = useRef(new Animated.Value(0)).current;
-  
-  // Debug flag - set to true to see logs
-  const DEBUG = false;
-  const log = (...args: any[]) => {
-    if (DEBUG) console.log('[CardCarousel]', ...args);
-  };
+  const animatedIndex = useRef(new Animated.Value(0)).current;
 
-  // Auto-scroll to waiting tether on mount if needed
   useEffect(() => {
     if (hasWaitingTether && waitingTetherCategoryId) {
       const tetherIndex = cards.findIndex(card => card.id === waitingTetherCategoryId);
@@ -607,160 +595,86 @@ export default function Card3DCarousel({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: (_, gestureState) => {
-        log('onStartShouldSetPanResponder', { dx: gestureState.dx, dy: gestureState.dy });
-        return false;
-      },
-      onStartShouldSetPanResponderCapture: (_, gestureState) => {
-        log('onStartShouldSetPanResponderCapture', { dx: gestureState.dx, dy: gestureState.dy });
-        return false;
-      },
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        const shouldSet = Math.abs(gestureState.dx) > 2 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
-        log('onMoveShouldSetPanResponder', { 
-          dx: gestureState.dx, 
-          dy: gestureState.dy, 
-          shouldSet,
-          hasWaitingTether 
-        });
-        return shouldSet;
+        return Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
-      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-        const shouldCapture = Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
-        log('onMoveShouldSetPanResponderCapture', { 
-          dx: gestureState.dx, 
-          dy: gestureState.dy, 
-          shouldCapture 
-        });
-        return shouldCapture;
-      },
-      onPanResponderTerminationRequest: () => {
-        log('onPanResponderTerminationRequest - returning false to keep control');
-        return false;
-      },
-      onPanResponderGrant: (_, gestureState) => {
-        log('✅ PAN RESPONDER GRANTED!', { dx: gestureState.dx, dy: gestureState.dy });
+      onPanResponderGrant: () => {
         if (!hasWaitingTether) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        panX.stopAnimation();
-        panX.setOffset(0);
-        panX.setValue(0);
+        animatedIndex.stopAnimation();
       },
       onPanResponderMove: (_, gestureState) => {
-        log('onPanResponderMove', { 
-          dx: gestureState.dx, 
-          vx: gestureState.vx,
-          hasWaitingTether 
-        });
         if (!hasWaitingTether) {
-          panX.setValue(gestureState.dx);
+          const dragPosition = activeIndex - gestureState.dx / CARD_WIDTH;
+          const clampedPosition = Math.max(0, Math.min(cards.length - 1, dragPosition));
+          animatedIndex.setValue(clampedPosition);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        log('onPanResponderRelease', { 
-          dx: gestureState.dx, 
-          vx: gestureState.vx,
-          activeIndex,
-          cardsLength: cards.length
-        });
-        
         if (hasWaitingTether) {
-          log('Has waiting tether - resetting position');
-          Animated.spring(panX, {
-            toValue: 0,
+          Animated.spring(animatedIndex, {
+            toValue: activeIndex,
             useNativeDriver: true,
-            tension: 100,
-            friction: 10,
+            tension: 65,
+            friction: 7,
           }).start();
           return;
         }
 
-        panX.flattenOffset();
-        const threshold = CARD_WIDTH / 8; // Super sensitive threshold (~36px)
         const velocity = gestureState.vx;
+        const threshold = CARD_WIDTH * 0.25;
         
-        log('Checking swipe', { threshold, velocity, dx: gestureState.dx });
-        
-        // Prioritize distance first, then velocity
-        // Right swipe (going to previous card)
-        if (gestureState.dx > threshold && activeIndex > 0) {
-          log('Swipe RIGHT detected (distance) - going to index', activeIndex - 1);
-          goToIndex(activeIndex - 1);
-          return;
-        }
-        
-        // Left swipe (going to next card)
-        if (gestureState.dx < -threshold && activeIndex < cards.length - 1) {
-          log('Swipe LEFT detected (distance) - going to index', activeIndex + 1);
-          goToIndex(activeIndex + 1);
-          return;
-        }
-        
-        // Check velocity for quick swipes (backup check)
-        if (Math.abs(velocity) > 0.15) {
+        let targetIndex = activeIndex;
+
+        // Check swipe distance first
+        if (Math.abs(gestureState.dx) > threshold) {
+          if (gestureState.dx > 0 && activeIndex > 0) {
+            targetIndex = activeIndex - 1;
+          } else if (gestureState.dx < 0 && activeIndex < cards.length - 1) {
+            targetIndex = activeIndex + 1;
+          }
+        } 
+        // Then check velocity for quick swipes
+        else if (Math.abs(velocity) > 0.3) {
           if (velocity > 0 && activeIndex > 0) {
-            log('Quick swipe RIGHT (velocity) - going to index', activeIndex - 1);
-            goToIndex(activeIndex - 1);
-            return;
+            targetIndex = activeIndex - 1;
           } else if (velocity < 0 && activeIndex < cards.length - 1) {
-            log('Quick swipe LEFT (velocity) - going to index', activeIndex + 1);
-            goToIndex(activeIndex + 1);
-            return;
+            targetIndex = activeIndex + 1;
           }
         }
         
-        // If no conditions met, snap back
-        log('Swipe not enough - snapping back');
-        Animated.spring(panX, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 10,
-        }).start();
+        goToIndex(targetIndex);
       },
-      onPanResponderTerminate: (_, gestureState) => {
-        log('❌ PAN RESPONDER TERMINATED!', { dx: gestureState.dx, dy: gestureState.dy });
-        Animated.spring(panX, {
-          toValue: 0,
+      onPanResponderTerminate: () => {
+        Animated.spring(animatedIndex, {
+          toValue: activeIndex,
           useNativeDriver: true,
-          tension: 100,
-          friction: 10,
+          tension: 65,
+          friction: 7,
         }).start();
       },
     })
   ).current;
 
   const goToIndex = (index: number, isSystemDriven = false) => {
-    log('goToIndex called', { index, isSystemDriven, hasWaitingTether });
     if (!hasWaitingTether || isSystemDriven) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     
     setActiveIndex(index);
     
-    Animated.parallel([
-      Animated.spring(panX, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 90,
-        friction: 7,
-      }),
-      Animated.spring(scrollX, {
-        toValue: index * (CARD_WIDTH + SPACING),
-        useNativeDriver: true,
-        tension: 90,
-        friction: 7,
-      }),
-    ]).start(() => {
-      log('Animation complete - now at index', index);
-    });
+    Animated.spring(animatedIndex, {
+      toValue: index,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 7,
+    }).start();
   };
 
   const handleCardPress = (card: CarouselCard, index: number) => {
-    log('handleCardPress', { cardId: card.id, index, activeIndex, hasWaitingTether });
     if (hasWaitingTether && card.id !== waitingTetherCategoryId) {
-      // Non-active card tap when waiting tether exists
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
@@ -781,57 +695,50 @@ export default function Card3DCarousel({
       >
         {cards.map((card, index) => {
           const position = index - activeIndex;
-          const inputRange = [
-            (index - 1) * (CARD_WIDTH + SPACING),
-            index * (CARD_WIDTH + SPACING),
-            (index + 1) * (CARD_WIDTH + SPACING),
-          ];
+          
+          // Create input range for smooth interpolation
+          const inputRange = [index - 1, index, index + 1];
 
-          const combinedValue = Animated.add(scrollX, panX);
-
-          const scale = combinedValue.interpolate({
-            inputRange,
-            outputRange: [SIDE_CARD_SCALE, 1, SIDE_CARD_SCALE],
-            extrapolate: 'clamp',
-          });
-
-          const translateX = combinedValue.interpolate({
+          // Position cards in a deck/shuffle style
+          const translateX = animatedIndex.interpolate({
             inputRange,
             outputRange: [
-              -CARD_WIDTH * 0.35,
+              -SCREEN_WIDTH / 2 + SIDE_CARD_OFFSET,
               0,
-              CARD_WIDTH * 0.35,
+              SCREEN_WIDTH / 2 - SIDE_CARD_OFFSET,
             ],
             extrapolate: 'clamp',
           });
 
-          const rotateY = combinedValue.interpolate({
+          // Slight vertical offset for depth
+          const translateY = animatedIndex.interpolate({
             inputRange,
-            outputRange: [`${ROTATION_ANGLE}deg`, '0deg', `-${ROTATION_ANGLE}deg`],
+            outputRange: [10, 0, 10],
             extrapolate: 'clamp',
           });
 
-          const opacity = combinedValue.interpolate({
+          // Scale - center card is full size
+          const scale = animatedIndex.interpolate({
             inputRange,
-            outputRange: [0.4, 1, 0.4],
+            outputRange: [0.92, 1, 0.92],
             extrapolate: 'clamp',
           });
 
-          const shadowOpacityValue = combinedValue.interpolate({
+          // Rotation for deck effect
+          const rotateZ = animatedIndex.interpolate({
             inputRange,
-            outputRange: [0.1, 0.25, 0.1],
+            outputRange: ['-12deg', '0deg', '12deg'],
             extrapolate: 'clamp',
           });
 
-          const shadowRadiusValue = combinedValue.interpolate({
+          // Opacity
+          const opacity = animatedIndex.interpolate({
             inputRange,
-            outputRange: [12, 24, 12],
+            outputRange: [0.6, 1, 0.6],
             extrapolate: 'clamp',
           });
 
           const isActive = index === activeIndex;
-          const shouldShowStroke = isActive && (!hasWaitingTether || card.id === waitingTetherCategoryId);
-          const isDisabled = hasWaitingTether && card.id !== waitingTetherCategoryId;
 
           return (
             <Animated.View
@@ -841,105 +748,60 @@ export default function Card3DCarousel({
                 {
                   transform: [
                     { translateX },
+                    { translateY },
                     { scale },
-                    { perspective: CARD_PERSPECTIVE },
-                    { rotateY },
+                    { rotateZ },
                   ],
                   opacity,
-                  zIndex: isActive ? 100 : 50 - Math.abs(position),
+                  zIndex: cards.length - Math.abs(position),
                 },
               ]}
-              pointerEvents="box-none"
             >
               <TouchableOpacity
                 activeOpacity={0.95}
                 onPress={() => handleCardPress(card, index)}
-                disabled={isDisabled}
                 style={styles.touchableCard}
-                delayPressIn={50}
               >
+                {/* Glass Card with Border */}
                 <View style={[
-                  styles.cardBorder,
-                  shouldShowStroke && styles.cardBorderActive,
+                  styles.card,
+                  isActive && styles.cardActive,
                 ]}>
-                  <LinearGradient
-                    colors={card.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.card}
-                  >
-                    <View style={styles.cardContent}>
-                      {/* Top Badge */}
-                      <View style={styles.badgeContainer}>
-                        {card.isTemporary && card.daysLeft !== undefined ? (
-                          <View style={styles.expiryPill}>
-                            <Text style={styles.badgeText}>
-                              {card.daysLeft} days left
-                            </Text>
-                          </View>
-                        ) : (
-                          <View style={styles.badge}>
-                            <Text style={styles.badgeText}>
-                              {card.isLocked ? '🔒 Locked' : '✨ Unlocked'}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Center Content */}
-                      <View style={styles.centerContent}>
-                        <Text style={styles.cardTitle}>{card.title}</Text>
-                        <Text style={styles.cardDescription}>{card.description}</Text>
-                      </View>
-
-                      {/* Bottom Progress */}
-                      <View style={styles.progressSection}>
-                        <View style={styles.progressBar}>
-                          <View 
-                            style={[
-                              styles.progressFill, 
-                              { 
-                                width: `${(card.questionsAnswered / card.totalQuestions) * 100}%` 
-                              }
-                            ]} 
-                          />
-                        </View>
-                        <Text style={styles.progressText}>
-                          {card.questionsAnswered}/{card.totalQuestions} answered
-                        </Text>
-                      </View>
+                  {/* Locked Badge - Top Right */}
+                  {card.isLocked && (
+                    <View style={styles.lockedBadge}>
+                      <Text style={styles.lockedText}>🔒 Unlock with Premium</Text>
                     </View>
+                  )}
 
-                    {/* Decorative Elements */}
-                    <View style={styles.decorativeCircle1} />
-                    <View style={styles.decorativeCircle2} />
-                  </LinearGradient>
+                  {/* Card Content */}
+                  <View style={styles.cardContent}>
+                    {/* Title */}
+                    <Text style={styles.cardTitle}>{card.title}</Text>
+                    
+                    {/* Description */}
+                    <Text style={styles.cardDescription}>{card.description}</Text>
+                    
+                    {/* Progress */}
+                    <View style={styles.progressSection}>
+                      <Text style={styles.progressText}>
+                        {card.questionsAnswered}/{card.totalQuestions} answered
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Subtle background pattern lines */}
+                  <View style={styles.backgroundPattern}>
+                    {[...Array(8)].map((_, i) => (
+                      <View key={i} style={styles.patternLine} />
+                    ))}
+                  </View>
                 </View>
               </TouchableOpacity>
             </Animated.View>
           );
         })}
       </View>
-
-      {/* Navigation Dots */}
-      {!hasWaitingTether && (
-        <View style={styles.dotsContainer}>
-          {cards.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => goToIndex(index)}
-              style={styles.dotWrapper}
-            >
-              <View
-                style={[
-                  styles.dot,
-                  index === activeIndex && styles.dotActive,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
     </View>
   );
 }
@@ -965,137 +827,93 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  cardBorder: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: BorderRadius.xl,
-    padding: 0,
-    backgroundColor: 'transparent',
-  },
-  cardBorderActive: {
-    padding: 2,
-    backgroundColor: Colors.darkOrange,
-  },
   card: {
     width: '100%',
     height: '100%',
-    borderRadius: BorderRadius.xl,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     overflow: 'hidden',
-    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  cardActive: {
+    borderColor: Colors.darkOrange,
+    borderWidth: 2.5,
+    shadowOpacity: 0.25,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  lockedBadge: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    zIndex: 100,
+  },
+  lockedText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: 12,
+    fontWeight: FontWeights.semibold,
+    color: Colors.white,
   },
   cardContent: {
     flex: 1,
     padding: Spacing.xl,
-    justifyContent: 'space-between',
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
-  },
-  expiryPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
-  },
-  badgeText: {
-    fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.semibold,
-    color: Colors.white,
-  },
-  centerContent: {
-    flex: 1,
+    paddingTop: Spacing.xl * 2.5,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    zIndex: 10,
   },
   cardTitle: {
     fontFamily: 'InterTight-Bold',
     fontSize: 28,
     fontWeight: FontWeights.bold,
-    color: Colors.white,
+    color: Colors.darkOrange,
     textAlign: 'center',
-    marginBottom: Spacing.sm,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: Spacing.md,
     lineHeight: 34,
   },
   cardDescription: {
     fontFamily: 'InterTight-Regular',
     fontSize: FontSizes.description,
     fontWeight: FontWeights.regular,
-    color: Colors.white,
+    color: Colors.inputText,
     textAlign: 'center',
-    opacity: 0.95,
     lineHeight: 22,
+    marginBottom: Spacing.lg,
   },
   progressSection: {
-    gap: Spacing.xs,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: 3,
+    marginTop: 'auto',
+    paddingTop: Spacing.xl,
   },
   progressText: {
     fontFamily: 'InterTight-Medium',
     fontSize: FontSizes.small,
     fontWeight: FontWeights.medium,
-    color: Colors.white,
+    color: Colors.darkOrange,
     textAlign: 'center',
-    opacity: 0.9,
   },
-  decorativeCircle1: {
+  backgroundPattern: {
     position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'space-evenly',
+    paddingHorizontal: Spacing.lg,
+    opacity: 0.15,
+    zIndex: 1,
   },
-  decorativeCircle2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  dotWrapper: {
-    padding: Spacing.xs,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  patternLine: {
+    height: 1,
     backgroundColor: Colors.mediumGrey,
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: Colors.darkOrange,
+    width: '100%',
   },
 });

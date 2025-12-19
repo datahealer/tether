@@ -29,13 +29,15 @@ export default function ProfileDetailsScreen() {
   // State
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.profilePicture || null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.avatar || null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
   
-  // Profile data
+  // Profile data - Initialize from user's onboardingData
   const [name, setName] = useState(user?.name || '');
-  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
-  const [gender, setGender] = useState<string>('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
+    user?.onboardingData?.dateOfBirth ? new Date(user.onboardingData.dateOfBirth) : null
+  );
+  const [gender, setGender] = useState<string>(user?.onboardingData?.gender || '');
 
   // Request camera permissions
   const requestCameraPermission = async () => {
@@ -114,7 +116,7 @@ export default function ProfileDetailsScreen() {
       setProfilePhoto(photoUrl); // Replace with CDN URL
       setUploadStatus('success');
     } catch (error) {
-      setProfilePhoto(user?.profilePicture || null); // Revert on error
+      setProfilePhoto(user?.avatar || null); // Revert on error
       Alert.alert('Error', 'Failed to upload image');
     }
   }
@@ -199,13 +201,14 @@ export default function ProfileDetailsScreen() {
         ...user!,
         id: data.user.id,
         name: data.user.name,
-        profilePicture: data.user.avatar,
+        avatar: data.user.avatar,
         email: data.user.email,
         provider: data.user.provider,
         token: user!.token,
         refreshToken: user!.refreshToken,
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
+        onboardingData: data.user.onboardingData,
       });
 
       Alert.alert(

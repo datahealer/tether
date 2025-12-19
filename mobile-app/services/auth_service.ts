@@ -195,9 +195,24 @@ export interface AuthUser {
   name: string;
   provider: 'apple' | 'google' | 'email';
   providerId?: string;
-  profilePicture?: string;
+  avatar?: string;
   token: string; // Access token
   refreshToken?: string;
+  onboardingData?: {
+    firstName?: string;
+    partnerFirstName?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    relationshipStatus?: 'single' | 'dating' | 'engaged' | 'married' | 'its-complicated';
+    relationshipDuration?: string;
+    livingType?: string[];
+    hasChildren?: boolean;
+    goals?: string[];
+    emotionalNeeds?: string[];
+    rhythm?: string;
+    tone?: string;
+    packPreferences?: string[];
+  };
 }
 
 export interface TokenPair {
@@ -443,11 +458,12 @@ export const signInWithApple = async (): Promise<AuthUser> => {
       email: data.user.email,
       name: data.user.name,
       provider: data.user.provider,
-      profilePicture: data.user.avatar,
+      avatar: data.user.avatar,
       token: data.accessToken,
       refreshToken: data.refreshToken,
-      onboarded:data.user.onboarded,
-      subscribed:data.user.subscribed
+      onboarded: data.user.onboarded,
+      subscribed: data.user.subscribed,
+      onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {
     if (error.code === 'ERR_REQUEST_CANCELED') {
@@ -531,11 +547,12 @@ export const processGoogleSignIn = async (response: any): Promise<AuthUser> => {
       email: data.user.email,
       name: data.user.name,
       provider: data.user.provider,
-      profilePicture: data.user.avatar,
+      avatar: data.user.avatar,
       token: data.accessToken,
       refreshToken: data.refreshToken,
-      onboarded:data.user.onboarded,
-      subscribed:data.user.subscribed
+      onboarded: data.user.onboarded,
+      subscribed: data.user.subscribed,
+      onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {
     console.error('❌ Google sign in error:', error);

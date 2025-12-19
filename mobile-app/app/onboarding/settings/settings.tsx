@@ -548,8 +548,8 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileAvatar}>
-            {user?.profilePicture ? (
-              <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
             ) : (
               <Ionicons name="person" size={32} color={Colors.darkOrange} />
             )}

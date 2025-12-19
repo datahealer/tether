@@ -358,7 +358,8 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         provider: user.provider,
         avatar: user.avatar,
         onboarded: user.onboarded,
-        subscribed: user.subscribed, 
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
   } catch (error: any) {
@@ -413,7 +414,8 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
         provider: user.provider,
         avatar: user.avatar,
         onboarded: user.onboarded,
-        subscribed: user.subscribed, 
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
   } catch (error: any) {
@@ -487,7 +489,8 @@ export const emailSignup = async (req: Request, res: Response): Promise<void> =>
         provider: user.provider,
         avatar: user.avatar,
         onboarded: user.onboarded,
-        subscribed: user.subscribed, 
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
   } catch (error: any) {
@@ -541,9 +544,9 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
-    console.log('✅ Email login successful:', email);
+    console.log('✅ Email signup successful:', email);
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
       accessToken,
       refreshToken,
@@ -554,11 +557,12 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
         provider: user.provider,
         avatar: user.avatar,
         onboarded: user.onboarded,
-        subscribed: user.subscribed, 
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
   } catch (error: any) {
-    console.error('❌ Email login error:', error);
+    console.error('❌ Email signup error:', error);
     res.status(500).json({
       error: error.message || 'Failed to login',
     });

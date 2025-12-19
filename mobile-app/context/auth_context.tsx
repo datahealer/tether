@@ -263,6 +263,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
   const signUp = useCallback(async (email: string, password: string) => {
     try {
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+      console.log('Api sign in',API_URL);
+      
       
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
@@ -286,10 +288,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         email: data.user.email,
         name: data.user.name,
         provider: data.user.provider,
+        avatar: data.user.avatar,
         token: data.accessToken,
         refreshToken: data.refreshToken,
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
+        onboardingData: data.user.onboardingData,
       };
       
       await signIn(userData);
@@ -321,10 +325,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         email: data.user.email,
         name: data.user.name,
         provider: data.user.provider || 'email',
+        avatar: data.user.avatar,
         token: data.accessToken,
         refreshToken: data.refreshToken,
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
+        onboardingData: data.user.onboardingData,
       };
       
       await signIn(userData);

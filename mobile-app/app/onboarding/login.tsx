@@ -294,17 +294,16 @@ const styles = StyleSheet.create({
     color: Colors.darkOrange,
     fontWeight: FontWeights.medium,
   },
-  inputContainer: {
+inputContainer: {
     ...ComponentSizes.inputField,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.inputFill,
     marginBottom: Spacing.md,
-    borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   inputFocused: {
-    borderWidth: 1,
     borderColor: Colors.lightOrange,
     backgroundColor: Colors.white,
   },
@@ -312,15 +311,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    // lineHeight: 24,
     fontWeight: FontWeights.regular,
-    color: Colors.inputText,
+    color: Colors.black,  // Black text for visibility
     letterSpacing: 0,
+    paddingVertical: 0,
+    includeFontPadding: false,
   },
   inputIcon: {
     width: 24,
     height: 24,
   },
+
   forgotPasswordContainer: {
     width: ComponentSizes.inputField.width,
     alignItems: 'flex-end',
@@ -412,3 +413,4 @@ const styles = StyleSheet.create({
     color: Colors.darkOrange,
   },
 });
+
