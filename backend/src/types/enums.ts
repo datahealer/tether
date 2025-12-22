@@ -1,6 +1,13 @@
 export enum Provider {
-  APPLE = 'apple',
   GOOGLE = 'google',
+  APPLE = 'apple',
+  EMAIL = 'email', // Add this
+}
+
+export enum AuthProvider {
+  GOOGLE = 'google',
+  APPLE = 'apple',
+  EMAIL = 'email', // Add this
 }
 
 export enum Platform {
@@ -10,9 +17,10 @@ export enum Platform {
 }
 
 export enum Rhythm {
-  DAILY = 'daily',             // 24 hours
-  TWICE_WEEKLY = 'twice_weekly', // 72 hours
-  WEEKLY = 'weekly',           // 168 hours
+  EVERY_DAY = 'Every day',
+  FEW_TIMES_WEEK = 'A few times a week',
+  ONCE_WEEK = 'Once a week',
+  DECIDE_AS_GO = "We'll decide as we go",
 }
 
 export enum SubscriptionTier {
@@ -31,13 +39,14 @@ export enum TetherStatus {
   UNANSWERED_EXPIRED = 'unanswered_expired', // first responder answered, second didn't
 }
 
+// ...existing code...
 export enum Tone {
-  PLAYFUL = 'Playful',
-  REFLECTIVE = 'Reflective',
-  INTIMATE = 'Intimate',
-  VULNERABLE = 'Vulnerable',
-  EROTIC = 'Erotic',
+  PLAYFUL = 'playful',
+  REFLECTIVE = 'reflective',
+  ROMANTIC = 'romantic',
+  DEEP = 'deep',
 }
+// ...existing code...
 
 export enum GenderFocus {
   MALE = 'Male',
