@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User } from '../models/User';
+import  User  from '../models/User';
 import { Platform } from '../types/enums';
 
 export const updatePushToken = async (req: Request, res: Response) => {

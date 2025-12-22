@@ -31,5 +31,5 @@ const questionSchema = new Schema<IQuestion>({
 questionSchema.index({ questionId: 1 });
 questionSchema.index({ categoryId: 1 });
 questionSchema.index({ status: 1 });
-
-export const Question = model<IQuestion>('Question', questionSchema);
+const Question = model<IQuestion>('Question', questionSchema);
+export default Question;

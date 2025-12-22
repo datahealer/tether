@@ -1,41 +1,76 @@
-import { Schema, model } from 'mongoose';
-import { ICoupleInvite } from '../types/interfaces';
+// import mongoose, { Schema, Document } from 'mongoose';
 
-const coupleInviteSchema = new Schema<ICoupleInvite>(
+// export interface ICoupleInvite extends Document {
+//   inviterId: mongoose.Types.ObjectId;
+//   inviteCode: string;
+//   inviteLink: string;
+//   status: 'pending' | 'accepted' | 'expired';
+//   expiresAt: Date;
+//   acceptedById?: mongoose.Types.ObjectId;
+//   acceptedAt?: Date;
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
+
+// const CoupleInviteSchema: Schema = new Schema(
+//   {
+//     inviterId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+//     inviteCode: { type: String, required: true, unique: true },
+//     inviteLink: { type: String, required: true },
+//     status: { 
+//       type: String, 
+//       enum: ['pending', 'accepted', 'expired'], 
+//       default: 'pending' 
+//     },
+//     expiresAt: { type: Date, required: true },
+//     acceptedById: { type: Schema.Types.ObjectId, ref: 'User' },
+//     acceptedAt: { type: Date },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
+
+// // Indexes
+// CoupleInviteSchema.index({ inviteCode: 1 });
+// CoupleInviteSchema.index({ inviterId: 1, status: 1 });
+// CoupleInviteSchema.index({ expiresAt: 1 });
+
+// export default mongoose.model<ICoupleInvite>('CoupleInvite', CoupleInviteSchema);
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface ICoupleInvite extends Document {
+  inviterId: mongoose.Types.ObjectId;
+  inviteCode: string;
+  status: 'pending' | 'accepted' | 'expired';
+  expiresAt: Date;
+  acceptedById?: mongoose.Types.ObjectId;
+  acceptedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const CoupleInviteSchema: Schema = new Schema(
   {
-    inviterUserId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
+    inviterId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    inviteCode: { type: String, required: true, unique: true },
+    status: { 
+      type: String, 
+      enum: ['pending', 'accepted', 'expired'], 
+      default: 'pending' 
     },
-    code: {
-      type: String,
-      required: true,
-      unique: true,
-      uppercase: true,
-      minlength: 6,
-      maxlength: 6,
-    },
-    email: {
-      type: String,
-      lowercase: true,
-      sparse: true,
-    },
-    expiresAt: {
-      type: Date,
-      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      index: { expires: '30d' },
-    },
-    usedByUserId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-    },
-    usedAt: Date,
+    expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }, // 7 days from now
+    acceptedById: { type: Schema.Types.ObjectId, ref: 'User' },
+    acceptedAt: { type: Date },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-coupleInviteSchema.index({ code: 1 });
-coupleInviteSchema.index({ inviterUserId: 1, usedAt: 1 });
+// Indexes
+CoupleInviteSchema.index({ inviteCode: 1 }, { unique: true });
+CoupleInviteSchema.index({ inviterId: 1, status: 1 });
+CoupleInviteSchema.index({ expiresAt: 1 });
 
-export const CoupleInvite = model<ICoupleInvite>('CoupleInvite', coupleInviteSchema);
+export default mongoose.model<ICoupleInvite>('CoupleInvite', CoupleInviteSchema);
