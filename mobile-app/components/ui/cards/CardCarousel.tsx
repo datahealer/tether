@@ -548,9 +548,11 @@ import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../../theme/constants';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.75;
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
-const SIDE_CARD_OFFSET = 35; // How much each card peeks out
+const CARD_WIDTH = SCREEN_WIDTH * 0.55; // Slightly narrower for better stacking
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.7; // Fixed height based on screen
+const HORIZONTAL_OFFSET = 30; // Horizontal offset per card
+const VERTICAL_OFFSET = 10; // Vertical drop per card
+const HEIGHT_REDUCTION = 30; // Height reduction per background card
 
 export interface CarouselCard {
   id: string;
@@ -696,49 +698,50 @@ export default function Card3DCarousel({
         {cards.map((card, index) => {
           const position = index - activeIndex;
           
+          // Only show current card and next 4 cards
+          if (position < 0 || position > 4) return null;
+
           // Create input range for smooth interpolation
           const inputRange = [index - 1, index, index + 1];
 
-          // Position cards in a deck/shuffle style
+          // Horizontal offset - cards stack to the right
           const translateX = animatedIndex.interpolate({
             inputRange,
             outputRange: [
-              -SCREEN_WIDTH / 2 + SIDE_CARD_OFFSET,
+              -HORIZONTAL_OFFSET,
               0,
-              SCREEN_WIDTH / 2 - SIDE_CARD_OFFSET,
+              HORIZONTAL_OFFSET,
             ],
             extrapolate: 'clamp',
           });
 
-          // Slight vertical offset for depth
+          // Vertical offset - slight drop for depth
           const translateY = animatedIndex.interpolate({
             inputRange,
-            outputRange: [10, 0, 10],
+            outputRange: [-VERTICAL_OFFSET, 0, VERTICAL_OFFSET],
             extrapolate: 'clamp',
           });
 
-          // Scale - center card is full size
+          // Scale - progressively smaller
           const scale = animatedIndex.interpolate({
             inputRange,
-            outputRange: [0.92, 1, 0.92],
-            extrapolate: 'clamp',
-          });
-
-          // Rotation for deck effect
-          const rotateZ = animatedIndex.interpolate({
-            inputRange,
-            outputRange: ['-12deg', '0deg', '12deg'],
+            outputRange: [0.98, 1, 0.96 - position * 0.02],
             extrapolate: 'clamp',
           });
 
           // Opacity
           const opacity = animatedIndex.interpolate({
             inputRange,
-            outputRange: [0.6, 1, 0.6],
+            outputRange: [0.75, 1, 0.75],
             extrapolate: 'clamp',
           });
 
           const isActive = index === activeIndex;
+          const shouldShowBorder = isActive && (!hasWaitingTether || card.id === waitingTetherCategoryId);
+          const isDisabled = hasWaitingTether && card.id !== waitingTetherCategoryId;
+
+          // Calculate dynamic height reduction for background cards
+          const cardHeight = position === 0 ? CARD_HEIGHT : CARD_HEIGHT - (position * HEIGHT_REDUCTION);
 
           return (
             <Animated.View
@@ -750,22 +753,25 @@ export default function Card3DCarousel({
                     { translateX },
                     { translateY },
                     { scale },
-                    { rotateZ },
                   ],
                   opacity,
-                  zIndex: cards.length - Math.abs(position),
+                  zIndex: cards.length - position,
+                  height: cardHeight,
+                  right: position * HORIZONTAL_OFFSET, // Stack cards to the right
                 },
               ]}
             >
               <TouchableOpacity
                 activeOpacity={0.95}
                 onPress={() => handleCardPress(card, index)}
+                disabled={isDisabled}
                 style={styles.touchableCard}
               >
-                {/* Glass Card with Border */}
+                {/* Card Container */}
                 <View style={[
                   styles.card,
-                  isActive && styles.cardActive,
+                  shouldShowBorder && styles.cardActive,
+                  !isActive && styles.cardInactive,
                 ]}>
                   {/* Locked Badge - Top Right */}
                   {card.isLocked && (
@@ -774,34 +780,60 @@ export default function Card3DCarousel({
                     </View>
                   )}
 
-                  {/* Card Content */}
+                  {/* Card Content - Bottom Aligned */}
                   <View style={styles.cardContent}>
                     {/* Title */}
-                    <Text style={styles.cardTitle}>{card.title}</Text>
+                    <Text style={[styles.cardTitle, !isActive && styles.cardTitleInactive]}>
+                      {card.title}
+                    </Text>
                     
                     {/* Description */}
-                    <Text style={styles.cardDescription}>{card.description}</Text>
+                    <Text style={[styles.cardDescription, !isActive && styles.cardDescriptionInactive]}>
+                      {card.description}
+                    </Text>
                     
                     {/* Progress */}
                     <View style={styles.progressSection}>
-                      <Text style={styles.progressText}>
+                      <Text style={[styles.progressText, !isActive && styles.progressTextInactive]}>
                         {card.questionsAnswered}/{card.totalQuestions} answered
                       </Text>
                     </View>
                   </View>
 
-                  {/* Subtle background pattern lines */}
-                  <View style={styles.backgroundPattern}>
-                    {[...Array(8)].map((_, i) => (
-                      <View key={i} style={styles.patternLine} />
-                    ))}
-                  </View>
+                  {/* Subtle background pattern - only on active card */}
+                  {isActive && (
+                    <View style={styles.backgroundPattern}>
+                      {[...Array(8)].map((_, i) => (
+                        <View key={i} style={styles.patternLine} />
+                      ))}
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             </Animated.View>
           );
         })}
       </View>
+
+      {/* Navigation Dots - Optional, can be removed */}
+      {!hasWaitingTether && cards.length > 1 && (
+        <View style={styles.dotsContainer}>
+          {cards.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => goToIndex(index)}
+              style={styles.dotWrapper}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  index === activeIndex && styles.dotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -810,95 +842,103 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-end', // Align to the right like the reference
+    paddingRight: Spacing.xl, // Add right padding
   },
   cardsContainer: {
     height: CARD_HEIGHT + 100,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-end', // Align cards to right
     width: SCREEN_WIDTH,
+    position: 'relative',
   },
   cardWrapper: {
     position: 'absolute',
     width: CARD_WIDTH,
-    height: CARD_HEIGHT,
   },
   touchableCard: {
     width: '100%',
     height: '100%',
   },
   card: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
+    width: '110%',
+    height: '85%',
+    backgroundColor: '#ffffff', // Pure white for active card
+    borderRadius: 20, // Large border radius like reference
+    borderWidth: 0.5,
+    borderColor: '#b3aba6', // Subtle border for inactive
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 10,
   },
   cardActive: {
     borderColor: Colors.darkOrange,
-    borderWidth: 2.5,
-    shadowOpacity: 0.25,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 3,
+    shadowOpacity: 0.35,
+  },
+  cardInactive: {
+    backgroundColor: '#E3DEDB', // Muted beige for background cards
   },
   lockedBadge: {
     position: 'absolute',
-    top: Spacing.md,
-    right: Spacing.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: Spacing.sm,
+    top: Spacing.lg,
+    right: Spacing.lg,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     zIndex: 100,
   },
   lockedText: {
     fontFamily: 'InterTight-SemiBold',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeights.semibold,
     color: Colors.white,
   },
   cardContent: {
     flex: 1,
-    padding: Spacing.xl,
-    paddingTop: Spacing.xl * 2.5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingTop: CARD_HEIGHT * 0.45, // Reduced from 0.55 to shift content upward
+    justifyContent: 'flex-start',
     zIndex: 10,
   },
   cardTitle: {
     fontFamily: 'InterTight-Bold',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: FontWeights.bold,
     color: Colors.darkOrange,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-    lineHeight: 34,
+    marginBottom: Spacing.sm, // Reduced from Spacing.lg to reduce gap
+    lineHeight: 32,
+  },
+  cardTitleInactive: {
+    color: '#8B7F78', // Muted color for inactive cards
   },
   cardDescription: {
     fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.description,
+    fontSize: 17,
     fontWeight: FontWeights.regular,
-    color: Colors.inputText,
-    textAlign: 'center',
+    color: '#4A4A4A',
     lineHeight: 22,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.lg, // Reduced from Spacing.xl * 1.5
+  },
+  cardDescriptionInactive: {
+    color: '#9B9390', // Muted description for inactive cards
   },
   progressSection: {
     marginTop: 'auto',
-    paddingTop: Spacing.xl,
   },
   progressText: {
-    fontFamily: 'InterTight-Medium',
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.medium,
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: 13,
+    fontWeight: FontWeights.semibold,
     color: Colors.darkOrange,
-    textAlign: 'center',
+  },
+  progressTextInactive: {
+    color: '#9B9390', // Muted progress for inactive cards
   },
   backgroundPattern: {
     position: 'absolute',
@@ -908,12 +948,35 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'space-evenly',
     paddingHorizontal: Spacing.lg,
-    opacity: 0.15,
+    opacity: 0.08,
     zIndex: 1,
   },
   patternLine: {
     height: 1,
     backgroundColor: Colors.mediumGrey,
     width: '100%',
+  },
+  dotsContainer: {
+    position: 'absolute',
+    bottom: Spacing.xl,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  dotWrapper: {
+    padding: Spacing.xs,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1C7C2',
+  },
+  dotActive: {
+    width: 24,
+    backgroundColor: Colors.darkOrange,
   },
 });

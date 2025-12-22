@@ -58,7 +58,7 @@ export default function DrawLockedUpsellScreen() {
 
   return (
     <OnboardingLayout 
-      showBackButton={false}
+      showBackButton={true}
       showLogo={false} 
       showHeartLogo={false}
       showChatIcon={true}

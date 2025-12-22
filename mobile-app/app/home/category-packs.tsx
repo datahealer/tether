@@ -917,8 +917,8 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.lg,
     alignItems: 'center',
   },
   mainTitle: {
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: FontWeights.bold,
     color: Colors.black,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   subtitle: {
     fontFamily: 'InterTight-Regular',

@@ -487,3 +487,4 @@ function signIn(arg0: { name: any; profilePicture: any; subscribed?: boolean; on
   throw new Error('Function not implemented.');
 }
 
+

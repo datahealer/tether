@@ -32,7 +32,7 @@ export default function BothExpiredScreen() {
 
   return (
     <OnboardingLayout 
-      showBackButton={false}
+      showBackButton={true}
       showLogo={true} 
       showHeartLogo={false}
       showChatIcon={true}
@@ -45,7 +45,7 @@ export default function BothExpiredScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Push Notification Banner */}
-        <View style={styles.notificationBanner}>
+        {/* <View style={styles.notificationBanner}>
           <View style={styles.notificationHeader}>
             <View style={styles.appIcon}>
               <Text style={styles.appIconText}>Tether</Text>
@@ -57,7 +57,7 @@ export default function BothExpiredScreen() {
             Oops, {partnerName} didn't respond to the Tether in time.{' '}
             <Text style={styles.notificationBold}>But, new questions await you both...</Text>
           </Text>
-        </View>
+        </View> */}
 
         {/* Header */}
         <View style={styles.header}>

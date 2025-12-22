@@ -9,7 +9,14 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ftvg8elzse.execute-api.us-east-1.amazonaws.com"
+      }
     },
     "production": {
       "autoIncrement": true
