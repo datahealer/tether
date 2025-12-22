@@ -1,77 +1,665 @@
+
+
+// import { Request, Response } from 'express';
+// import bcrypt from 'bcryptjs';
+// import { verifyGoogleToken, verifyAppleToken, generateAuthToken, verifyGoogleAccessToken } from '../services/auth';
+// import { createOrUpdateUser } from '../services/user';
+// import { Provider, Platform } from '../types/enums';
+// import User from '../models/User';
+
+// /**
+//  * POST /api/auth/google
+//  * Authenticate with Google
+//  */
+// export const googleAuth = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { idToken, accessToken, platform = 'ios' } = req.body;
+
+//     if (!idToken && !accessToken) {
+//       res.status(400).json({ error: 'ID token or access token is required' });
+//       return;
+//     }
+
+//     let googleUser;
+    
+//     try {
+//       // Try ID token first (preferred)
+//       if (idToken) {
+//         console.log('🔐 Attempting Google ID token verification...');
+//         googleUser = await verifyGoogleToken(idToken);
+//       }
+//     } catch (idTokenError) {
+//       console.log('⚠️ ID token verification failed, trying access token...');
+      
+//       // Fallback to access token
+//       if (accessToken) {
+//         try {
+//           googleUser = await verifyGoogleAccessToken(accessToken);
+//         } catch (accessTokenError) {
+//           console.error('❌ Both token verifications failed');
+//           res.status(401).json({ error: 'Invalid Google credentials' });
+//           return;
+//         }
+//       } else {
+//         res.status(401).json({ error: 'Invalid Google ID token and no access token provided' });
+//         return;
+//       }
+//     }
+
+//     if (!googleUser) {
+//       res.status(401).json({ error: 'Failed to verify Google credentials' });
+//       return;
+//     }
+
+//     console.log('✅ Google user verified:', googleUser.email);
+
+//     // Create or update user
+//     const user = await createOrUpdateUser({
+//       email: googleUser.email,
+//       name: googleUser.name,
+//       provider: Provider.GOOGLE,
+//       providerId: googleUser.sub,
+//       picture: googleUser.picture,
+//       platform,
+//     });
+
+//     // Generate JWT
+//     const token = generateAuthToken(user._id.toString());
+
+//     res.status(200).json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         name: user.name,
+//         provider: user.provider,
+//         avatar: user.avatar,
+//         onboarded: user.onboarded,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error('❌ Google auth error:', error);
+//     res.status(500).json({
+//       error: error.message || 'Authentication failed',
+//     });
+//   }
+// };
+
+// /**
+//  * POST /api/auth/apple
+//  * Authenticate with Apple
+//  */
+// export const appleAuth = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { identityToken, user: appleUserData, platform = 'ios' } = req.body;
+
+//     if (!identityToken) {
+//       res.status(400).json({ error: 'Identity token is required' });
+//       return;
+//     }
+
+//     const appleUser = await verifyAppleToken(identityToken);
+
+//     const userData = {
+//       email: appleUser.email,
+//       name: appleUserData?.fullName?.givenName 
+//         ? `${appleUserData.fullName.givenName} ${appleUserData.fullName.familyName || ''}`.trim()
+//         : appleUser.email.split('@')[0],
+//       provider: Provider.APPLE,
+//       providerId: appleUser.sub,
+//       platform,
+//     };
+
+//     const user = await createOrUpdateUser(userData);
+//     const token = generateAuthToken(user._id.toString());
+
+//     res.status(200).json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         name: user.name,
+//         provider: user.provider,
+//         avatar: user.avatar,
+//         onboarded: user.onboarded,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error('Apple auth error:', error);
+//     res.status(500).json({
+//       error: error.message || 'Authentication failed',
+//     });
+//   }
+// };
+
+// /**
+//  * POST /api/auth/signup
+//  * Email/Password Signup
+//  */
+// export const emailSignup = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { email, password, name, platform = 'ios' } = req.body;
+
+//     if (!email || !password) {
+//       res.status(400).json({ error: 'Email and password are required' });
+//       return;
+//     }
+
+//     if (password.length < 8) {
+//       res.status(400).json({ error: 'Password must be at least 8 characters' });
+//       return;
+//     }
+
+//     // Check if user already exists
+//     const existingUser = await User.findOne({ email: email.toLowerCase() });
+//     if (existingUser) {
+//       res.status(400).json({ error: 'User with this email already exists' });
+//       return;
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Create user
+//     const user = await User.create({
+//       email: email.toLowerCase(),
+//       name: name || email.split('@')[0],
+//       password: hashedPassword,
+//       provider: Provider.EMAIL,
+//       platform: platform as Platform,
+//       onboarded: false,
+//       onboardingData: {
+//         livingType: [],
+//         goals: [],
+//         emotionalNeeds: [],
+//         packPreferences: [],
+//       },
+//       fcmTokens: [],
+//     });
+
+//     // Generate JWT
+//     const token = generateAuthToken(user._id.toString());
+
+//     console.log('✅ Email signup successful:', email);
+
+//     res.status(201).json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         name: user.name,
+//         provider: user.provider,
+//         avatar: user.avatar,
+//         onboarded: user.onboarded,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error('❌ Email signup error:', error);
+//     res.status(500).json({
+//       error: error.message || 'Failed to create account',
+//     });
+//   }
+// };
+
+// /**
+//  * POST /api/auth/login
+//  * Email/Password Login
+//  */
+// export const emailLogin = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password) {
+//       res.status(400).json({ error: 'Email and password are required' });
+//       return;
+//     }
+
+//     // Find user
+//     const user = await User.findOne({ email: email.toLowerCase() });
+//     if (!user) {
+//       res.status(401).json({ error: 'Invalid email or password' });
+//       return;
+//     }
+
+//     // Check if user signed up with email
+//     if (user.provider !== Provider.EMAIL) {
+//       res.status(400).json({
+//         error: `This email is associated with ${user.provider} sign-in. Please use ${user.provider} to login.`,
+//       });
+//       return;
+//     }
+
+//     // Verify password
+//     if (!user.password) {
+//       res.status(500).json({ error: 'Password not set for this account' });
+//       return;
+//     }
+
+//     const isValidPassword = await bcrypt.compare(password, user.password);
+//     if (!isValidPassword) {
+//       res.status(401).json({ error: 'Invalid email or password' });
+//       return;
+//     }
+
+//     // Generate JWT
+//     const token = generateAuthToken(user._id.toString());
+
+//     console.log('✅ Email login successful:', email);
+
+//     res.status(200).json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         name: user.name,
+//         provider: user.provider,
+//         avatar: user.avatar,
+//         onboarded: user.onboarded,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error('❌ Email login error:', error);
+//     res.status(500).json({
+//       error: error.message || 'Failed to login',
+//     });
+//   }
+// };
+
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { OAuth2Client } from 'google-auth-library';
-import appleSignin from 'apple-signin-auth';
-import { User } from '../models/User';
+import bcrypt from 'bcryptjs';
+import { 
+  verifyGoogleToken, 
+  verifyAppleToken, 
+  generateTokenPair, 
+  verifyRefreshToken,
+  verifyGoogleAccessToken 
+} from '../services/auth';
+import { createOrUpdateUser } from '../services/user';
 import { Provider, Platform } from '../types/enums';
+import User, { IUser } from '../models/User';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// ✅ Helper function to safely get userId from request
+const getUserId = (req: Request): string | undefined => {
+  const user = req.user as any;
+  return user?.userId || user?.id || user?._id?.toString();
+};
 
-export const signIn = async (req: Request, res: Response) => {
-  const { idToken, provider, deviceToken, platform } = req.body; // provider: 'apple'|'google'
-
+/**
+ * POST /api/auth/google
+ * Authenticate with Google
+ */
+export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    let sub: string, email: string, name: string | undefined;
+    const { idToken, accessToken, platform = 'ios' } = req.body;
 
-    if (provider === Provider.GOOGLE) {
-      const ticket = await googleClient.verifyIdToken({
-        idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload) throw new Error('Invalid Google token');
-      sub = payload.sub;
-      email = payload.email!;
-      name = payload.name;
-    } else if (provider === Provider.APPLE) {
-      const appleIdToken = await appleSignin.verifyIdToken(idToken, {
-        audience: process.env.APPLE_CLIENT_ID,
-      });
-      sub = appleIdToken.sub;
-      email = appleIdToken.email || req.body.email; // Fallback if not in token
-      name = req.body.fullName; // From client (Apple provides on first sign-in)
-    } else {
-      return res.status(400).json({ error: 'Invalid provider' });
+    if (!idToken && !accessToken) {
+      res.status(400).json({ error: 'ID token or access token is required' });
+      return;
     }
 
-    const query = provider === Provider.GOOGLE ? { googleSub: sub } : { appleSub: sub };
-    let user = await User.findOne(query);
-
-    if (!user) {
-      user = new User({
-        [provider === Provider.GOOGLE ? 'googleSub' : 'appleSub']: sub,
-        email,
-        name,
-        provider,
-        platform,
-        fcmTokens: platform === Platform.ANDROID ? [deviceToken] : [],
-        apnsToken: platform === Platform.IOS ? deviceToken : undefined,
-      });
-      await user.save();
-    } else {
-      // Update push tokens if changed
-      if (platform === Platform.ANDROID && deviceToken && !user.fcmTokens.includes(deviceToken)) {
-        user.fcmTokens.push(deviceToken);
-      } else if (platform === Platform.IOS && deviceToken !== user.apnsToken) {
-        user.apnsToken = deviceToken;
+    let googleUser;
+    
+    try {
+      if (idToken) {
+        console.log('🔐 Attempting Google ID token verification...');
+        googleUser = await verifyGoogleToken(idToken);
       }
-      if (name && !user.name) user.name = name;
-      await user.save();
+    } catch (idTokenError) {
+      console.log('⚠️ ID token verification failed, trying access token...');
+      
+      if (accessToken) {
+        try {
+          googleUser = await verifyGoogleAccessToken(accessToken);
+        } catch (accessTokenError) {
+          console.error('❌ Both token verifications failed');
+          res.status(401).json({ error: 'Invalid Google credentials' });
+          return;
+        }
+      } else {
+        res.status(401).json({ error: 'Invalid Google ID token and no access token provided' });
+        return;
+      }
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, { expiresIn: '180d' });
+    if (!googleUser) {
+      res.status(401).json({ error: 'Failed to verify Google credentials' });
+      return;
+    }
 
-    res.json({
-      token,
+    console.log('✅ Google user verified:', googleUser.email);
+
+    const user = await createOrUpdateUser({
+      email: googleUser.email,
+      name: googleUser.name,
+      provider: Provider.GOOGLE,
+      providerId: googleUser.sub,
+      picture: googleUser.picture,
+      platform,
+    });
+
+    // Generate token pair
+    const { accessToken: newAccessToken, refreshToken } = generateTokenPair(user._id.toString());
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      accessToken: newAccessToken,
+      refreshToken,
       user: {
-        _id: user._id,
+        id: user._id,
         email: user.email,
         name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
         onboarded: user.onboarded,
-        coupleId: user.coupleId,
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
-  } catch (err: any) {
-    res.status(401).json({ error: err.message || 'Authentication failed' });
+  } catch (error: any) {
+    console.error('❌ Google auth error:', error);
+    res.status(500).json({
+      error: error.message || 'Authentication failed',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/apple
+ * Authenticate with Apple
+ */
+export const appleAuth = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identityToken, user: appleUserData, platform = 'ios' } = req.body;
+
+    if (!identityToken) {
+      res.status(400).json({ error: 'Identity token is required' });
+      return;
+    }
+
+    const appleUser = await verifyAppleToken(identityToken);
+
+    const userData = {
+      email: appleUser.email,
+      name: appleUserData?.fullName?.givenName 
+        ? `${appleUserData.fullName.givenName} ${appleUserData.fullName.familyName || ''}`.trim()
+        : appleUser.email.split('@')[0],
+      provider: Provider.APPLE,
+      providerId: appleUser.sub,
+      platform,
+    };
+
+    const user = await createOrUpdateUser(userData);
+    
+    // Generate token pair
+    const { accessToken, refreshToken } = generateTokenPair(user._id.toString());
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
+      },
+    });
+  } catch (error: any) {
+    console.error('Apple auth error:', error);
+    res.status(500).json({
+      error: error.message || 'Authentication failed',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/signup
+ * Email/Password Signup
+ */
+export const emailSignup = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password, name, platform = 'ios' } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      res.status(400).json({ error: 'User with this email already exists' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      email: email.toLowerCase(),
+      name: name || email.split('@')[0],
+      password: hashedPassword,
+      provider: Provider.EMAIL,
+      platform: platform as Platform,
+      onboarded: false,
+      onboardingData: {
+        livingType: [],
+        goals: [],
+        emotionalNeeds: [],
+        packPreferences: [],
+      },
+      fcmTokens: [],
+      refreshTokens: [],
+      refreshTokenVersion: 0,
+    });
+
+    // Generate token pair
+    const { accessToken, refreshToken } = generateTokenPair(user._id.toString());
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
+
+    console.log('✅ Email signup successful:', email);
+
+    res.status(201).json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Email signup error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to create account',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/login
+ * Email/Password Login
+ */
+export const emailLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    if (user.provider !== Provider.EMAIL) {
+      res.status(400).json({
+        error: `This email is associated with ${user.provider} sign-in. Please use ${user.provider} to login.`,
+      });
+      return;
+    }
+
+    if (!user.password) {
+      res.status(500).json({ error: 'Password not set for this account' });
+      return;
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    // Generate token pair
+    const { accessToken, refreshToken } = generateTokenPair(user._id.toString());
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
+
+    console.log('✅ Email signup successful:', email);
+
+    res.status(201).json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        avatar: user.avatar,
+        onboarded: user.onboarded,
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Email signup error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to login',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/refresh
+ * Refresh Access Token
+ */
+export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.status(400).json({ error: 'Refresh token is required' });
+      return;
+    }
+
+    // Verify refresh token
+    const decoded = verifyRefreshToken(refreshToken);
+    
+    // Find user and check if token is valid
+    const user = await User.findById(decoded.userId).select('+refreshTokens +refreshTokenVersion');
+    
+    if (!user) {
+      res.status(401).json({ error: 'User not found' });
+      return;
+    }
+
+    // Check if refresh token exists in user's tokens
+    if (!user.refreshTokens.includes(refreshToken)) {
+      res.status(401).json({ error: 'Invalid refresh token' });
+      return;
+    }
+
+    // Generate new token pair
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = generateTokenPair(user._id.toString());
+    
+    // Remove old refresh token and add new one
+    await user.removeRefreshToken(refreshToken);
+    await user.addRefreshToken(newRefreshToken);
+
+    console.log('✅ Token refreshed for user:', user.email);
+
+    res.status(200).json({
+      success: true,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error: any) {
+    console.error('❌ Token refresh error:', error);
+    res.status(401).json({
+      error: error.message || 'Failed to refresh token',
+    });
+  }
+};
+
+/**
+ * POST /api/auth/logout
+ * Logout (invalidate refresh token)
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+    const userId = getUserId(req); // ✅ Use helper function
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const user = await User.findById(userId).select('+refreshTokens');
+    
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (refreshToken) {
+      // Logout from current device
+      await user.removeRefreshToken(refreshToken);
+      console.log('✅ User logged out from current device:', user.email);
+    } else {
+      // Logout from all devices
+      await user.clearRefreshTokens();
+      console.log('✅ User logged out from all devices:', user.email);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error: any) {
+    console.error('❌ Logout error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to logout',
+    });
   }
 };
