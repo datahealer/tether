@@ -41,11 +41,13 @@ import authRoutes from './auth';
 import coupleRoutes from './couple';
 import onboardingRoutes from './onboarding';
 import settingsRoutes from './settings';
+import tetherRoutes from './tethers';
 
 import adminAuthRoutes from './admin/auth';
 import adminQuestionRoutes from './admin/questions';
 import subscriptionRoutes from './subscription';
 import profileRoutes from './profile';
+
 
 const router = Router();
 
@@ -54,6 +56,7 @@ router.use('/auth', authRoutes);
 router.use('/couple', coupleRoutes);
 router.use('/onboarding', onboardingRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/tethers', tetherRoutes);
 
 // Admin routes (correctly prefixed)
 router.use('/admin/auth', adminAuthRoutes);

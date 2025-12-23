@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useAuth } from '@/context/auth_context';
-import { useGoogleAuth, processGoogleSignIn, signInWithApple } from '@/services/auth_service';
+import { signInWithGoogle, processGoogleSignIn, signInWithApple } from '@/services/auth_service';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '../../theme/constants';
 
 export default function LoginScreen() {
@@ -30,14 +30,7 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  // Google Sign In
-  const { request, response, promptAsync } = useGoogleAuth();
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      handleGoogleResponse(response);
-    }
-  }, [response]);
 
   const handleGoogleResponse = async (googleResponse: any) => {
     setLoading(true);
@@ -54,14 +47,18 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await promptAsync();
-    } catch (error: any) {
-      Alert.alert('Error', 'Failed to initiate Google sign in');
-    }
-  };
+const handleGoogleSignIn = async () => {
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const user = await signInWithGoogle();
+    await signIn(user);  // Your auth context
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.push('/onboarding/privacy');
+  } catch (error: any) {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    Alert.alert('Error', error.message || 'Failed to sign in with Google');
+  }
+};
 
   const handleAppleSignIn = async () => {
     setLoading(true);
@@ -212,7 +209,7 @@ export default function LoginScreen() {
             <TouchableOpacity 
               style={styles.authButton}
               onPress={handleGoogleSignIn}
-              disabled={!request || loading}
+              disabled={!Request || loading}
               activeOpacity={0.8}
             >
               <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />

@@ -118,6 +118,21 @@ const initializeDatabase = async () => {
   try {
     await sequelize();
     console.log('Database initialized successfully.');
+    
+    // Initialize scheduled jobs for Question Service Engine
+    // Only run in non-serverless environments
+    if (process.env.NODE_ENV !== 'production' || !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      try {
+        const { initializeScheduledJobs } = await import('./services/scheduledJobs');
+        initializeScheduledJobs();
+        console.log('✅ Question Service scheduled jobs initialized');
+      } catch (error) {
+        console.error('⚠️  Warning: Could not initialize scheduled jobs:', error);
+        console.log('   Scheduled jobs require node-cron: pnpm add node-cron');
+      }
+    } else {
+      console.log('ℹ️  Serverless mode: Scheduled jobs should be handled by CloudWatch Events');
+    }
   } catch (error) {
     console.error('Unable to initialize database:', error);
     throw error;

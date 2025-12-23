@@ -175,13 +175,14 @@
 // };
 
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Google from 'expo-auth-session/providers/google';
+// import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-WebBrowser.maybeCompleteAuthSession();
+// WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 console.log("API",API_URL);
@@ -253,6 +254,8 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     }
 
     const data = await response.json();
+    console.log('tok',data.accessToken);
+    
     
     if (!data.accessToken || !data.refreshToken) {
       console.error('❌ Invalid response from refresh endpoint');
@@ -262,7 +265,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     
     await storeTokens(data.accessToken, data.refreshToken);
     
-    console.log('✅ Access token refreshed');
+    console.log('✅ Access token refreshed',data.accessToken);
     
     return data.accessToken;
   } catch (error) {
@@ -274,6 +277,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
 export const storeTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
   try {
+    console.log('🔐 Storing access token:', accessToken);
     await AsyncStorage.multiSet([
       ['accessToken', accessToken],
       ['refreshToken', refreshToken],
@@ -476,17 +480,81 @@ export const signInWithApple = async (): Promise<AuthUser> => {
 // ============================================
 // GOOGLE SIGN IN
 // ============================================
-export const useGoogleAuth = () => {
-  const config = {
-    clientId: Constants.expoConfig?.extra?.googleWebClientId,
-    iosClientId: Constants.expoConfig?.extra?.googleIosClientId,
-    androidClientId: Constants.expoConfig?.extra?.googleAndroidClientId,
-    scopes: ['profile', 'email'],
-  };
+// export const useGoogleAuth = () => {
+//   const config = {
+//     clientId: Constants.expoConfig?.extra?.googleWebClientId,
+//     iosClientId: Constants.expoConfig?.extra?.googleIosClientId,
+//     androidClientId: Constants.expoConfig?.extra?.googleAndroidClientId,
+//     scopes: ['profile', 'email'],
+//   };
 
-  const [request, response, promptAsync] = Google.useAuthRequest(config);
+//   const [request, response, promptAsync] = Google.useAuthRequest(config);
 
-  return { request, response, promptAsync };
+//   return { request, response, promptAsync };
+// };
+// ============================================
+// GOOGLE SIGN IN (Native)
+// ============================================
+// Note: GoogleSignin.configure() is called once at app startup in _layout.tsx
+
+export const signInWithGoogle = async (): Promise<AuthUser> => {
+  try {
+    await GoogleSignin.hasPlayServices();
+
+    const signInResult = await GoogleSignin.signIn();
+    
+    // Check if sign-in was successful
+    if (signInResult.type !== 'success') {
+      throw new Error('Sign in was cancelled');
+    }
+
+    const userInfo = signInResult.data;
+    
+    console.log('✅ Google native sign-in success', { email: userInfo.user.email, name: userInfo.user.name });
+
+    // Get tokens
+    const tokens = await GoogleSignin.getTokens();
+    
+    if (!tokens.idToken) {
+      throw new Error('No ID token received from Google');
+    }
+
+    // Send ID token to your backend (more secure than access token)
+    const apiResponse = await fetch(`${API_URL}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken: tokens.idToken,
+        platform: Platform.OS,
+      }),
+    });
+
+    if (!apiResponse.ok) {
+      const error = await apiResponse.json();
+      throw new Error(error.error || 'Failed to authenticate with server');
+    }
+
+    const data = await apiResponse.json();
+
+    // Store tokens
+    await storeTokens(data.accessToken, data.refreshToken);
+
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.name,
+      provider: data.user.provider,
+      avatar: data.user.avatar,
+      token: data.accessToken,
+      refreshToken: data.refreshToken,
+      onboarded: data.user.onboarded,
+      subscribed: data.user.subscribed,
+      onboardingData: data.user.onboardingData,
+    };
+  } catch (error: any) {
+    console.error('❌ Native Google sign-in error:', error);
+    throw new Error(error.message || 'Google sign-in failed');
+  }
 };
 
 export const processGoogleSignIn = async (response: any): Promise<AuthUser> => {
@@ -633,3 +701,5 @@ export const logoutAllDevices = async (): Promise<void> => {
     await clearTokens();
   }
 };
+
+

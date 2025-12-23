@@ -39,6 +39,26 @@ export enum TetherStatus {
   UNANSWERED_EXPIRED = 'unanswered_expired', // first responder answered, second didn't
 }
 
+export enum QuestionState {
+  UNSEEN = 'unseen',
+  SERVED = 'served',
+  SKIPPED_REFRESH = 'skipped_refresh',
+  UNANSWERED_EXPIRED = 'unanswered_expired',
+  WAITING_FOR_PARTNER = 'waiting_for_partner',
+  COMPLETED = 'completed',
+}
+
+export enum Tier {
+  FREE = 'free',
+  PREMIUM = 'premium',
+  TRIAL = 'trial',
+}
+
+export enum RefreshType {
+  DEFAULT = 'default',
+  PERMANENT = 'permanent',
+}
+
 // ...existing code...
 export enum Tone {
   PLAYFUL = 'playful',

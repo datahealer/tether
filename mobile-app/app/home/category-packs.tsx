@@ -743,56 +743,21 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import Card3DCarousel, { CarouselCard } from '../../components/ui/cards/CardCarousel';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import { getCategoryProgress, type CategoryProgress } from '@/services/tether_service';
 
-const mockCategories: CarouselCard[] = [
-  {
-    id: '1',
-    title: 'Improve your Communication',
-    description: 'Figure out what each of you really means beneath the words.',
-    questionsAnswered: 3,
-    totalQuestions: 150,
-    gradient: ['#FF6B6B', '#FF8E53'],
-    isLocked: false,
-  },
-  {
-    id: '2',
-    title: 'Deepen Intimacy',
-    description: 'Explore emotional and physical connection on a deeper level.',
-    questionsAnswered: 0,
-    totalQuestions: 120,
-    gradient: ['#A569BD', '#EC7063'],
-    isLocked: false,
-    isTemporary: true,
-    daysLeft: 5,
-  },
-  {
-    id: '3',
-    title: 'Navigate Conflict',
-    description: 'Learn healthy ways to disagree and grow stronger together.',
-    questionsAnswered: 0,
-    totalQuestions: 100,
-    gradient: ['#5DADE2', '#48C9B0'],
-    isLocked: true,
-  },
-  {
-    id: '4',
-    title: 'Build Trust',
-    description: 'Strengthen the foundation of your relationship.',
-    questionsAnswered: 0,
-    totalQuestions: 90,
-    gradient: ['#F39C12', '#E74C3C'],
-    isLocked: true,
-  },
-  {
-    id: '5',
-    title: 'Future Planning',
-    description: 'Align your dreams and goals for the life ahead.',
-    questionsAnswered: 0,
-    totalQuestions: 110,
-    gradient: ['#16A085', '#27AE60'],
-    isLocked: true,
-  },
-];
+// Map category names to gradients
+const categoryGradients: Record<string, string[]> = {
+  'Communication': ['#FF6B6B', '#FF8E53'],
+  'Intimacy': ['#A569BD', '#EC7063'],
+  'Playfulness': ['#5DADE2', '#48C9B0'],
+  'Trust': ['#F39C12', '#E74C3C'],
+  'Love Languages': ['#16A085', '#27AE60'],
+  'Future': ['#E74C3C', '#C0392B'],
+  'Vulnerability': ['#8E44AD', '#9B59B6'],
+  'Conflict': ['#F1C40F', '#F39C12'],
+  'Erotic': ['#3498DB', '#2980B9'],
+  'Gratitude': ['#1ABC9C', '#16A085'],
+};
 
 export default function CategoryPacksScreen() {
   const router = useRouter();
@@ -812,11 +777,59 @@ export default function CategoryPacksScreen() {
 
   const loadCategories = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCategories(mockCategories);
+      const response = await getCategoryProgress();
+      
+      console.log('Category progress response:', response);
+      
+      // Backend returns { success: true, progress: [...] }
+      const categoryData = response.progress || [];
+      
+      if (!Array.isArray(categoryData) || categoryData.length === 0) {
+        console.warn('No categories found in response, may need to initialize');
+        Alert.alert(
+          'Setup Required',
+          'Setting up your category packs. Please try again in a moment.'
+        );
+        setCategories([]);
+        return;
+      }
+      
+      // Map backend CoupleCategoryState to CarouselCard format
+      // Backend returns: { coupleId, categoryId, answeredCount, totalQuestions, skippedCount, unlocked, ... }
+      const mappedCategories: CarouselCard[] = categoryData.map((cat: any) => {
+        // Get category name from categoryId
+        const categoryNames: Record<string, string> = {
+          'COMMUNICATION': 'Communication',
+          'INTIMACY': 'Intimacy',
+          'PLAYFULNESS': 'Playfulness',
+          'TRUST': 'Trust',
+          'LOVE_LANGUAGES': 'Love Languages',
+          'FUTURE': 'Future',
+          'VULNERABILITY': 'Vulnerability',
+          'CONFLICT': 'Conflict',
+          'EROTIC': 'Erotic',
+          'GRATITUDE': 'Gratitude',
+        };
+        
+        const categoryName = categoryNames[cat.categoryId] || cat.categoryId;
+        const colorCode = categoryGradients[categoryName] ? categoryGradients[categoryName][0] : '#FFB8A0';
+        const gradient = categoryGradients[categoryName] || ['#FFB8A0', '#FFA07A'];
+        
+        return {
+          id: cat.categoryId,
+          title: categoryName,
+          description: `Explore ${categoryName.toLowerCase()} together`,
+          questionsAnswered: cat.answeredCount || 0,
+          totalQuestions: cat.totalQuestions || 180,
+          gradient: gradient as unknown as readonly [string, string],
+          isLocked: !cat.unlocked,
+        };
+      });
+      
+      setCategories(mappedCategories);
     } catch (error) {
       console.error('Failed to load categories:', error);
-      Alert.alert('Error', 'Failed to load category packs');
+      Alert.alert('Error', 'Failed to load category packs. Please try again.');
     } finally {
       setLoading(false);
     }

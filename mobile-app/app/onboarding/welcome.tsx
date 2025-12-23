@@ -296,7 +296,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Platform } from
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { useGoogleAuth, processGoogleSignIn } from '@/services/auth_service';
+import {  signInWithGoogle,processGoogleSignIn } from '@/services/auth_service';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useAuth } from '@/context/auth_context';
@@ -308,19 +308,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function WelcomeScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const { request, response, promptAsync } = useGoogleAuth();
+  // const { request, response, promptAsync } = useGoogleAuth();
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      handleGoogleResponse(response);
-    }
-  }, [response]);
+  // useEffect(() => {
+  //   if (response?.type === 'success') {
+  //     handleGoogleResponse(response);
+  //   }
+  // }, [response]);
 
 
-  const handleGoogleResponse = async (googleResponse: any) => {
+
+
+  const handleGoogleSignIn = async () => {
   try {
-    const user = await processGoogleSignIn(googleResponse);
-    await signIn(user);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const user = await signInWithGoogle();
+    await signIn(user);  // Your auth context
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.push('/onboarding/privacy');
   } catch (error: any) {
@@ -328,15 +331,6 @@ export default function WelcomeScreen() {
     Alert.alert('Error', error.message || 'Failed to sign in with Google');
   }
 };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await promptAsync();
-    } catch (error: any) {
-      Alert.alert('Error', 'Failed to initiate Google sign in');
-    }
-  };
 
   const handleAppleSignIn = async () => {
     try {

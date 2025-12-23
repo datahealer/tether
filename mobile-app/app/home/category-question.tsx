@@ -18,6 +18,13 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import QuestionCard from '../../components/ui/cards/QuestionCard';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import {
+  getActiveTethers,
+  submitAnswer,
+  skipTether,
+  type TetherQuestion,
+  type TetherStats,
+} from '@/services/tether_service';
 
 interface Question {
   id: string;
@@ -25,44 +32,6 @@ interface Question {
   categoryId: string;
   categoryName: string;
 }
-
-// Mock questions - will be replaced with backend API
-const mockQuestions: Record<string, Question[]> = {
-  '1': [
-    {
-      id: 'q1',
-      text: 'When do you feel proud to be with me?',
-      categoryId: '1',
-      categoryName: 'Deeper Connection',
-    },
-    {
-      id: 'q2',
-      text: 'What helps you feel that I have your back?',
-      categoryId: '1',
-      categoryName: 'Deeper Connection',
-    },
-    {
-      id: 'q3',
-      text: 'What makes you feel most understood by me?',
-      categoryId: '1',
-      categoryName: 'Deeper Connection',
-    },
-  ],
-  '2': [
-    {
-      id: 'q4',
-      text: 'What moment made you feel closest to me recently?',
-      categoryId: '2',
-      categoryName: 'Deepen Intimacy',
-    },
-    {
-      id: 'q5',
-      text: 'How do you like to be comforted when you\'re upset?',
-      categoryId: '2',
-      categoryName: 'Deepen Intimacy',
-    },
-  ],
-};
 
 export default function CategoryQuestionScreen() {
   const router = useRouter();
@@ -73,75 +42,93 @@ export default function CategoryQuestionScreen() {
   const categoryTitle = params.categoryTitle as string;
 
   const [loading, setLoading] = useState(true);
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<TetherQuestion | null>(null);
   const [response, setResponse] = useState('');
-  const [sharedRefreshesRemaining, setSharedRefreshesRemaining] = useState(2);
-  const [usedRefreshes, setUsedRefreshes] = useState(0);
+  const [refreshesRemaining, setRefreshesRemaining] = useState(1);
+  const [stats, setStats] = useState<TetherStats | null>(null);
   const [timeLeft, setTimeLeft] = useState('6 h');
-  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
-  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
 
   useEffect(() => {
-    loadQuestion();
+    loadActiveTethers();
   }, []);
 
-  const loadQuestion = async () => {
+  const loadActiveTethers = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const data = await getActiveTethers();
       
-      const questions = mockQuestions[categoryId] || [];
-      setAvailableQuestions(questions);
+      console.log('Active tethers response:', JSON.stringify(data, null, 2));
+      console.log('Looking for categoryId:', categoryId);
       
-      if (questions.length > 0) {
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-        setCurrentQuestion(randomQuestion);
-        setUsedQuestionIds([randomQuestion.id]);
+      // Filter tethers for current category (case-insensitive comparison)
+      const categoryTether = data.tethers.find(
+        (t) => t.categoryId?.toLowerCase() === categoryId?.toLowerCase()
+      );
+      
+      if (categoryTether) {
+        console.log('Found tether for category:', categoryTether);
+        setCurrentQuestion(categoryTether);
+        // Pre-fill if user already answered
+        if (categoryTether.userAnswer) {
+          setResponse(categoryTether.userAnswer);
+        }
+      } else {
+        console.log('No tether found for category. Available tethers:', data.tethers.map(t => ({ id: t.categoryId, name: t.categoryName })));
+        Alert.alert(
+          'No Tethers Available',
+          'Check back later for new questions, or unlock more categories!'
+        );
       }
+      
+      setStats(data.stats);
     } catch (error) {
-      console.error('Error loading question:', error);
-      Alert.alert('Error', 'Failed to load question');
+      console.error('Error loading tethers:', error);
+      Alert.alert('Error', 'Failed to load questions. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDrawAnother = async () => {
-    if (sharedRefreshesRemaining <= 0) {
+    if (!currentQuestion) return;
+
+    if (refreshesRemaining <= 0) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('No Refreshes Left', 'You\'ve used all your shared refreshes for this question.');
+      Alert.alert(
+        'No Refreshes Left',
+        'You\'ve used all your refreshes for today. Upgrade to Premium for more refreshes!'
+      );
+      router.push('/home/draw-locked-upsell');
       return;
     }
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    // Get unused questions
-    const unusedQuestions = availableQuestions.filter(q => !usedQuestionIds.includes(q.id));
-    
-    if (unusedQuestions.length === 0) {
-      Alert.alert('No More Questions', 'You\'ve seen all available questions in this category.');
-      return;
-    }
-
-    const newQuestion = unusedQuestions[Math.floor(Math.random() * unusedQuestions.length)];
-    setCurrentQuestion(newQuestion);
-    setUsedQuestionIds([...usedQuestionIds, newQuestion.id]);
-    
-    // Check if this is the last refresh (1 remaining, will become 0)
-    if (sharedRefreshesRemaining === 1) {
-      setSharedRefreshesRemaining(0);
-      setUsedRefreshes(prev => prev + 1);
-      setResponse(''); // Clear previous response
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      // Navigate to upsell screen after a short delay to show the new question
-      setTimeout(() => {
-        router.push('/home/draw-locked-upsell');
-      }, 500);
-    } else {
-      setSharedRefreshesRemaining(prev => prev - 1);
-      setUsedRefreshes(prev => prev + 1);
-      setResponse(''); // Clear previous response
+      const result = await skipTether(currentQuestion.questionId);
+      
+      if (result.newQuestion) {
+        setCurrentQuestion(result.newQuestion);
+        setResponse(''); // Clear previous response
+        setRefreshesRemaining(result.refreshesRemaining);
+        
+        Alert.alert(
+          'New Question',
+          result.message || 'Here\'s a new question for you!'
+        );
+      } else {
+        Alert.alert('Notice', result.message);
+        
+        // If no refreshes left, show upsell
+        if (result.refreshesRemaining === 0) {
+          setTimeout(() => {
+            router.push('/home/draw-locked-upsell');
+          }, 1500);
+        }
+      }
+    } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to draw another question');
     }
   };
 
@@ -152,19 +139,70 @@ export default function CategoryQuestionScreen() {
       return;
     }
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    
-    // TODO: Send response to backend
-    Alert.alert(
-      'Tether Shared! 🎉',
-      'Your response has been sent to your partner.',
-      [
-        {
-          text: 'Back to Categories',
-          onPress: () => router.back(),
-        },
-      ]
-    );
+    if (!currentQuestion) {
+      Alert.alert('Error', 'No active question to answer');
+      return;
+    }
+
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      
+      const result = await submitAnswer(currentQuestion.questionId, response);
+      
+      // Check if partner already answered
+      if (result.state === 'COMPLETED' && result.partnerAnswer) {
+        Alert.alert(
+          'Tether Completed! 🎉',
+          `You both answered!\n\nYour partner said: "${result.partnerAnswer}"`,
+          [
+            {
+              text: 'View History',
+              onPress: () => router.push('/home/tether-history'),
+            },
+            {
+              text: 'Continue',
+              onPress: () => router.back(),
+              style: 'cancel',
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Tether Shared! 🎉',
+          'Your response has been sent to your partner. They have 24 hours to respond!',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
+
+      // Show milestones if achieved
+      if (result.milestones && result.milestones.length > 0) {
+        setTimeout(() => {
+          const milestone = result.milestones![0];
+          Alert.alert(
+            '🏆 Milestone Achieved!',
+            milestone.message,
+            [{ text: 'Awesome!', style: 'default' }]
+          );
+        }, 1000);
+      }
+    } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to submit answer',
+        [
+          {
+            text: 'Back to Categories',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    }
   };
 
   if (loading) {
@@ -217,30 +255,20 @@ export default function CategoryQuestionScreen() {
           {/* Question Card */}
           {currentQuestion && (
             <QuestionCard
-              categoryName={currentQuestion.categoryName}
-              question={currentQuestion.text}
+              categoryName={currentQuestion.categoryName || categoryTitle}
+              question={currentQuestion.question}
               timeLeft={timeLeft}
               response={response}
               onResponseChange={setResponse}
               onDrawAnother={handleDrawAnother}
-              sharedRefreshesRemaining={sharedRefreshesRemaining}
+              sharedRefreshesRemaining={refreshesRemaining}
             />
           )}
 
           {/* Refresh Info Banner */}
           <View style={styles.infoBanner}>
             <Text style={styles.infoBannerText}>
-              {usedRefreshes > 0 ? (
-                <>
-                  <Text style={styles.infoBannerHighlight}>{usedRefreshes}</Text>
-                  {' Shared question refresh used!'}
-                </>
-              ) : (
-                <>
-                  <Text style={styles.infoBannerHighlight}>Refreshes</Text>
-                  {' are shared between you both'}
-                </>
-              )}
+              You have <Text style={styles.infoBannerHighlight}>{refreshesRemaining}</Text> refresh{refreshesRemaining === 1 ? '' : 'es'} remaining today.
             </Text>
           </View>
 
@@ -377,3 +405,4 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
   },
 });
+

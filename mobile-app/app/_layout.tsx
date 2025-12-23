@@ -11,6 +11,16 @@ import { AuthProvider } from '@/context/auth_context';
 import { OnboardingProvider } from '@/context/onboarding_context';
 import SplashScreenComponent from '../components/splash';
 import { NavigationHandler } from '../components/NavigationHandler';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
+
+// ✅ Configure Google Sign-In once at app startup
+GoogleSignin.configure({
+  webClientId: Constants.expoConfig?.extra?.googleWebClientId,
+  iosClientId: Constants.expoConfig?.extra?.googleIosClientId,
+  scopes: ['profile', 'email'],
+  offlineAccess: false,
+});
 
 SplashScreen.preventAutoHideAsync();
 

@@ -132,7 +132,72 @@ export interface ICategoryProgress extends Document {
   categoryId: CategoryId;
   answeredCount: number;
   totalQuestions: number;
-   servedQuestionIds: string[];
+  servedQuestionIds: string[];
   lastServedAt?: Date;
 }
+
+// New comprehensive interfaces for Question Service Engine
+
+export interface ICategory extends Document {
+  categoryId: CategoryId;
+  name: string;
+  totalQuestions: number;
+  colorCode: string;
+  description?: string;
+}
+
+export interface IMilestone {
+  count: number;
+  achievedAt: Date;
+  notified: boolean;
+}
+
+export interface ICoupleQuestionState extends Document {
+  coupleId: Types.ObjectId;
+  questionId: string;
+  categoryId: CategoryId;
+  state: string; // QuestionState enum values
+  poolOrder: number;
+  servedDate?: Date;
+  expiryTimestamp?: Date;
+  answers: {
+    userId: Types.ObjectId;
+    text: string;
+    timestamp: Date;
+  }[];
+  cooldownEnd?: Date;
+  skippedBy?: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICoupleCategoryState extends Document {
+  coupleId: Types.ObjectId;
+  categoryId: CategoryId;
+  answeredCount: number;
+  totalQuestions: number;
+  skippedCount: number;
+  isComplete: boolean;
+  unlocked: boolean;
+  unlockExpiry?: Date;
+  lastActivityAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IUserEntitlement extends Document {
+  userId: Types.ObjectId;
+  tier: string; // Tier enum values
+  refreshesDefault: number;
+  refreshesPermanent: number;
+  trialEnd?: Date;
+  premiumEnd?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IRhythmConfig {
+  [key: string]: number; // hours
+}
+
 

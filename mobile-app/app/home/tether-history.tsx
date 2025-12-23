@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import { getTetherHistory, type TetherHistory } from '@/services/tether_service';
 
 interface TetherAnswer {
   categoryName: string;
@@ -23,25 +25,19 @@ interface TetherAnswer {
   gradient: readonly [string, string];
 }
 
-// Mock data - will be replaced with API
-const mockAnswers: TetherAnswer[] = [
-  {
-    categoryName: 'Deep Connection',
-    question: 'What is something small your partner does that makes you smile?',
-    userAnswer: 'She kisses me good night.',
-    partnerAnswer: 'He sucks my toes.',
-    date: 'Wednesday, 12th January 2025',
-    gradient: ['#FFB8A0', '#FFA07A'],
-  },
-  {
-    categoryName: 'Add Some Spice',
-    question: 'What adventure would you like to experience together?',
-    userAnswer: 'A hot air balloon ride at sunrise.',
-    partnerAnswer: 'Skydiving together!',
-    date: 'Monday, 10th January 2025',
-    gradient: ['#FFB8A0', '#FFA07A'],
-  },
-];
+// Map category names to gradients
+const categoryGradients: Record<string, readonly [string, string]> = {
+  'Communication': ['#FFB8A0', '#FFA07A'],
+  'Intimacy': ['#A569BD', '#EC7063'],
+  'Playfulness': ['#5DADE2', '#48C9B0'],
+  'Trust': ['#F39C12', '#E74C3C'],
+  'Love Languages': ['#16A085', '#27AE60'],
+  'Future': ['#E74C3C', '#C0392B'],
+  'Vulnerability': ['#8E44AD', '#9B59B6'],
+  'Conflict': ['#F1C40F', '#F39C12'],
+  'Erotic': ['#3498DB', '#2980B9'],
+  'Gratitude': ['#1ABC9C', '#16A085'],
+};
 
 const emojis = ['❤️', '😂', '🔥', '👏'];
 
@@ -49,8 +45,45 @@ export default function TetherHistoryScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [selectedEmoji, setSelectedEmoji] = useState<{ [key: number]: string }>({});
+  const [tetherHistory, setTetherHistory] = useState<TetherAnswer[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const nextQuestionDate = 'Friday, 14th January 2025';
+  const nextQuestionDate = 'Tomorrow at your Tether Time';
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await getTetherHistory(50, 0);
+      
+      // Map API response to TetherAnswer format
+      const mappedHistory: TetherAnswer[] = response.history
+        .filter((item: TetherHistory) => item.partnerAnswer) // Only show completed tethers
+        .map((item: TetherHistory) => ({
+          categoryName: item.categoryName,
+          question: item.question,
+          userAnswer: item.userAnswer,
+          partnerAnswer: item.partnerAnswer || 'Waiting for partner...',
+          date: new Date(item.answeredAt).toLocaleDateString('en-US', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+          gradient: categoryGradients[item.categoryName] || ['#FFB8A0', '#FFA07A'],
+        }));
+      
+      setTetherHistory(mappedHistory);
+    } catch (error) {
+      console.error('Error loading tether history:', error);
+      Alert.alert('Error', 'Failed to load your tether history. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmojiPress = async (answerIndex: number, emoji: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -74,27 +107,40 @@ export default function TetherHistoryScreen() {
       showChatIcon={false}
       showSettingsIcon={true}
     >
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            A new question will be{'\n'}dropping very soon...
-          </Text>
-          <Text style={styles.headerSubtitle}>{nextQuestionDate}</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.darkOrange} />
+          <Text style={styles.loadingText}>Loading your tether history...</Text>
         </View>
+      ) : (
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>
+              A new question will be{'\n'}dropping very soon...
+            </Text>
+            <Text style={styles.headerSubtitle}>{nextQuestionDate}</Text>
+          </View>
 
-        {/* Tether History */}
-        <View style={styles.tetherList}>
-          {mockAnswers.map((answer, index) => (
-            <View key={index}>
-              {/* Answer Card */}
-              <TouchableOpacity
-                style={styles.answerCardWrapper}
-                onPress={() => handleAnswerPress(answer)}
+          {/* Tether History */}
+          {tetherHistory.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                No completed tethers yet.{'\n'}Answer your first question together!
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.tetherList}>
+              {tetherHistory.map((answer, index) => (
+                <View key={index}>
+                  {/* Answer Card */}
+                  <TouchableOpacity
+                    style={styles.answerCardWrapper}
+                    onPress={() => handleAnswerPress(answer)}
                 activeOpacity={0.95}
               >
                 <LinearGradient
@@ -155,23 +201,47 @@ export default function TetherHistoryScreen() {
               </View>
 
               {/* Date Separator */}
-              {index < mockAnswers.length - 1 && (
+              {index < tetherHistory.length - 1 && (
                 <View style={styles.dateSeparator}>
-                  <Text style={styles.dateText}>{mockAnswers[index + 1].date}</Text>
+                  <Text style={styles.dateText}>{tetherHistory[index + 1].date}</Text>
                 </View>
               )}
             </View>
           ))}
         </View>
+          )}
 
         {/* Bottom Spacer */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+      )}
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing.xl * 3,
+  },
+  loadingText: {
+    marginTop: Spacing.lg,
+    fontSize: FontSizes.medium,
+    color: Colors.darkGrey,
+    fontWeight: FontWeights.medium as any,
+  },
+  emptyState: {
+    paddingVertical: Spacing.xl * 2,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: FontSizes.large,
+    color: Colors.darkGrey,
+    textAlign: 'center',
+    fontWeight: FontWeights.medium as any,
+  },
   scrollView: {
     flex: 1,
   },

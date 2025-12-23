@@ -40,3 +40,4 @@ categoryProgressSchema.index({ coupleId: 1, categoryId: 1 }, { unique: true });
 categoryProgressSchema.index({ coupleId: 1 });
 
 export const CategoryProgress = model<ICategoryProgress>('CategoryProgress', categoryProgressSchema);
+
