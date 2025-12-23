@@ -66,17 +66,21 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
 import router from './routes';
 import sequelize from './db/db';
 import serverless from 'serverless-http';
+import { swaggerSpec } from './config/swagger';
+import { morganFormat } from './utils/logger';
+import notificationScheduler from './services/notification/scheduler';
+import fcmProvider from './services/notification/providers/fcm.provider';
 
-// Load environment variables
 dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env` });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware - CORS configuration
 app.use(cors({
   origin: [
     'http://localhost:5173', 
@@ -85,7 +89,6 @@ app.use(cors({
     'http://192.168.29.107:8081',
     'https://9l2k8cwj-3000.inc1.devtunnels.ms',
     'https://dev.d3tt7e7nz4d0aw.amplifyapp.com',
-    // ✅ Allow requests from mobile apps (no origin header)
     '*'
   ],
   credentials: true,
@@ -93,18 +96,22 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// ✅ Add explicit OPTIONS handler for preflight
 app.options('*', cors());
+
+app.use(morgan(morganFormat as any));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Add health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Tether API Documentation',
+}));
+
 app.use('/api', router);
 
 // Error handling middleware
@@ -124,10 +131,32 @@ const initializeDatabase = async () => {
   }
 };
 
-// Initialize database once
-initializeDatabase();
+const initializeServices = async () => {
+  try {
+    await initializeDatabase();
 
-// For local development
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      await fcmProvider.initialize({ serviceAccount });
+      console.log('FCM initialized successfully');
+    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+      await fcmProvider.initialize({ serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH });
+      console.log('FCM initialized successfully');
+    } else {
+      console.warn('FCM not initialized - FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH not set');
+    }
+
+    if (process.env.NODE_ENV !== 'test') {
+      notificationScheduler.start();
+    }
+  } catch (error) {
+    console.error('Service initialization error:', error);
+    throw error;
+  }
+};
+
+initializeServices();
+
 if (process.env.NODE_ENV !== 'production' && require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

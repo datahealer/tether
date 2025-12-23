@@ -28,31 +28,94 @@ const upload = multer({
 });
 
 /**
- * @route   GET /api/profile
- * @desc    Get current user profile
- * @access  Private
+ * @swagger
+ * /api/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Profile'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Profile'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', authMiddleware, getProfile);
-
-/**
- * @route   PUT /api/profile
- * @desc    Update user profile
- * @access  Private
- */
 router.put('/', authMiddleware, updateProfile);
 
 /**
- * @route   POST /api/profile/photo
- * @desc    Upload profile photo
- * @access  Private
+ * @swagger
+ * /api/profile/photo:
+ *   post:
+ *     summary: Upload profile photo
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Photo uploaded
+ *       401:
+ *         description: Unauthorized
+ *   delete:
+ *     summary: Delete profile photo
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Photo deleted
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/photo', authMiddleware, upload.single('photo'), uploadProfilePhoto);
-
-/**
- * @route   DELETE /api/profile/photo
- * @desc    Delete profile photo
- * @access  Private
- */
 router.delete('/photo', authMiddleware, deleteProfilePhoto);
 
 export default router;

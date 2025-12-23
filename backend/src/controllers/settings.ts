@@ -22,6 +22,9 @@ export const updatePushToken = async (req: Request, res: Response) => {
         user.fcmTokens.push(deviceToken);
       }
     } else if (platform === Platform.IOS) {
+      if (!user.fcmTokens.includes(deviceToken)) {
+        user.fcmTokens.push(deviceToken);
+      }
       user.apnsToken = deviceToken;
     } else {
       return res.status(400).json({ error: 'Invalid platform' });

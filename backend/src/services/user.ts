@@ -18,7 +18,7 @@ export const findUserByProvider = async (
   providerId: string
 ): Promise<any | null> => {
   try {
-    let query: any = {};
+    const query: any = {};
     
     if (provider === Provider.GOOGLE) {
       query.googleSub = providerId;

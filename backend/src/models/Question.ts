@@ -12,7 +12,7 @@ import {
 } from '../types/enums';
 
 const questionSchema = new Schema<IQuestion>({
-  questionId: { type: String, required: true, unique: true },
+  questionId: { type: String, required: true },
   question: { type: String, required: true },
   tone: { type: String, enum: Object.values(Tone), required: true },
   genderFocus: { type: String, enum: Object.values(GenderFocus), required: true },
@@ -28,7 +28,7 @@ const questionSchema = new Schema<IQuestion>({
   writerNotes: String,
 }, { timestamps: true });
 
-questionSchema.index({ questionId: 1 });
+questionSchema.index({ questionId: 1 }, { unique: true });
 questionSchema.index({ categoryId: 1 });
 questionSchema.index({ status: 1 });
 const Question = model<IQuestion>('Question', questionSchema);
