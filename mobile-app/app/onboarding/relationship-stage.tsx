@@ -171,7 +171,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOnboarding } from '@/context/onboarding_context';
 
 const relationshipOptions = [
@@ -184,13 +184,7 @@ const relationshipOptions = [
 export default function RelationshipStatusScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
-  const [selected, setSelected] = useState<string | undefined>(onboardingData.relationshipStatus);
-
-  useEffect(() => {
-    if (onboardingData.relationshipStatus) {
-      setSelected(onboardingData.relationshipStatus);
-    }
-  }, []);
+  const [selected, setSelected] = useState<string | undefined>(undefined);
 
   const handleSelect = (id: string) => {
     setSelected(id);

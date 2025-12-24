@@ -212,7 +212,7 @@ const goalOptions = [
 export default function GoalsScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
-  const [selected, setSelected] = useState<string[]>(onboardingData.goals || []);
+  const [selected, setSelected] = useState<string[]>([]);
 
   const toggleGoal = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

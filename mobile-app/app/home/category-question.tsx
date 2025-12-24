@@ -18,6 +18,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import QuestionCard from '../../components/ui/cards/QuestionCard';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import { useOnboarding } from '@/context/onboarding_context';
 import {
   getActiveTethers,
   submitAnswer,
@@ -37,9 +38,23 @@ export default function CategoryQuestionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuth();
+  const { onboardingData } = useOnboarding();
   
   const categoryId = params.categoryId as string;
   const categoryTitle = params.categoryTitle as string;
+
+  // Get partner name from user profile first, then onboarding context, then fallback
+  const partnerName = user?.onboardingData?.partnerFirstName || 
+                      onboardingData.partnerFirstName || 
+                      'your partner';
+  
+  console.log('🔍 Partner name sources:', {
+    fromUser: user?.onboardingData?.partnerFirstName,
+    fromOnboarding: onboardingData.partnerFirstName,
+    final: partnerName
+  });
+  console.log('ob',onboardingData);
+  
 
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState<TetherQuestion | null>(null);
@@ -247,7 +262,7 @@ export default function CategoryQuestionScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              Answer a question before{'\n'}[partner] beats you to it
+              Answer a question before{'\n'}{partnerName} beats you to it
             </Text>
             <Text style={styles.headerSubtitle}>Pull each other closer...</Text>
           </View>

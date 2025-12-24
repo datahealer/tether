@@ -98,8 +98,9 @@ import { updateOnboardingData, completeOnboarding, OnboardingData } from '../ser
 interface OnboardingContextType {
   onboardingData: OnboardingData;
   updateField: (field: keyof OnboardingData, value: any) => void;
-  submitOnboarding: () => Promise<void>;
+  submitOnboarding: () => Promise<any>;
   clearOnboarding: () => void;
+  loadUserOnboardingData: (userId: string, userOnboardingData?: any) => Promise<void>;
   isLoading: boolean;
   error: string | null;
   hasAuthToken: boolean;
@@ -107,7 +108,18 @@ interface OnboardingContextType {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-const ONBOARDING_STORAGE_KEY = '@tether_onboarding_data';
+const ONBOARDING_STORAGE_KEY_PREFIX = '@tether_onboarding_data_';
+
+// Helper to get user-specific storage key
+const getUserStorageKey = async (): Promise<string> => {
+  const userStr = await AsyncStorage.getItem('user');
+  if (userStr) {
+    const user = JSON.parse(userStr);
+    return `${ONBOARDING_STORAGE_KEY_PREFIX}${user.id}`;
+  }
+  // Fallback for users not logged in yet (during onboarding)
+  return `${ONBOARDING_STORAGE_KEY_PREFIX}temp`;
+};
 
 export const OnboardingProvider = ({ children }: { children: React.ReactNode }) => {
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
@@ -147,20 +159,67 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
 
   const loadOnboardingData = async () => {
     try {
-      const storedData = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+      const storageKey = await getUserStorageKey();
+      const storedData = await AsyncStorage.getItem(storageKey);
       if (storedData) {
         setOnboardingData(JSON.parse(storedData));
-        console.log('✅ Loaded onboarding data from storage');
+        console.log('✅ Loaded onboarding data from user-specific storage');
       }
     } catch (error) {
       console.error('❌ Error loading onboarding data:', error);
     }
   };
 
+  // Load user-specific onboarding data (called after login)
+  const loadUserOnboardingData = useCallback(async (userId: string, userOnboardingData?: any) => {
+    try {
+      console.log('📥 Loading user-specific onboarding data for user:', userId);
+      
+      // If user has onboarding data in their profile, use that
+      if (userOnboardingData) {
+        setOnboardingData(userOnboardingData);
+        console.log('✅ Loaded onboarding data from user profile:', userOnboardingData);
+        
+        // Also save to user-specific storage
+        const storageKey = `${ONBOARDING_STORAGE_KEY_PREFIX}${userId}`;
+        await AsyncStorage.setItem(storageKey, JSON.stringify(userOnboardingData));
+      } else {
+        // Try to load from user-specific storage
+        const storageKey = `${ONBOARDING_STORAGE_KEY_PREFIX}${userId}`;
+        const storedData = await AsyncStorage.getItem(storageKey);
+        if (storedData) {
+          setOnboardingData(JSON.parse(storedData));
+          console.log('✅ Loaded onboarding data from user storage');
+        } else {
+          // Reset to empty if no data found
+          setOnboardingData({
+            firstName: undefined,
+            partnerFirstName: undefined,
+            dateOfBirth: undefined,
+            gender: undefined,
+            relationshipStatus: undefined,
+            relationshipDuration: undefined,
+            livingType: [],
+            hasChildren: undefined,
+            goals: [],
+            emotionalNeeds: [],
+            rhythm: undefined,
+            tone: undefined,
+            packPreferences: [],
+          });
+          console.log('ℹ️ No onboarding data found, starting fresh');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading user onboarding data:', error);
+    }
+  }, []);
+
   const saveToStorage = async (data: OnboardingData) => {
     try {
-      await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
-      console.log('✅ Saved onboarding data to storage');
+      const storageKey = await getUserStorageKey();
+      await AsyncStorage.setItem(storageKey, JSON.stringify(data));
+      console.log('✅ Saved onboarding data to user-specific storage');
     } catch (error) {
       console.error('❌ Error saving onboarding data:', error);
     }
@@ -190,17 +249,19 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
         // If no token, just save locally and wait for account creation
         console.log('⏳ No auth token yet, data saved locally');
         await saveToStorage(onboardingData);
-        return;
+        return null;
       }
 
       // If authenticated, send all data to backend
       console.log('📤 Sending onboarding data to backend:', onboardingData);
       await updateOnboardingData(onboardingData);
-      await completeOnboarding();
+      const updatedUser = await completeOnboarding();
       
-      // Clear local storage after successful submission
-      await AsyncStorage.removeItem(ONBOARDING_STORAGE_KEY);
-      console.log('✅ Onboarding submitted successfully');
+      // Keep onboarding data in storage as fallback (don't clear it)
+      // The user's profile should include this data from the backend
+      console.log('✅ Onboarding submitted successfully (data kept in storage as fallback)');
+      
+      return updatedUser;
     } catch (err: any) {
       console.error('❌ Onboarding submission error:', err);
       setError(err.message || 'Failed to submit onboarding');
@@ -212,9 +273,14 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
 
   const clearOnboarding = useCallback(async () => {
     setOnboardingData({
+      firstName: undefined,
+      partnerFirstName: undefined,
+      dateOfBirth: undefined,
+      gender: undefined,
       relationshipStatus: undefined,
       relationshipDuration: undefined,
       livingType: [],
+      hasChildren: undefined,
       goals: [],
       emotionalNeeds: [],
       rhythm: undefined,
@@ -222,7 +288,15 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
       packPreferences: [],
     });
     setError(null);
-    await AsyncStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    
+    // Clear user-specific storage
+    try {
+      const storageKey = await getUserStorageKey();
+      await AsyncStorage.removeItem(storageKey);
+      console.log('✅ Cleared user-specific onboarding data');
+    } catch (error) {
+      console.error('❌ Error clearing onboarding data:', error);
+    }
   }, []);
 
   return (
@@ -232,6 +306,7 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
         updateField,
         submitOnboarding,
         clearOnboarding,
+        loadUserOnboardingData,
         isLoading,
         error,
         hasAuthToken,

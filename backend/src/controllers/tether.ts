@@ -21,7 +21,22 @@ export const getActiveTethers = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not in a couple' });
     }
 
-    const tethers = await QuestionServiceEngine.getActiveTethers(user.coupleId);
+    // Check if categories are initialized, if not, initialize them
+    let progress = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
+    if (!progress || progress.length === 0) {
+      console.log('📚 Initializing categories for couple:', user.coupleId);
+      await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
+    }
+
+    let tethers = await QuestionServiceEngine.getActiveTethers(user.coupleId);
+
+    // If no active tethers, try to drop new ones
+    if (tethers.length === 0) {
+      console.log('🎯 No active tethers, attempting to drop new ones');
+      await QuestionServiceEngine.dropTethersForCouple(user.coupleId, true); // force = true
+      tethers = await QuestionServiceEngine.getActiveTethers(user.coupleId);
+      console.log(`✅ Dropped tethers, now have ${tethers.length} active`);
+    }
 
     // Get couple stats
     const couple = await Couple.findById(user.coupleId);
@@ -66,7 +81,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not in a couple' });
     }
 
-    await QuestionServiceEngine.submitAnswer(
+    const result = await QuestionServiceEngine.submitAnswer(
       user.coupleId,
       userId,
       questionId,
@@ -76,6 +91,9 @@ export const submitAnswer = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'Answer submitted successfully',
+      state: result.state,
+      partnerAnswer: result.partnerAnswer,
+      milestones: result.milestones,
     });
   } catch (error: any) {
     console.error('Error submitting answer:', error);
@@ -322,3 +340,4 @@ export const initializeCoupleCategories = async (req: Request, res: Response) =>
     });
   }
 };
+

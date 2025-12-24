@@ -13,11 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
+import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 
 export default function FirstTetherScreen() {
   const router = useRouter();
   const { onboardingData, submitOnboarding } = useOnboarding();
+  const { user, signIn } = useAuth();
   const [response, setResponse] = useState('');
   const [responseFocused, setResponseFocused] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,8 +44,19 @@ export default function FirstTetherScreen() {
     setLoading(true);
 
     try {
-      // Complete onboarding
-      await submitOnboarding();
+      // Complete onboarding and get updated user data
+      const updatedUserData = await submitOnboarding();
+      
+      // Update user object with onboarding data
+      if (updatedUserData && user) {
+        await signIn({
+          ...user,
+          onboarded: updatedUserData.onboarded,
+          subscribed: updatedUserData.subscribed,
+          onboardingData: updatedUserData.onboardingData,
+        });
+        console.log('✅ User updated with onboarding data:', updatedUserData.onboardingData);
+      }
       
       // TODO: Submit first tether response to backend
       await new Promise(resolve => setTimeout(resolve, 1000));

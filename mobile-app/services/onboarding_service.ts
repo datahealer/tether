@@ -85,7 +85,7 @@ export const updateOnboardingData = async (data: any) => {
 /**
  * Complete onboarding
  */
-export const completeOnboarding = async (): Promise<void> => {
+export const completeOnboarding = async (): Promise<any> => {
   try {
     const token = await getAuthToken();
 
@@ -106,7 +106,9 @@ export const completeOnboarding = async (): Promise<void> => {
       throw new Error(error.error || 'Failed to complete onboarding');
     }
 
-    console.log('✅ Onboarding completed');
+    const result = await response.json();
+    console.log('✅ Onboarding completed, user data:', result.user);
+    return result.user;
   } catch (error: any) {
     console.error('❌ Complete onboarding error:', error);
     throw error;

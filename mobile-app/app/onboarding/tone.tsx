@@ -145,7 +145,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOnboarding } from '@/context/onboarding_context';
 
 const toneOptions = [
@@ -158,13 +158,7 @@ const toneOptions = [
 export default function ToneScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
-  const [selected, setSelected] = useState<string | undefined>(onboardingData.tone);
-
-  useEffect(() => {
-    if (onboardingData.tone) {
-      setSelected(onboardingData.tone);
-    }
-  }, []);
+  const [selected, setSelected] = useState<string | undefined>(undefined);
 
   const handleSelect = (id: string) => {
     setSelected(id);

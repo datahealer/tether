@@ -27,9 +27,14 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
     }
 
     const {
+      firstName,
+      partnerFirstName,
+      dateOfBirth,
+      gender,
       relationshipStatus,
       relationshipDuration,
       livingType,
+      hasChildren,
       goals,
       emotionalNeeds,
       rhythm,
@@ -47,9 +52,14 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
     // Update onboarding data
     user.onboardingData = {
       ...user.onboardingData,
+      ...(firstName && { firstName }),
+      ...(partnerFirstName && { partnerFirstName }),
+      ...(dateOfBirth && { dateOfBirth }),
+      ...(gender && { gender }),
       ...(relationshipStatus && { relationshipStatus }),
       ...(relationshipDuration && { relationshipDuration }),
       ...(livingType && { livingType }),
+      ...(hasChildren !== undefined && { hasChildren }),
       ...(goals && { goals }),
       ...(emotionalNeeds && { emotionalNeeds }),
       ...(rhythm && { rhythm }),
@@ -107,6 +117,8 @@ export const completeOnboarding = async (req: Request, res: Response): Promise<v
         email: user.email,
         name: user.name,
         onboarded: user.onboarded,
+        subscribed: user.subscribed,
+        onboardingData: user.onboardingData,
       },
     });
   } catch (error: any) {
@@ -259,6 +271,16 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     invite.acceptedById = new mongoose.Types.ObjectId(userId);
     invite.acceptedAt = new Date();
     await invite.save();
+
+    // Initialize categories for the new couple
+    console.log('📚 Initializing categories for new couple:', couple._id);
+    const { QuestionServiceEngine } = await import('../services/questionService');
+    await QuestionServiceEngine.initializeCategoriesForCouple(couple._id);
+    
+    // Drop initial tethers for the couple
+    console.log('🎯 Dropping initial tethers for new couple');
+    await QuestionServiceEngine.dropTethersForCouple(couple._id, true); // force = true
+    console.log('✅ New couple setup complete!');
 
     res.status(200).json({
       success: true,

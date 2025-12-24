@@ -18,6 +18,7 @@ import DatePickerModal from '../../components/ui/onboarding/DatePickerModal';
 import GenderPickerModal from '../../components/ui/onboarding/GenderPickerModal';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { formatDateToYMD } from '@/utils/dateUtils';
 
 export default function AboutYouScreen() {
   const router = useRouter();
@@ -60,16 +61,16 @@ const handleContinue = async () => {
   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
   try {
-    // Update individual fields
+    // Update individual fields - save date as YYYY-MM-DD to avoid timezone issues
     updateField('firstName', firstName.trim());
     updateField('partnerFirstName', partnerFirstName.trim());
-    updateField('dateOfBirth', dateOfBirth.toISOString());
+    updateField('dateOfBirth', formatDateToYMD(dateOfBirth));
     if (gender) {
       updateField('gender', gender);
     }
 
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.push('/onboarding/living-situation');
+    router.push('/onboarding/understanding');
   } catch (error) {
     console.error('Error saving personal info:', error);
     Alert.alert('Error', 'Failed to save information');

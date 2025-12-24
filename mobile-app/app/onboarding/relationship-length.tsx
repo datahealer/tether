@@ -149,7 +149,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOnboarding } from '@/context/onboarding_context';
 
 const durationOptions = [
@@ -164,13 +164,7 @@ const durationOptions = [
 export default function RelationshipDurationScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
-  const [selected, setSelected] = useState<string>(onboardingData.relationshipDuration || '1-3-years');
-
-  useEffect(() => {
-    if (onboardingData.relationshipDuration) {
-      setSelected(onboardingData.relationshipDuration);
-    }
-  }, []);
+  const [selected, setSelected] = useState<string | undefined>(undefined);
 
   const handleSelect = (id: string) => {
     setSelected(id);

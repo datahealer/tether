@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, useSegments, usePathname } from 'expo-router';
 import { useAuth } from '@/context/auth_context';
+import { useOnboardingSync } from '@/hooks/useOnboardingSync';
 
 export function NavigationHandler() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
+  
+  // Sync onboarding data when user changes
+  useOnboardingSync();
   
   const hasNavigated = useRef(false);
   const lastRoute = useRef(pathname);

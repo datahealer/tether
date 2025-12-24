@@ -361,7 +361,12 @@ export class QuestionServiceEngine {
     userId: mongoose.Types.ObjectId,
     questionId: string,
     answerText: string
-  ): Promise<void> {
+  ): Promise<{
+    state: string;
+    userAnswer?: string;
+    partnerAnswer?: string;
+    milestones?: any[];
+  }> {
     const questionState = await CoupleQuestionState.findOne({
       coupleId,
       questionId,
@@ -386,6 +391,8 @@ export class QuestionServiceEngine {
       timestamp: new Date(),
     });
 
+    let milestones: any[] = [];
+
     // Update state
     if (questionState.answers.length === 2) {
       // Both answered
@@ -404,12 +411,27 @@ export class QuestionServiceEngine {
       );
 
       // Update couple stats and check for streak/milestone
-      await this.updateCoupleStats(coupleId, questionState.expiryTimestamp!);
+      milestones = await this.updateCoupleStats(coupleId, questionState.expiryTimestamp!);
     } else {
       questionState.state = QuestionState.WAITING_FOR_PARTNER;
     }
 
     await questionState.save();
+
+    // Return state information
+    const userAnswer = questionState.answers.find(
+      (a) => a.userId.toString() === userId.toString()
+    );
+    const partnerAnswer = questionState.answers.find(
+      (a) => a.userId.toString() !== userId.toString()
+    );
+
+    return {
+      state: questionState.state,
+      userAnswer: userAnswer?.text,
+      partnerAnswer: partnerAnswer?.text,
+      milestones: milestones.length > 0 ? milestones : undefined,
+    };
   }
 
   /**
@@ -418,9 +440,9 @@ export class QuestionServiceEngine {
   private static async updateCoupleStats(
     coupleId: mongoose.Types.ObjectId,
     expiryTimestamp: Date
-  ): Promise<void> {
+  ): Promise<any[]> {
     const couple = await Couple.findById(coupleId);
-    if (!couple) return;
+    if (!couple) return [];
 
     const now = new Date();
     const bothAnsweredBeforeExpiry = now <= expiryTimestamp;
@@ -437,6 +459,8 @@ export class QuestionServiceEngine {
 
     couple.sharedData.lastTetherDate = now;
 
+    const achievedMilestones: any[] = [];
+
     // Check milestones
     const totalCompleted = couple.sharedData.totalTethersCompleted;
     for (const milestoneCount of MILESTONE_COUNTS) {
@@ -445,16 +469,20 @@ export class QuestionServiceEngine {
           (m) => m.count === milestoneCount
         );
         if (!existing) {
-          couple.sharedData.milestoneRecords.push({
+          const milestone = {
             count: milestoneCount,
             achievedAt: now,
+            message: `Amazing! You've completed ${milestoneCount} tethers together! 🎉`,
             notified: false,
-          });
+          };
+          couple.sharedData.milestoneRecords.push(milestone);
+          achievedMilestones.push(milestone);
         }
       }
     }
 
     await couple.save();
+    return achievedMilestones;
   }
 
   /**

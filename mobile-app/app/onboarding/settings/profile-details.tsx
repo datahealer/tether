@@ -20,6 +20,7 @@ import DatePickerModal from '@/components/ui/onboarding/DatePickerModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { uploadProfilePhoto } from '@/services/upload_service';
 import { authenticatedFetch } from '@/services/auth_service';
+import { formatDateToYMD, formatDateForDisplay } from '@/utils/dateUtils';
 import Constants from 'expo-constants';
 
 export default function ProfileDetailsScreen() {
@@ -180,7 +181,7 @@ export default function ProfileDetailsScreen() {
         method: 'PUT',
         body: JSON.stringify({
           name,
-          dateOfBirth: dateOfBirth?.toISOString(),
+          dateOfBirth: dateOfBirth ? formatDateToYMD(dateOfBirth) : undefined,
           gender,
           profilePicture: profilePhoto,
         }),
@@ -236,12 +237,7 @@ export default function ProfileDetailsScreen() {
   // ... rest of component ...
 
   const formatDate = (date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDateForDisplay(date);
   };
 
   return (
@@ -482,9 +478,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.45,
   },
 });
-
-function signIn(arg0: { name: any; profilePicture: any; subscribed?: boolean; onboarded?: boolean; id: string; email: string; provider: "apple" | "google" | "email"; providerId?: string; token: string; refreshToken?: string; }) {
-  throw new Error('Function not implemented.');
-}
 
 
