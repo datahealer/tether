@@ -47,11 +47,12 @@ import adminAuthRoutes from './admin/auth';
 import adminQuestionRoutes from './admin/questions';
 import subscriptionRoutes from './subscription';
 import profileRoutes from './profile';
+import logsRoutes from './logs';
+import notificationRoutes from './notification';
 
 
 const router = Router();
 
-// Mobile app routes
 router.use('/auth', authRoutes);
 router.use('/couple', coupleRoutes);
 router.use('/onboarding', onboardingRoutes);
@@ -63,8 +64,9 @@ router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/questions', adminQuestionRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/profile', profileRoutes);
+router.use('/logs', logsRoutes);
+router.use('/notifications', notificationRoutes);
 
-// Health check
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });

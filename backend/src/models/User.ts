@@ -85,9 +85,9 @@ export interface IUser extends Document {
 
 const UserSchema: Schema = new Schema(
   {
-    googleSub: { type: String, unique: true, sparse: true },
-    appleSub: { type: String, unique: true, sparse: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
+    googleSub: { type: String, sparse: true },
+    appleSub: { type: String, sparse: true },
+    email: { type: String, required: true, lowercase: true },
     name: { type: String, required: true },
     password: { type: String },
     avatar: { type: String },
@@ -129,6 +129,7 @@ const UserSchema: Schema = new Schema(
     },
     coupleId: { type: Schema.Types.ObjectId, ref: 'Couple' },
     fcmTokens: [{ type: String }],
+    apnsToken: { type: String },
     notificationPreferences: {
       gentleReminders: { type: Boolean, default: true },
       milestoneAlerts: { type: Boolean, default: true },
@@ -202,9 +203,9 @@ UserSchema.methods.clearRefreshTokens = async function(this: IUser): Promise<voi
   }
 };
 
-UserSchema.index({ email: 1 });
-UserSchema.index({ googleSub: 1 });
-UserSchema.index({ appleSub: 1 });
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ googleSub: 1 }, { unique: true, sparse: true });
+UserSchema.index({ appleSub: 1 }, { unique: true, sparse: true });
 UserSchema.index({ coupleId: 1 });
 
 const User = mongoose.model<IUser>('User', UserSchema);

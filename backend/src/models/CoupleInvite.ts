@@ -53,7 +53,7 @@ export interface ICoupleInvite extends Document {
 const CoupleInviteSchema: Schema = new Schema(
   {
     inviterId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    inviteCode: { type: String, required: true, unique: true },
+    inviteCode: { type: String, required: true },
     status: { 
       type: String, 
       enum: ['pending', 'accepted', 'expired'], 
@@ -68,7 +68,6 @@ const CoupleInviteSchema: Schema = new Schema(
   }
 );
 
-// Indexes
 CoupleInviteSchema.index({ inviteCode: 1 }, { unique: true });
 CoupleInviteSchema.index({ inviterId: 1, status: 1 });
 CoupleInviteSchema.index({ expiresAt: 1 });
