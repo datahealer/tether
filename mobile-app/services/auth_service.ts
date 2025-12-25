@@ -229,7 +229,10 @@ export interface TokenPair {
  * Store tokens securely
  */
 
-export const refreshAccessToken = async (): Promise<string | null> => {
+export const refreshAccessToken = async (retryCount = 0): Promise<string | null> => {
+  const MAX_RETRIES = 2;
+  const RETRY_DELAY = 1000; // 1 second
+  
   try {
     const tokens = await getStoredTokens();
     
@@ -240,37 +243,70 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
     console.log('🔄 Refreshing access token...');
 
-    const response = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Token refresh failed:', response.status, errorText);
-      await clearTokens();
-      return null;
-    }
+    try {
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        signal: controller.signal,
+      });
 
-    const data = await response.json();
-    console.log('tok',data.accessToken);
-    
-    
-    if (!data.accessToken || !data.refreshToken) {
-      console.error('❌ Invalid response from refresh endpoint');
-      await clearTokens();
-      return null;
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Token refresh failed:', response.status, errorText);
+        
+        // Don't clear tokens on server errors that might be temporary
+        if (response.status >= 500 && retryCount < MAX_RETRIES) {
+          console.log(`🔄 Retrying token refresh (${retryCount + 1}/${MAX_RETRIES})...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          return refreshAccessToken(retryCount + 1);
+        }
+        
+        // Only clear tokens on 401 (invalid token)
+        if (response.status === 401) {
+          await clearTokens();
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (!data.accessToken || !data.refreshToken) {
+        console.error('❌ Invalid response from refresh endpoint');
+        await clearTokens();
+        return null;
+      }
+      
+      await storeTokens(data.accessToken, data.refreshToken);
+      console.log('✅ Access token refreshed successfully');
+      
+      return data.accessToken;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // Network errors - retry if we haven't exceeded max retries
+      if (fetchError.name === 'AbortError') {
+        console.error('❌ Token refresh timeout');
+      } else if (fetchError.message?.includes('Network request failed')) {
+        console.error('❌ Network error during token refresh');
+      }
+      
+      if (retryCount < MAX_RETRIES) {
+        console.log(`🔄 Retrying token refresh due to network error (${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return refreshAccessToken(retryCount + 1);
+      }
+      
+      throw fetchError;
     }
-    
-    await storeTokens(data.accessToken, data.refreshToken);
-    
-    console.log('✅ Access token refreshed',data.accessToken);
-    
-    return data.accessToken;
   } catch (error) {
     console.error('❌ Error refreshing token:', error);
-    await clearTokens();
+    // Don't clear tokens on network errors - user might just have temporary connectivity issue
     return null;
   }
 };

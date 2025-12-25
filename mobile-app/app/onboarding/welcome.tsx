@@ -450,7 +450,7 @@ export default function WelcomeScreen() {
 
   return (
     
-    <OnboardingLayout showBackButton={false} showLogo={false}>
+    <OnboardingLayout showBackButton={false} showLogo={false} showTetherLine={false}>
       {/* Animated Flowing Line */}
       <AnimatedFlowingLine />
 

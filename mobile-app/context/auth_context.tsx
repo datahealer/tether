@@ -217,7 +217,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
       const newToken = await getValidAccessToken();
       
       if (!newToken) {
-        console.log('⚠️ Failed to refresh session, logging out...');
+        // Check if we have tokens stored - if yes, it's a network issue, not auth issue
+        const storedTokens = await getStoredTokens();
+        
+        if (storedTokens && storedTokens.refreshToken) {
+          console.log('⚠️ Token refresh failed but tokens exist - likely network issue, keeping session');
+          // Don't log out on network errors - keep the old token and try again later
+          return false;
+        }
+        
+        // No tokens at all - legitimate logout needed
+        console.log('⚠️ No valid tokens found, logging out...');
         await signOut();
         return false;
       }
