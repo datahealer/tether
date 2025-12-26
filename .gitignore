@@ -139,3 +139,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 backend/config/env/*.env
+backend/config/*.json
+mobile-app/android/app/*.json
+*.sh
+
