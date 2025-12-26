@@ -78,7 +78,7 @@ const handleContinue = async () => {
 };
 
   return (
-    <OnboardingLayout progress={0.42} showBackButton={true}>
+    <OnboardingLayout progress={0.42} showBackButton={true} showLogoutAvatar={true}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

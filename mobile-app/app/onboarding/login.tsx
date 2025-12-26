@@ -105,6 +105,7 @@ const handleGoogleSignIn = async () => {
     <OnboardingLayout 
       progress={0.14} 
       showBackButton={true}
+      
       // rightButton={
       //   <TouchableOpacity onPress={() => router.push('/onboarding/privacy')}>
       //     <Text style={styles.skipText}>Skip</Text>

@@ -49,7 +49,7 @@ export default function ChildrenScreen() {
 };
 
   return (
-    <OnboardingLayout progress={0.63} showBackButton={true}>
+    <OnboardingLayout progress={0.63} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

@@ -6,6 +6,8 @@ import {
   updateProfile,
   getProfile,
   deleteProfilePhoto,
+  registerFCMToken,
+  unregisterFCMToken,
 } from '../controllers/profile';
 
 const router = Router();
@@ -117,5 +119,9 @@ router.put('/', authMiddleware, updateProfile);
  */
 router.post('/photo', authMiddleware, upload.single('photo'), uploadProfilePhoto);
 router.delete('/photo', authMiddleware, deleteProfilePhoto);
+
+// FCM Token routes for push notifications
+router.post('/fcm-token', authMiddleware, registerFCMToken);
+router.delete('/fcm-token', authMiddleware, unregisterFCMToken);
 
 export default router;

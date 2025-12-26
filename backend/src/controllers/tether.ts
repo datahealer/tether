@@ -5,6 +5,7 @@ import { CategoryId } from '../types/enums';
 import { UserEntitlement } from '../models/UserEntitlement';
 import Couple from '../models/Couple';
 import User from '../models/User';
+import { NotificationTriggers } from '../services/notification/triggers';
 
 /**
  * Get active tethers for the logged-in user's couple
@@ -87,6 +88,11 @@ export const submitAnswer = async (req: Request, res: Response) => {
       questionId,
       answer
     );
+
+    // 🔔 Trigger notification for partner
+    NotificationTriggers.onTetherAnswered(questionId, userId.toString(), user.coupleId.toString()).catch(err => {
+      console.error('Failed to send notification:', err);
+    });
 
     res.json({
       success: true,

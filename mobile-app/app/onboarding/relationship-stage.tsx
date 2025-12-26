@@ -1,162 +1,3 @@
-// import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-// import { LinearGradient } from 'expo-linear-gradient';
-// import { useRouter } from 'expo-router';
-// import { useState } from 'react';
-
-// const relationshipOptions = [
-//   { id: 'dating', label: 'Dating', emoji: '💕' },
-//   { id: 'engaged', label: 'Engaged', emoji: '💍' },
-//   { id: 'married', label: 'Married', emoji: '💑' },
-//   { id: 'something-else', label: 'Something Else', emoji: '' },
-// ];
-
-// export default function RelationshipStatusScreen() {
-//   const router = useRouter();
-//   const [selected, setSelected] = useState('');
-
-//   return (
-//     <LinearGradient
-//       colors={['#F5E6D3', '#E8D4C0', '#F0DDD0']}
-//       style={styles.container}
-//     >
-//       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => router.back()}>
-//           <Text style={styles.backText}>←</Text>
-//         </TouchableOpacity>
-//         <Text style={styles.progress}>1/8</Text>
-//         <TouchableOpacity onPress={() => router.push('/onboarding/relationship-duration')}>
-//           <Text style={styles.closeText}>✕</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-//         <Text style={styles.title}>What best describes your relationship right now?</Text>
-//         <Text style={styles.subtitle}>This helps us tailor your questions</Text>
-
-//         <View style={styles.optionsContainer}>
-//           {relationshipOptions.map((option) => (
-//             <TouchableOpacity
-//               key={option.id}
-//               style={[
-//                 styles.optionCard,
-//                 selected === option.id && styles.optionCardSelected,
-//               ]}
-//               onPress={() => setSelected(option.id)}
-//             >
-//               {option.emoji && <Text style={styles.optionEmoji}>{option.emoji}</Text>}
-//               <Text style={styles.optionLabel}>{option.label}</Text>
-//             </TouchableOpacity>
-//           ))}
-//         </View>
-//       </ScrollView>
-
-//       <View style={styles.bottomContainer}>
-//         <TouchableOpacity
-//           style={[styles.primaryButton, !selected && styles.buttonDisabled]}
-//           disabled={!selected}
-//           onPress={() => router.push('/onboarding/relationship-duration')}
-//         >
-//           <Text style={styles.primaryButtonText}>Continue</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={() => router.push('/onboarding/relationship-duration')}>
-//           <Text style={styles.linkText}>Skip For Now</Text>
-//         </TouchableOpacity>
-//       </View>
-//     </LinearGradient>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingTop: 60,
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: 24,
-//     paddingBottom: 16,
-//   },
-//   backText: {
-//     fontSize: 28,
-//     color: '#2C2C2C',
-//   },
-//   progress: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   closeText: {
-//     fontSize: 24,
-//     color: '#2C2C2C',
-//   },
-//   content: {
-//     flex: 1,
-//   },
-//   contentContainer: {
-//     paddingHorizontal: 24,
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     color: '#2C2C2C',
-//     marginBottom: 8,
-//   },
-//   subtitle: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 32,
-//   },
-//   optionsContainer: {
-//     gap: 16,
-//   },
-//   optionCard: {
-//     backgroundColor: '#FFFFFF',
-//     borderRadius: 16,
-//     padding: 24,
-//     alignItems: 'center',
-//     borderWidth: 2,
-//     borderColor: 'transparent',
-//   },
-//   optionCardSelected: {
-//     borderColor: '#FF9B7A',
-//   },
-//   optionEmoji: {
-//     fontSize: 40,
-//     marginBottom: 8,
-//   },
-//   optionLabel: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     color: '#2C2C2C',
-//   },
-//   bottomContainer: {
-//     paddingHorizontal: 24,
-//     paddingBottom: 50,
-//     gap: 16,
-//   },
-//   primaryButton: {
-//     backgroundColor: '#FF9B7A',
-//     paddingVertical: 18,
-//     borderRadius: 30,
-//     alignItems: 'center',
-//   },
-//   buttonDisabled: {
-//     opacity: 0.5,
-//   },
-//   primaryButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 18,
-//     fontWeight: '600',
-//   },
-//   linkText: {
-//     fontSize: 16,
-//     color: '#2C2C2C',
-//     textAlign: 'center',
-//     fontWeight: '500',
-//   },
-// });
 
 
 
@@ -168,175 +9,214 @@
 
 
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useOnboarding } from '@/context/onboarding_context';
+import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
+import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import * as Haptics from 'expo-haptics';
 
 const relationshipOptions = [
-  { id: 'dating', label: 'Dating', emoji: '💕' },
-  { id: 'engaged', label: 'Engaged', emoji: '💍' },
-  { id: 'married', label: 'Married', emoji: '💑' },
-  { id: 'something-else', label: 'Something Else', emoji: '' },
+  { id: 'dating', label: 'Dating' },
+  { id: 'engaged', label: 'Engaged' },
+  { id: 'married', label: 'Married' },
+  { id: 'other', label: 'Other' },
 ];
 
 export default function RelationshipStatusScreen() {
   const router = useRouter();
   const { onboardingData, updateField } = useOnboarding();
   const [selected, setSelected] = useState<string | undefined>(undefined);
+  const [otherText, setOtherText] = useState('');
 
   const handleSelect = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelected(id);
-    updateField('relationshipStatus', id);
+    if (id !== 'other') {
+      updateField('relationshipStatus', id);
+      setOtherText('');
+    }
+  };
+
+  const handleOtherTextChange = (text: string) => {
+    setOtherText(text);
+    if (text.trim()) {
+      updateField('relationshipStatus', text);
+    }
   };
 
   const handleContinue = () => {
     if (selected) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       router.push('/onboarding/relationship-length');
     }
   };
 
   return (
-    <LinearGradient
-      colors={['#F5E6D3', '#E8D4C0', '#F0DDD0']}
-      style={styles.container}
+    <OnboardingLayout 
+      showBackButton={true} 
+      showLogo={true}
+      // progress={1/8}
+      showLogoutAvatar={true}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.progress}>1/8</Text>
-        <TouchableOpacity onPress={() => router.push('/onboarding/relationship-length')}>
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.title}>What best describes your relationship right now?</Text>
-        <Text style={styles.subtitle}>This helps us tailor your questions</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>What best describes your{"\n"}relationship right now?</Text>
 
         <View style={styles.optionsContainer}>
           {relationshipOptions.map((option) => (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.optionCard,
-                selected === option.id && styles.optionCardSelected,
-              ]}
-              onPress={() => handleSelect(option.id)}
-            >
-              {option.emoji && <Text style={styles.optionEmoji}>{option.emoji}</Text>}
-              <Text style={styles.optionLabel}>{option.label}</Text>
-            </TouchableOpacity>
+            <View key={option.id}>
+              <TouchableOpacity
+                style={[
+                  styles.optionItem,
+                  selected === option.id && styles.optionItemSelected,
+                ]}
+                onPress={() => handleSelect(option.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.optionLabel,
+                  selected === option.id && styles.optionLabelSelected
+                ]}>
+                  {option.label}
+                </Text>
+                {selected === option.id && (
+                  <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
+                )}
+              </TouchableOpacity>
+              
+              {option.id === 'other' && selected === 'other' && (
+                <View style={styles.otherInputContainer}>
+                  <TextInput
+                    style={styles.otherInput}
+                    placeholder="Type your response..."
+                    placeholderTextColor={Colors.darkGrey}
+                    value={otherText}
+                    onChangeText={handleOtherTextChange}
+                    autoFocus
+                    multiline={false}
+                  />
+                  <Text style={styles.editIcon}>✎</Text>
+                </View>
+              )}
+            </View>
           ))}
         </View>
       </ScrollView>
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.primaryButton, !selected && styles.buttonDisabled]}
-          disabled={!selected}
+          style={[
+            styles.primaryButton,
+            (!selected || (selected === 'other' && !otherText.trim())) && styles.buttonDisabled
+          ]}
+          disabled={!selected || (selected === 'other' && !otherText.trim())}
           onPress={handleContinue}
+          activeOpacity={0.8}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/onboarding/relationship-length')}>
-          <Text style={styles.linkText}>Skip For Now</Text>
-        </TouchableOpacity>
       </View>
-    </LinearGradient>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    paddingTop: 60,
   },
-  header: {
+  content: {
+    flexGrow: 1,
+    paddingBottom: Spacing.xl,
+  },
+  title: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.heading,
+    lineHeight: 36,
+    fontWeight: FontWeights.semibold,
+    color: Colors.black,
+    marginBottom: Spacing.xl,
+    letterSpacing: 0,
+  },
+  optionsContainer: {
+    gap: Spacing.sm,
+  },
+  optionItem: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 20,
+    paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-  },
-  backText: {
-    fontSize: 28,
-    color: '#2C2C2C',
-  },
-  progress: {
-    fontSize: 16,
-    color: '#666',
-  },
-  closeText: {
-    fontSize: 24,
-    color: '#2C2C2C',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2C2C2C',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 32,
-  },
-  optionsContainer: {
-    gap: 16,
-  },
-  optionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  optionCardSelected: {
-    borderColor: '#FF9B7A',
-  },
-  optionEmoji: {
-    fontSize: 40,
-    marginBottom: 8,
+  optionItemSelected: {
+    borderColor: Colors.darkOrange,
   },
   optionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2C2C2C',
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.input,
+    fontWeight: FontWeights.regular,
+    color: Colors.black,
+  },
+  optionLabelSelected: {
+    color: Colors.darkOrange,
+    fontWeight: FontWeights.medium,
+  },
+  otherInputContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 16,
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.mediumGrey,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  otherInput: {
+    flex: 1,
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.input,
+    color: Colors.black,
+    padding: 0,
+  },
+  editIcon: {
+    fontSize: 18,
+    color: Colors.darkGrey,
   },
   bottomContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 50,
-    gap: 16,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   primaryButton: {
-    backgroundColor: '#FF9B7A',
+    backgroundColor: Colors.darkOrange,
+    borderRadius: BorderRadius.xl,
     paddingVertical: 18,
-    borderRadius: 30,
     alignItems: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  linkText: {
-    fontSize: 16,
-    color: '#2C2C2C',
-    textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.buttonLarge,
+    lineHeight: 28,
+    fontWeight: FontWeights.semibold,
+    color: Colors.white,
+    letterSpacing: 0.45,
   },
 });

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authenticatedFetch } from './auth_service';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 
@@ -29,39 +30,14 @@ export interface CoupleInvite {
 }
 
 /**
- * Get auth token from storage
- */
-const getAuthToken = async (): Promise<string | null> => {
-  try {
-    return await AsyncStorage.getItem('authToken');
-  } catch (error) {
-    console.error('Error getting auth token:', error);
-    return null;
-  }
-};
-
-/**
  * Update onboarding data
  */
-// ...existing code...
-
 export const updateOnboardingData = async (data: any) => {
   try {
-    const token = await AsyncStorage.getItem('authToken');
-    
-    console.log('🔑 Token available:', !!token);
     console.log('📤 Sending onboarding data to backend:', data);
 
-    if (!token) {
-      throw new Error('No auth token found');
-    }
-
-    const response = await fetch(`${API_URL}/api/onboarding/update`, {
+    const response = await authenticatedFetch(`${API_URL}/api/onboarding/update`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
       body: JSON.stringify(data),
     });
 
@@ -87,18 +63,8 @@ export const updateOnboardingData = async (data: any) => {
  */
 export const completeOnboarding = async (): Promise<any> => {
   try {
-    const token = await getAuthToken();
-
-    if (!token) {
-      throw new Error('No auth token found');
-    }
-
-    const response = await fetch(`${API_URL}/api/onboarding/complete`, {
+    const response = await authenticatedFetch(`${API_URL}/api/onboarding/complete`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
     if (!response.ok) {
@@ -120,18 +86,8 @@ export const completeOnboarding = async (): Promise<any> => {
  */
 export const generateCoupleInvite = async (): Promise<CoupleInvite> => {
   try {
-    const token = await getAuthToken();
-
-    if (!token) {
-      throw new Error('No auth token found');
-    }
-
-    const response = await fetch(`${API_URL}/api/onboarding/invite/generate`, {
+    const response = await authenticatedFetch(`${API_URL}/api/onboarding/invite/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
     if (!response.ok) {
@@ -152,18 +108,8 @@ export const generateCoupleInvite = async (): Promise<CoupleInvite> => {
  */
 export const acceptCoupleInvite = async (inviteCode: string): Promise<void> => {
   try {
-    const token = await getAuthToken();
-
-    if (!token) {
-      throw new Error('No auth token found');
-    }
-
-    const response = await fetch(`${API_URL}/api/onboarding/invite/accept`, {
+    const response = await authenticatedFetch(`${API_URL}/api/onboarding/invite/accept`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
       body: JSON.stringify({ inviteCode }),
     });
 
@@ -184,17 +130,8 @@ export const acceptCoupleInvite = async (inviteCode: string): Promise<void> => {
  */
 export const getCoupleInfo = async (): Promise<any> => {
   try {
-    const token = await getAuthToken();
-
-    if (!token) {
-      throw new Error('No auth token found');
-    }
-
-    const response = await fetch(`${API_URL}/api/onboarding/couple`, {
+    const response = await authenticatedFetch(`${API_URL}/api/onboarding/couple`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
     if (!response.ok) {

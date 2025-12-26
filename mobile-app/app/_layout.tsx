@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/auth_context';
 import { OnboardingProvider } from '@/context/onboarding_context';
+import { NotificationProvider } from '@/context/notification_context';
 import SplashScreenComponent from '../components/splash';
 import { NavigationHandler } from '../components/NavigationHandler';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -63,11 +64,12 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OnboardingProvider>
-        <NavigationHandler/>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="onboarding/welcome" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding/account-creation" options={{ headerShown: false }} />
+        <NotificationProvider>
+          <NavigationHandler/>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="onboarding/welcome" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/account-creation" options={{ headerShown: false }} />
             
             <Stack.Screen name="onboarding/login" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/settings/settings" options={{ headerShown: false }} />
@@ -114,6 +116,7 @@ export default function RootLayout() {
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
+        </NotificationProvider>
       </OnboardingProvider>
     </AuthProvider>
   );

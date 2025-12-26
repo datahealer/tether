@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import User from '../models/User';
 import dotenv from 'dotenv';
+import { Platform } from '../types/enums';
 
 dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env` });
 
@@ -243,5 +244,87 @@ export const deleteProfilePhoto = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Delete photo error:', error);
     res.status(500).json({ error: 'Failed to delete profile photo' });
+  }
+};
+
+/**
+ * Register FCM token for push notifications
+ */
+export const registerFCMToken = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { token, platform } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'FCM token is required' });
+    }
+
+    if (!platform || !['ios', 'android'].includes(platform)) {
+      return res.status(400).json({ error: 'Valid platform (ios/android) is required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Add token if not already present
+    // Add token if not already present
+    if (!user.fcmTokens.includes(token)) {
+      user.fcmTokens.push(token);
+      user.platform = platform;
+      await user.save();
+    } else {
+      console.log(`ℹ️ FCM token already registered for user ${user.email}`);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'FCM token registered successfully',
+    });
+  } catch (error) {
+    console.error('Register FCM token error:', error);
+    res.status(500).json({ error: 'Failed to register FCM token' });
+  }
+};
+
+/**
+ * Unregister FCM token (on logout)
+ */
+export const unregisterFCMToken = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'FCM token is required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Remove token
+    user.fcmTokens = user.fcmTokens.filter(t => t !== token);
+    await user.save();
+
+    console.log(`✅ FCM token unregistered for user ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'FCM token unregistered successfully',
+    });
+  } catch (error) {
+    console.error('Unregister FCM token error:', error);
+    res.status(500).json({ error: 'Failed to unregister FCM token' });
   }
 };
