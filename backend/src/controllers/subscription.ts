@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Purchase from '../models/Purchase';
+import { getRevenueCatService } from '../services/revenuecat/revenuecat.service';
 
 // Helper function to get userId
 const getUserId = (req: Request): string | undefined => {
@@ -131,19 +132,43 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       yearly: {
         amount: 44.99,
         duration: 365,
+        productId: 'premium_yearly',
       },
       monthly: {
         amount: 6.49,
         duration: 30,
+        productId: 'premium_monthly',
       },
     };
 
     const plan = planDetails[planType as 'yearly' | 'monthly'];
+    
+    // Process through RevenueCat if purchaseToken provided
+    let revenueCatData = null;
+    if (purchaseToken) {
+      try {
+        const revenueCat = getRevenueCatService();
+        revenueCatData = await revenueCat.processPurchase({
+          app_user_id: userId,
+          product_id: plan.productId,
+          price: plan.amount * 100,
+          currency: 'USD',
+          store: user.platform === 'ios' ? 'APP_STORE' : 'PLAY_STORE',
+          transaction_id: purchaseToken,
+          period: planType === 'yearly' ? 'P1Y' : 'P1M',
+        });
+      } catch (error: any) {
+        console.error('RevenueCat purchase processing error:', error);
+        res.status(400).json({
+          error: 'Failed to validate purchase with RevenueCat',
+          details: error.message,
+        });
+        return;
+      }
+    }
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + plan.duration);
-
-    // TODO: Validate purchaseToken with app store/play store
-    // For now, we'll assume validation is successful
 
     // Create purchase record
     const purchase = await Purchase.create({
@@ -156,6 +181,11 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       expiresAt,
       autoRenew: true,
       purchaseToken,
+      ...(revenueCatData && {
+        revenueCatTransactionId: purchaseToken,
+        revenueCatProductId: plan.productId,
+        revenueCatStore: user.platform === 'ios' ? 'APP_STORE' : 'PLAY_STORE',
+      }),
     });
 
     // Update user subscription status
