@@ -67,6 +67,10 @@ export interface IPurchase extends Document {
   expiresAt: Date;
   autoRenew: boolean;
   purchaseToken?: string;
+  revenueCatTransactionId?: string;
+  revenueCatOriginalTransactionId?: string;
+  revenueCatProductId?: string;
+  revenueCatStore?: string;
   cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -114,6 +118,20 @@ const PurchaseSchema: Schema = new Schema(
     },
     purchaseToken: {
       type: String,
+    },
+    revenueCatTransactionId: {
+      type: String,
+      index: true,
+    },
+    revenueCatOriginalTransactionId: {
+      type: String,
+    },
+    revenueCatProductId: {
+      type: String,
+    },
+    revenueCatStore: {
+      type: String,
+      enum: ['APP_STORE', 'PLAY_STORE', 'STRIPE', 'PROMOTICAL'],
     },
     cancelledAt: {
       type: Date,

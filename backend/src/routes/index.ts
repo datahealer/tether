@@ -46,6 +46,7 @@ import adminAuthRoutes from './admin/auth';
 import adminQuestionRoutes from './admin/questions';
 import subscriptionRoutes from './subscription';
 import profileRoutes from './profile';
+import revenueCatRoutes from './revenuecat';
 
 const router = Router();
 
@@ -60,6 +61,7 @@ router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/questions', adminQuestionRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/profile', profileRoutes);
+router.use('/revenuecat', revenueCatRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

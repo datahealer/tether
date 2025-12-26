@@ -69,6 +69,7 @@ import dotenv from 'dotenv';
 import router from './routes';
 import sequelize from './db/db';
 import serverless from 'serverless-http';
+import { initializeRevenueCat } from './services/revenuecat/revenuecat.service';
 
 // Load environment variables
 dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env` });
@@ -108,7 +109,8 @@ app.get('/health', (req, res) => {
 app.use('/api', router);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
@@ -124,10 +126,44 @@ const initializeDatabase = async () => {
   }
 };
 
-// Initialize database once
-initializeDatabase();
+const initializeServices = async () => {
+  try {
+    await initializeDatabase();
 
-// For local development
+    // TODO: Implement FCM provider initialization
+    // if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    //   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    //   await fcmProvider.initialize({ serviceAccount });
+    //   console.log('FCM initialized successfully');
+    // } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+    //   await fcmProvider.initialize({ serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH });
+    //   console.log('FCM initialized successfully');
+    // } else {
+    //   console.warn('FCM not initialized - FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH not set');
+    // }
+
+    if (process.env.REVENUECAT_API_KEY) {
+      initializeRevenueCat({
+        apiKey: process.env.REVENUECAT_API_KEY,
+        sandbox: process.env.REVENUECAT_SANDBOX === 'true',
+      });
+      console.log('RevenueCat initialized successfully');
+    } else {
+      console.warn('RevenueCat not initialized - REVENUECAT_API_KEY not set');
+    }
+
+    // TODO: Implement notification scheduler
+    // if (process.env.NODE_ENV !== 'test') {
+    //   notificationScheduler.start();
+    // }
+  } catch (error) {
+    console.error('Service initialization error:', error);
+    throw error;
+  }
+};
+
+initializeServices();
+
 if (process.env.NODE_ENV !== 'production' && require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
