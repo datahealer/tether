@@ -16,7 +16,8 @@ interface QuestionCardProps {
   response: string;
   onResponseChange: (text: string) => void;
   onDrawAnother: () => void;
-  sharedRefreshesRemaining: number;
+  isSkipping: boolean;                    // ← Controlled by parent
+  refreshesRemaining: number;             // ← For display only
 }
 
 export default function QuestionCard({
@@ -26,8 +27,11 @@ export default function QuestionCard({
   response,
   onResponseChange,
   onDrawAnother,
-  sharedRefreshesRemaining,
+  isSkipping,
+  refreshesRemaining,
 }: QuestionCardProps) {
+  const isDrawDisabled = isSkipping || refreshesRemaining <= 0;
+
   return (
     <View style={styles.container}>
       {/* Category Header */}
@@ -56,24 +60,26 @@ export default function QuestionCard({
       <TouchableOpacity
         style={[
           styles.drawButton,
-          sharedRefreshesRemaining === 0 && styles.drawButtonDisabled,
+          isDrawDisabled && styles.drawButtonDisabled,
         ]}
         onPress={onDrawAnother}
-        disabled={sharedRefreshesRemaining === 0}
+        disabled={isDrawDisabled}
         activeOpacity={0.8}
       >
-        <Ionicons 
-          name="refresh" 
-          size={18} 
-          color={Colors.white} 
+        <Ionicons
+          name="refresh"
+          size={18}
+          color={Colors.white}
           style={styles.refreshIcon}
         />
-        <Text style={styles.drawButtonText}>Draw Another</Text>
+        <Text style={styles.drawButtonText}>
+          {isSkipping ? 'Drawing...' : 'Draw Another'}
+        </Text>
       </TouchableOpacity>
 
       {/* Refreshes Remaining */}
       <Text style={styles.refreshesText}>
-        {sharedRefreshesRemaining} Shared refreshes remaining
+        {refreshesRemaining} refresh{refreshesRemaining === 1 ? '' : 'es'} remaining today
       </Text>
     </View>
   );
@@ -147,7 +153,7 @@ const styles = StyleSheet.create({
   },
   drawButtonDisabled: {
     backgroundColor: Colors.mediumGrey,
-    opacity: 0.5,
+    opacity: 0.7,
   },
   refreshIcon: {
     marginRight: Spacing.xs,

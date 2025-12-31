@@ -4,7 +4,10 @@ import { RouterProvider } from "@tanstack/react-router";
 import type { FunctionComponent } from "./common/types";
 import { TanStackRouterDevelopmentTools } from "./components/utils/development-tools/TanStackRouterDevelopmentTools";
 import type { router as Router } from "./main";
-
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css'; // For Semi Bold, Bold
 const queryClient = new QueryClient();
 
 type AppProps = { router: typeof Router };

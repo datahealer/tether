@@ -1,15 +1,20 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { QuestionServiceEngine } from '../services/questionService';
-import { CategoryId } from '../types/enums';
+import { CategoryId ,QuestionState,Rhythm} from '../types/enums';
 import { UserEntitlement } from '../models/UserEntitlement';
 import Couple from '../models/Couple';
 import User from '../models/User';
+import {Category} from '../models/Category'
 import { NotificationTriggers } from '../services/notification/triggers';
+import { CoupleQuestionState } from '../models/CoupleQuestionState';
+import { RHYTHM_HOURS } from '../services/questionService';
 
 /**
  * Get active tethers for the logged-in user's couple
  */
+
+
 export const getActiveTethers = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
@@ -116,40 +121,33 @@ export const submitAnswer = async (req: Request, res: Response) => {
 export const skipTether = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { questionId } = req.body;
-
-    if (!questionId) {
-      return res.status(400).json({ message: 'questionId is required' });
-    }
+    if (!questionId) return res.status(400).json({ message: 'questionId required' });
 
     const user = await User.findById(userId);
-    if (!user?.coupleId) {
-      return res.status(404).json({ message: 'Not in a couple' });
+    if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
+
+    const result = await QuestionServiceEngine.skipQuestion(user.coupleId, userId, questionId);
+
+    if (result.newQuestion) {
+      res.json({
+        success: true,
+        newQuestion: result.newQuestion,
+        refreshesRemaining: result.refreshesRemaining,
+        message: 'New question drawn!',
+      });
+    } else {
+      res.json({
+        success: true,
+        refreshesRemaining: result.refreshesRemaining,
+        message: 'No more questions available',
+      });
     }
-
-    // Check refresh entitlements
-    const entitlement = await UserEntitlement.findOne({ userId });
-    if (!entitlement) {
-      return res.status(403).json({ message: 'No entitlement found' });
-    }
-
-    // For now, simple skip - can add refresh count logic later
-    await QuestionServiceEngine.skipQuestion(user.coupleId, userId, questionId);
-
-    res.json({
-      success: true,
-      message: 'Tether skipped successfully',
-    });
   } catch (error: any) {
-    console.error('Error skipping tether:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to skip tether',
-    });
+    console.error('Skip tether error:', error);
+    res.status(500).json({ message: error.message || 'Failed to skip tether' });
   }
 };
 
@@ -168,18 +166,32 @@ export const getCategoryProgress = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not in a couple' });
     }
 
-    let progress = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
+    // This now auto-syncs missing categories
+    const coupleStates = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
 
-    // If no categories exist, initialize them
-    if (!progress || progress.length === 0) {
-      console.log('No categories found, initializing for couple:', user.coupleId);
-      await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
-      progress = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
-    }
+    // Enrich with category name and color
+    const progressWithDetails = await Promise.all(
+      coupleStates.map(async (state) => {
+        const category = await Category.findOne({ categoryId: state.categoryId });
+        return {
+          coupleId: state.coupleId,
+          categoryId: state.categoryId,
+          categoryName: category?.name || state.categoryId,
+          colorCode: category?.colorCode || '#CCCCCC',
+          answeredCount: state.answeredCount,
+          totalQuestions: state.totalQuestions,
+          skippedCount: state.skippedCount,
+          isComplete: state.isComplete,
+          unlocked: state.unlocked,
+          unlockExpiry: state.unlockExpiry,
+          lastActivityAt: state.lastActivityAt,
+        };
+      })
+    );
 
     res.json({
       success: true,
-      progress,
+      progress: progressWithDetails,
     });
   } catch (error: any) {
     console.error('Error getting category progress:', error);

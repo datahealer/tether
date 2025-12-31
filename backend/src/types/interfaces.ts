@@ -194,6 +194,7 @@ export interface IUserEntitlement extends Document {
   premiumEnd?: Date;
   createdAt: Date;
   updatedAt: Date;
+  getRefreshesForCycle(): number; 
 }
 
 export interface IRhythmConfig {

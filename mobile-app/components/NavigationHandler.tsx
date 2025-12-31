@@ -71,16 +71,25 @@ export function NavigationHandler() {
           router.replace('/onboarding/subscription');
         }
       } else {
-        // Both onboarded and subscribed - go to home (but allow settings)
-        console.log('✅ User fully onboarded and subscribed');
-        if (!inHome && currentRoute !== '/home/category-packs' && !isSettingsScreen) {
-          console.log('➡️ Redirecting to home');
+        // Fully onboarded + subscribed → home
+        // But allow invite screen access (e.g., reshare link)
+        const allowedPostSubscription = [
+          '/home/category-packs',
+          '/onboarding/partner-invite', // ← Explicitly allow invite even after subscription
+        ];
+
+        if (
+          !inHome &&
+          !allowedPostSubscription.some(route => currentRoute.startsWith(route)) &&
+          !isSettingsScreen
+        ) {
+          console.log('➡️ Redirecting fully ready user to category packs');
           hasNavigated.current = true;
           router.replace('/home/category-packs');
         }
       }
     }
-  }, [user?.id, user?.onboarded, user?.subscribed, loading, pathname]);
+  }, [user?.id, user?.onboarded, user?.subscribed, loading, pathname, router]);
 
   return null;
 }

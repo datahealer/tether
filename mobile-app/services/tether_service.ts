@@ -176,8 +176,9 @@ export async function skipTether(
  * Get category progress for the couple
  * Shows unlocked categories and available categories to unlock
  */
+// In getCategoryProgress() function
 export async function getCategoryProgress(): Promise<{
-  progress: never[];
+  progress: CategoryProgress[];
   categories: CategoryProgress[];
   unlockedCount: number;
   tier: string;
@@ -189,22 +190,35 @@ export async function getCategoryProgress(): Promise<{
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', response.status, errorText);
+      let errorMessage = 'Failed to fetch category progress';
+
       try {
-        const error = JSON.parse(errorText);
-        throw new Error(error.message || 'Failed to fetch category progress');
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorMessage;
       } catch {
-        throw new Error(`Server error: ${response.status}`);
+        // fallback
       }
+
+      // Special handling for "not in a couple"
+      if (response.status === 404 && errorMessage.includes('Not in a couple')) {
+        throw new Error('WAITING_FOR_PARTNER');
+      }
+
+      throw new Error(errorMessage);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching category progress:', error);
-    throw error;
+    
+    // Re-throw custom error so UI can handle it
+    if (error.message === 'WAITING_FOR_PARTNER') {
+      throw error;
+    }
+    
+    throw new Error(error.message || 'Failed to load category packs');
   }
 }
-
 /**
  * Unlock a new category
  * FREE tier: Can unlock 2 categories, PREMIUM: Can unlock all 10

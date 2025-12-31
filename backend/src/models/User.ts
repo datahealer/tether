@@ -56,7 +56,7 @@ export interface IUser extends Document {
     partnerFirstName?: string;
     dateOfBirth?: string;
     gender?: string;
-    relationshipStatus?: 'single' | 'dating' | 'engaged' | 'married' | 'its-complicated';
+    relationshipStatus?: string;
     relationshipDuration?: string;
     livingType?: string[];
     hasChildren?: boolean;
@@ -110,9 +110,11 @@ const UserSchema: Schema = new Schema(
       gender: { type: String },
       relationshipStatus: { 
         type: String,
-        enum: ['single', 'dating', 'engaged', 'married', 'its-complicated']
+        
       },
-      relationshipDuration: { type: String },
+      relationshipDuration: { 
+        type: String ,
+      },
       livingType: [{ type: String }],
       hasChildren: { type: Boolean },
       goals: [{ type: String }],

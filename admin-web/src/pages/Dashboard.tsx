@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Loader } from 'lucide-react';
+import { Plus, Loader, Upload } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/Dashboard_layout';
 import { StatsCards } from '../components/ui/Stats';
 import { Filters } from '../components/ui/Filter';
 import { QuestionsTable } from '../components/ui/question/Quesion_table';
 import { QuestionModal } from '../components/ui/question/QuestionModal';
+import { ImportModal } from '../components/ui/ImportModal';
 import { questionsService, Question } from '../services/question';
-
+import { Link } from '@tanstack/react-router';
 export const Dashboard: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  // New modal for upload
+const [showImportModal, setShowImportModal] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,6 +146,10 @@ export const Dashboard: React.FC = () => {
   const handleViewQuestion = (question: Question) => {
     alert(`Question: ${question.question}\n\nCategory: ${question.categoryId}\nGender Focus: ${question.genderFocus}\nDifficulty: ${question.difficulty}\nStatus: ${question.status}`);
   };
+  const handleImportSuccess = (count: number) => {
+  alert(`Successfully imported ${count} questions!`);
+  fetchQuestions(); // Refresh list
+};
 
   const handleExport = () => {
     const csv = [
@@ -180,19 +187,51 @@ export const Dashboard: React.FC = () => {
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Question Dashboard</h1>
-          <p className="text-purple-200">Manage and analyze your question bank</p>
-        </div>
-        <button
+      <div className="flex items-center justify-between mb-12 border-b border-white/10 pb-6">
+  <div className="flex gap-8">
+    <Link
+      to="/dashboard"
+      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
+      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      className="text-2xl font-semibold transition-colors"
+    >
+      Questions
+    </Link>
+    <Link
+      to="/categories"
+      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
+      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      className="text-2xl font-semibold transition-colors"
+    >
+      Categories
+    </Link>
+  </div>
+   <button
           onClick={handleAddQuestion}
           className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/50"
         >
           <Plus size={20} />
           Add Question
         </button>
+        </div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Question Dashboard</h1>
+          <p className="text-purple-200">Manage and analyze your question bank</p>
+        </div>
+       
+       <button
+  onClick={() => setShowImportModal(true)}
+  className="flex items-center gap-2 bg-white/10 border border-white/20 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-all"
+>
+  <Upload size={20} />
+  Import Excel
+</button>
       </div>
+      
+     
+
+
 
       {error && (
         <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl mb-6">
@@ -275,6 +314,11 @@ export const Dashboard: React.FC = () => {
         onSave={handleSaveQuestion}
         question={selectedQuestion}
       />
+      <ImportModal
+  isOpen={showImportModal}
+  onClose={() => setShowImportModal(false)}
+  onSuccess={handleImportSuccess}
+/>
     </DashboardLayout>
   );
 };

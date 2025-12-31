@@ -111,6 +111,7 @@ export default function RootLayout() {
             <Stack.Screen name="home/category-question" options={{ headerShown: false }} />
             
             <Stack.Screen name="home/draw-locked-upsell" options={{ headerShown: false }} />
+            <Stack.Screen name="home/waiting-for-partner" options={{ headerShown: false }} />
             
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>

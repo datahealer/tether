@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Question from '../models/Question';
 import { CoupleQuestionState } from '../models/CoupleQuestionState';
 import { CoupleCategoryState } from '../models/CoupleCategoryState';
+import {Category } from '../models/Category'
 import { UserEntitlement } from '../models/UserEntitlement';
 import Couple from '../models/Couple';
 import User from '../models/User';
@@ -16,8 +17,11 @@ import {
 } from '../types/enums';
 import { IQuestion, ICoupleCategoryState } from '../types/interfaces';
 
+import notificationService from './notification/notification.service';
+import { NotificationType } from '../models/Notification';
+
 // Rhythm mapping to hours
-const RHYTHM_HOURS: Record<Rhythm, number> = {
+export const RHYTHM_HOURS: Record<Rhythm, number> = {
   [Rhythm.EVERY_DAY]: 24,
   [Rhythm.FEW_TIMES_WEEK]: 72,
   [Rhythm.ONCE_WEEK]: 168,
@@ -31,99 +35,100 @@ const COOLDOWN_DAYS = 14;
 const MILESTONE_COUNTS = [5, 10, 25, 50, 100];
 
 export class QuestionServiceEngine {
-  /**
-   * Initialize categories for a new couple based on their onboarding data
-   */
-  static async initializeCategoriesForCouple(
-    coupleId: mongoose.Types.ObjectId
-  ): Promise<void> {
-    const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
-    if (!couple) throw new Error('Couple not found');
+  // static initializeCategoriesForCouple: any;
+  // Add this method inside QuestionServiceEngine class
+private static determineFreeCategoriesForCouple(couple: any): string[] {
+  const user1 = couple.user1Id;
+  const user2 = couple.user2Id;
 
-    const user1 = await User.findById(couple.user1Id);
-    const user2 = await User.findById(couple.user2Id);
+  const allGoals = [
+    ...(user1?.onboardingData?.goals || []),
+    ...(user2?.onboardingData?.goals || []),
+  ];
+  const allLiving = [
+    ...(user1?.onboardingData?.livingType || []),
+    ...(user2?.onboardingData?.livingType || []),
+  ];
 
-    if (!user1 || !user2) throw new Error('Users not found');
+  const goalCategoryMap: Record<string, string> = {
+    [GoalTag.COMMUNICATION]: CategoryId.COMMUNICATION,
+    [GoalTag.INTIMACY]: CategoryId.INTIMACY,
+    [GoalTag.TRUST]: CategoryId.TRUST,
+    [GoalTag.PLAYFULNESS]: CategoryId.PLAYFULNESS,
+    [GoalTag.VULNERABILITY]: CategoryId.VULNERABILITY,
+    [GoalTag.FUTURE]: CategoryId.FUTURE,
+    [GoalTag.GRATITUDE]: CategoryId.GRATITUDE,
+    [GoalTag.CONFLICT]: CategoryId.CONFLICT,
+    [GoalTag.LOVE_LANGUAGES]: CategoryId.LOVE_LANGUAGES,
+  };
 
-    // Determine free tier unlocked categories based on goals and living type
-    const unlockedCategories = this.determineFreeCategories(
-      user1.onboardingData?.goals || [],
-      user2.onboardingData?.goals || [],
-      user1.onboardingData?.livingType || [],
-      user2.onboardingData?.livingType || []
-    );
+  const unlocked: string[] = [];
 
-    // Create category states for all 10 categories
-    const categoryStates = Object.values(CategoryId).map((categoryId) => ({
-      coupleId,
-      categoryId,
-      answeredCount: 0,
-      totalQuestions: 180,
-      skippedCount: 0,
-      isComplete: false,
-      unlocked: unlockedCategories.includes(categoryId),
-      lastActivityAt: new Date(),
-    }));
-
-    await CoupleCategoryState.insertMany(categoryStates);
+  // First: unlock based on goals
+  for (const goal of allGoals) {
+    const catId = goalCategoryMap[goal];
+    if (catId && !unlocked.includes(catId)) {
+      unlocked.push(catId);
+      break;
+    }
   }
 
-  /**
-   * Determine which 2 categories are unlocked for free users
-   */
-  private static determineFreeCategories(
-    user1Goals: string[],
-    user2Goals: string[],
-    user1Living: string[],
-    user2Living: string[]
-  ): CategoryId[] {
-    const allGoals = [...user1Goals, ...user2Goals];
-    const allLiving = [...user1Living, ...user2Living];
-
-    // Priority mapping based on goals
-    const goalCategoryMap: Record<string, CategoryId> = {
-      [GoalTag.COMMUNICATION]: CategoryId.COMMUNICATION,
-      [GoalTag.INTIMACY]: CategoryId.INTIMACY,
-      [GoalTag.TRUST]: CategoryId.TRUST,
-      [GoalTag.PLAYFULNESS]: CategoryId.PLAYFULNESS,
-      [GoalTag.VULNERABILITY]: CategoryId.VULNERABILITY,
-      [GoalTag.FUTURE]: CategoryId.FUTURE,
-      [GoalTag.GRATITUDE]: CategoryId.GRATITUDE,
-      [GoalTag.CONFLICT]: CategoryId.CONFLICT,
-      [GoalTag.LOVE_LANGUAGES]: CategoryId.LOVE_LANGUAGES,
-    };
-
-    const unlocked: CategoryId[] = [];
-
-    // First category from goals
-    for (const goal of allGoals) {
-      if (goalCategoryMap[goal]) {
-        unlocked.push(goalCategoryMap[goal]);
-        break;
-      }
+  // Second: kids → playfulness or gratitude
+  if (allLiving.includes(LivingType.KIDS)) {
+    if (!unlocked.includes(CategoryId.PLAYFULNESS)) {
+      unlocked.push(CategoryId.PLAYFULNESS);
+    } else if (!unlocked.includes(CategoryId.GRATITUDE)) {
+      unlocked.push(CategoryId.GRATITUDE);
     }
-
-    // If living with kids, unlock playfulness or gratitude
-    if (allLiving.includes(LivingType.KIDS)) {
-      if (!unlocked.includes(CategoryId.PLAYFULNESS)) {
-        unlocked.push(CategoryId.PLAYFULNESS);
-      } else if (!unlocked.includes(CategoryId.GRATITUDE)) {
-        unlocked.push(CategoryId.GRATITUDE);
-      }
-    }
-
-    // Default fallback: Communication and Intimacy
-    if (unlocked.length < 2) {
-      if (!unlocked.includes(CategoryId.COMMUNICATION)) {
-        unlocked.push(CategoryId.COMMUNICATION);
-      }
-      if (unlocked.length < 2 && !unlocked.includes(CategoryId.INTIMACY)) {
-        unlocked.push(CategoryId.INTIMACY);
-      }
-    }
-
-    return unlocked.slice(0, 2);
   }
+
+  // Fallback: default to Communication + Intimacy
+  if (unlocked.length < 2) {
+    if (!unlocked.includes(CategoryId.COMMUNICATION)) unlocked.push(CategoryId.COMMUNICATION);
+    if (unlocked.length < 2 && !unlocked.includes(CategoryId.INTIMACY)) unlocked.push(CategoryId.INTIMACY);
+  }
+
+  return unlocked.slice(0, 2);
+}
+
+/**
+ * Initialize categories for a new couple based on their onboarding data
+ */
+static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): Promise<void> {
+  console.log(`Initializing categories for couple: ${coupleId}`);
+
+  const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
+  if (!couple) throw new Error('Couple not found');
+
+  const user1 = await User.findById(couple.user1Id);
+  const user2 = await User.findById(couple.user2Id);
+
+  if (!user1 || !user2) throw new Error('One or both users not found');
+
+  // Determine which 2 categories to unlock for free tier
+  const unlockedCategoryIds = this.determineFreeCategoriesForCouple(couple);
+
+  // Get all global categories
+  const allCategories = await Category.find({});
+
+  const categoryStates = allCategories.map((cat) => ({
+    coupleId,
+    categoryId: cat.categoryId,
+    answeredCount: 0,
+    totalQuestions: cat.totalQuestions || 180,
+    skippedCount: 0,
+    isComplete: false,
+    unlocked: unlockedCategoryIds.includes(cat.categoryId),
+    lastActivityAt: new Date(),
+  }));
+
+  await CoupleCategoryState.insertMany(categoryStates);
+
+  console.log(`Initialized ${allCategories.length} categories for couple ${coupleId}`);
+  console.log(`Free unlocked: ${unlockedCategoryIds.join(', ')}`);
+}
+
+// Fixed getCategoryProgress method
 
   /**
    * Get personalization weight for a question based on couple's profile
@@ -488,42 +493,117 @@ export class QuestionServiceEngine {
   /**
    * Skip/refresh a question
    */
-  static async skipQuestion(
-    coupleId: mongoose.Types.ObjectId,
-    userId: mongoose.Types.ObjectId,
-    questionId: string
-  ): Promise<void> {
+static async skipQuestion(
+  coupleId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  questionId: string
+): Promise<{ newQuestion?: any; refreshesRemaining: number }> {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Find current question state
     const questionState = await CoupleQuestionState.findOne({
       coupleId,
       questionId,
-    });
+    }).session(session);
 
     if (!questionState) {
       throw new Error('Question not found');
     }
 
-    // Add to skipped by
+    // Check if already skipped or answered
+    if (questionState.state !== QuestionState.SERVED) {
+      throw new Error('Cannot skip this question');
+    }
+
+    // Get user's entitlement
+    const entitlement = await UserEntitlement.findOne({ userId }).session(session);
+    if (!entitlement) {
+      throw new Error('No entitlement found');
+    }
+
+    // Calculate max refreshes
+    const maxRefreshes = entitlement.getRefreshesForCycle();
+
+    // Count user's skips today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const skipsToday = await CoupleQuestionState.countDocuments({
+      coupleId,
+      skippedBy: userId,
+      updatedAt: { $gte: today },
+    }).session(session);
+
+    if (skipsToday >= maxRefreshes) {
+      throw new Error('No refreshes remaining today');
+    }
+
+    // Mark as skipped by this user
     if (!questionState.skippedBy) questionState.skippedBy = [];
     if (!questionState.skippedBy.includes(userId)) {
       questionState.skippedBy.push(userId);
     }
 
-    // If both skipped
-    if (questionState.skippedBy.length === 2) {
-      questionState.state = QuestionState.SKIPPED_REFRESH;
-      questionState.cooldownEnd = new Date(
-        Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+    // Set to skipped_refresh (even on single skip)
+    questionState.state = QuestionState.SKIPPED_REFRESH;
+    questionState.cooldownEnd = new Date(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
+    await questionState.save({ session });
+
+    // Increment skippedCount for category
+    await CoupleCategoryState.findOneAndUpdate(
+      { coupleId, categoryId: questionState.categoryId },
+      { $inc: { skippedCount: 1 } },
+      { session }
+    );
+
+    // Drop new question in same category
+    const newQuestion = await this.selectNextQuestion(coupleId, questionState.categoryId as CategoryId);
+    
+    let newQuestionData: any | undefined;
+    if (newQuestion) {
+      const couple = await Couple.findById(coupleId).session(session);
+      const rhythmHours = RHYTHM_HOURS[couple?.rhythm || Rhythm.EVERY_DAY];
+      const expiry = new Date(Date.now() + rhythmHours * 60 * 60 * 1000);
+
+      const newState = await CoupleQuestionState.findOneAndUpdate(
+        { coupleId, questionId: newQuestion.questionId },
+        {
+          categoryId: questionState.categoryId,
+          state: QuestionState.SERVED,
+          servedDate: new Date(),
+          expiryTimestamp: expiry,
+          poolOrder: Date.now(),
+        },
+        { upsert: true, new: true, session }
       );
 
-      await CoupleCategoryState.findOneAndUpdate(
-        { coupleId, categoryId: questionState.categoryId },
-        { $inc: { skippedCount: 1 } }
-      );
+      newQuestionData = {
+        questionId: newQuestion.questionId,
+        question: newQuestion.question,
+        categoryId: questionState.categoryId,
+        categoryName: (await Category.findOne({ categoryId: questionState.categoryId }))?.name,
+        difficulty: newQuestion.difficulty,
+        tone: newQuestion.tone,
+        state: newState.state,
+        servedAt: newState.servedDate?.toISOString(),
+        expiresAt: newState.expiryTimestamp?.toISOString(),
+      };
     }
 
-    await questionState.save();
-  }
+    await session.commitTransaction();
 
+    return {
+      newQuestion: newQuestionData,
+      refreshesRemaining: maxRefreshes - (skipsToday + 1),
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+}
   /**
    * Handle expired questions
    */
@@ -582,10 +662,19 @@ export class QuestionServiceEngine {
    */
   static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
     const activeStates = await CoupleQuestionState.find({
-      coupleId,
-      state: { $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] },
-    }).populate('categoryId');
+    coupleId,
+    state: { $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] },
+  })
+  .sort({ servedDate: -1 }) // ← New: newest first
+  .populate('categoryId');
 
+  // Dedup by categoryId - keep only latest per category
+  const uniqueTethers = new Map();
+  for (const state of activeStates) {
+    if (!uniqueTethers.has(state.categoryId)) {
+      uniqueTethers.set(state.categoryId, state);
+    }
+  }
     const tethers = [];
     for (const state of activeStates) {
       const question = await Question.findOne({ questionId: state.questionId });
@@ -620,7 +709,50 @@ export class QuestionServiceEngine {
   /**
    * Get category progress for a couple
    */
-  static async getCategoryProgress(coupleId: mongoose.Types.ObjectId) {
-    return await CoupleCategoryState.find({ coupleId }).sort({ categoryId: 1 });
+  // In QuestionServiceEngine.ts
+
+static async getCategoryProgress(coupleId: mongoose.Types.ObjectId) {
+  // Get all global categories
+  const allCategories = await Category.find({});
+
+  // Get current couple's category states
+  let coupleStates = await CoupleCategoryState.find({ coupleId });
+
+  const existingIds = new Set(coupleStates.map(s => s.categoryId));
+
+  const missingCategories = allCategories.filter(cat => !existingIds.has(cat.categoryId));
+
+  if (missingCategories.length > 0) {
+    console.log(`Syncing ${missingCategories.length} missing categories for couple ${coupleId}`);
+
+    const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
+    if (!couple) throw new Error('Couple not found');
+
+    const unlockedIds = this.determineFreeCategoriesForCouple(couple);
+
+    for (const cat of missingCategories) {
+      await CoupleCategoryState.findOneAndUpdate(
+        { coupleId, categoryId: cat.categoryId },
+        {
+          $setOnInsert: {
+            answeredCount: 0,
+            totalQuestions: cat.totalQuestions || 180,
+            skippedCount: 0,
+            isComplete: false,
+            unlocked: unlockedIds.includes(cat.categoryId),
+            lastActivityAt: new Date(),
+          }
+        },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    
+
+    // Refresh coupleStates
+    coupleStates = await CoupleCategoryState.find({ coupleId });
   }
+
+  return coupleStates;
+}
 }

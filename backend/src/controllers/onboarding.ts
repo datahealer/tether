@@ -2,8 +2,10 @@ import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import CoupleInvite from '../models/CoupleInvite';
 import Couple from '../models/Couple';
+import { UserEntitlement } from '../models/UserEntitlement';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { Tier } from '../questionServiceEngine';
 
 /**
  * Generate a 6-digit invite code
@@ -262,9 +264,26 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     // Update both users with coupleId
     inviter.coupleId = couple._id;
     accepter.coupleId = couple._id;
-    
     await inviter.save();
     await accepter.save();
+
+    // ✅ CREATE USER ENTITLEMENTS FOR BOTH PARTNERS
+    for (const currentUserId of [invite.inviterId, userId]) {
+      const existingEntitlement = await UserEntitlement.findOne({ userId: currentUserId });
+
+      if (!existingEntitlement) {
+        const userDoc = currentUserId.toString() === invite.inviterId.toString() ? inviter : accepter;
+
+        await UserEntitlement.create({
+          userId: currentUserId,
+          tier: userDoc.subscribed ? Tier.PREMIUM : Tier.FREE,
+          refreshesDefault: userDoc.subscribed ? 3 : 1,
+          refreshesPermanent: 0,
+        });
+
+        console.log(`✅ Created UserEntitlement for user ${currentUserId} (tier: ${userDoc.subscribed ? 'PREMIUM' : 'FREE'})`);
+      }
+    }
 
     // Mark invite as accepted
     invite.status = 'accepted';
@@ -276,7 +295,7 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     console.log('📚 Initializing categories for new couple:', couple._id);
     const { QuestionServiceEngine } = await import('../services/questionService');
     await QuestionServiceEngine.initializeCategoriesForCouple(couple._id);
-    
+
     // Drop initial tethers for the couple
     console.log('🎯 Dropping initial tethers for new couple');
     await QuestionServiceEngine.dropTethersForCouple(couple._id, true); // force = true

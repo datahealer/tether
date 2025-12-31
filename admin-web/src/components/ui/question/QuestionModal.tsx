@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X ,Loader} from 'lucide-react';
 import { Question } from '../../../services/question';
+import { categoriesService, Category } from '../../../services/category';
+import { useQuery } from '@tanstack/react-query';
 
 interface QuestionModalProps {
   isOpen: boolean;
@@ -32,14 +34,39 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: categoriesService.getAll,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   useEffect(() => {
     if (question) {
-      setFormData(question);
+      setFormData({
+        question: question.question || '',
+        categoryId: question.categoryId || '',
+        genderFocus: question.genderFocus || 'Neutral',
+        tone: question.tone || 'playful',
+        difficulty: question.difficulty || 3,
+        relationshipStage: question.relationshipStage || [],
+        livingType: question.livingType || [],
+        goalTag: question.goalTag || [],
+        emotionalNeed: question.emotionalNeed || [],
+        formatType: question.formatType || '',
+        contextTag: question.contextTag || '',
+        status: question.status || 'Published',
+        writerNotes: question.writerNotes || '',
+      });
     } else {
+      
+      // Reset form, but keep category empty until loaded
       setFormData({
         question: '',
-        categoryId: 'communication',
+        categoryId: '',
         genderFocus: 'Neutral',
         tone: 'playful',
         difficulty: 3,
@@ -92,18 +119,18 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
 
   if (!isOpen) return null;
 
-  const categories = [
-    'communication',
-    'intimacy',
-    'playfulness',
-    'trust',
-    'love_languages',
-    'future',
-    'vulnerability',
-    'conflict',
-    'erotic',
-    'gratitude',
-  ];
+  // const categories = [
+  //   'communication',
+  //   'intimacy',
+  //   'playfulness',
+  //   'trust',
+  //   'love_languages',
+  //   'future',
+  //   'vulnerability',
+  //   'conflict',
+  //   'erotic',
+  //   'gratitude',
+  // ];
   const genderFocuses = ['Male', 'Female', 'Neutral'];
   const relationshipStages = ['Early', 'Established', 'Long-term', 'Rebuilding'];
   const livingTypes = ['Together', 'Apart, Long Distance', 'Kids', 'No Kids'];
@@ -152,6 +179,11 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
             {error}
           </div>
         )}
+        {categoriesError && (
+          <div className="bg-orange-500/20 border border-orange-500/50 text-orange-200 px-4 py-3 rounded-xl mb-6">
+            Failed to load categories
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Question Text */}
@@ -171,24 +203,33 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
 
           {/* Category and Gender Focus */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-purple-200 text-sm mb-2">Category *</label>
+            {/* Category Dropdown - Dynamic */}
+          <div>
+            <label className="block text-purple-200 text-sm mb-2">Category *</label>
+            {categoriesLoading ? (
+              <div className="flex items-center gap-2 text-purple-200">
+                <Loader className="animate-spin" size={16} />
+                Loading categories...
+              </div>
+            ) : (
               <select
-                value={formData.categoryId}
-                onChange={(e) =>
-                  setFormData({ ...formData, categoryId: e.target.value })
-                }
+                value={formData.categoryId || ''}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
-                disabled={isSubmitting}
+                disabled={isSubmitting || categoriesLoading}
               >
+                <option value="" disabled>
+                  Select a category
+                </option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat} className="bg-slate-800">
-                    {cat}
+                  <option key={cat._id} value={cat.categoryId} className="bg-slate-800">
+                    {cat.name} ({cat.categoryId})
                   </option>
                 ))}
               </select>
-            </div>
+            )}
+          </div>
 
             <div>
               <label className="block text-purple-200 text-sm mb-2">

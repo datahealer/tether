@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   getAllQuestions,
   getQuestionById,
@@ -6,10 +7,12 @@ import {
   updateQuestion,
   deleteQuestion,
   getQuestionStats,
+  importQuestionsFromExcel,
 } from '../../controllers/admin/question';
 import { adminAuth } from '../../middleware/auth';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(adminAuth);
 
@@ -154,5 +157,6 @@ router.get('/stats', getQuestionStats);
 router.get('/:id', getQuestionById);
 router.put('/:id', updateQuestion);
 router.delete('/:id', deleteQuestion);
+router.post('/import', upload.single('file'), importQuestionsFromExcel);
 
 export default router;
