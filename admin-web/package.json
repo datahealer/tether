@@ -37,6 +37,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@hookform/resolvers": "^5.2.0",
     "@nivo/bar": "^0.99.0",
     "@nivo/core": "^0.99.0",

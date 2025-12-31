@@ -10,6 +10,11 @@ import {
   EmotionalNeed,
   Tone,
 } from '../../types/enums';
+import xlsx from 'xlsx'; // Install: npm i xlsx
+import multer from 'multer'; // For file upload; install multer
+import { IQuestion } from '../../types/interfaces';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // @route   GET /api/admin/questions
 // @desc    Get all questions with filters
@@ -308,6 +313,109 @@ export const deleteQuestion = async (req: Request, res: Response): Promise<void>
       message: 'Server error while deleting question',
       error: error.message 
     });
+  }
+};
+
+
+
+
+// Configure multer for memory storage
+
+
+// In router: router.post('/import', upload.single('file'), importQuestionsFromExcel);
+
+export const importQuestionsFromExcel = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const imported: any[] = [];
+
+    // Process each sheet (one per category)
+    for (const sheetName of workbook.SheetNames) {
+      const worksheet = workbook.Sheets[sheetName];
+      const rows: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+      // First row is headers
+      const headers = rows[0] as string[];
+      const dataRows = rows.slice(1);
+
+      for (const row of dataRows) {
+        if (!row[0]) continue; // Skip empty
+
+        const questionData: Partial<IQuestion> = {};
+        headers.forEach((header, idx) => {
+          const value = row[idx]?.toString().trim();
+          if (!value) return;
+
+          switch (header.toLowerCase()) {
+            case 'id':
+              questionData.questionId = value;
+              break;
+            case 'question':
+              questionData.question = value;
+              break;
+            case 'difficulty':
+              const diff = parseInt(value);
+              if ([1, 2, 3, 4, 5].includes(diff)) {
+                questionData.difficulty = diff as 1 | 2 | 3 | 4 | 5;
+              }
+              break;
+            case 'tone':
+              questionData.tone = value;
+              break;
+            case 'gender focus':
+              questionData.genderFocus = value;
+              break;
+            case 'relationship stage':
+              questionData.relationshipStage = value.split(',').map((s: string) => s.trim());
+              break;
+            case 'living type':
+              questionData.livingType = value.split(',').map((s: string) => s.trim());
+              break;
+            case 'goal tag':
+              questionData.goalTag = value.split(',').map((s: string) => s.trim());
+              break;
+            case 'emotional need':
+              questionData.emotionalNeed = value.split(',').map((s: string) => s.trim());
+              break;
+            case 'format type':
+              questionData.formatType = value;
+              break;
+            case 'context tag':
+              questionData.contextTag = value;
+              break;
+            case 'status':
+              questionData.status = value === 'Published' ? 'Published' : 'Draft';
+              break;
+            case 'writer notes':
+              questionData.writerNotes = value;
+              break;
+          }
+        });
+
+        questionData.categoryId = sheetName.toLowerCase() as CategoryId; // Sheet name as category
+
+        // Skip drafts
+        if (questionData.status !== 'Published') continue;
+
+        // Generate ID if missing
+        if (!questionData.questionId) {
+          questionData.questionId = `${sheetName.toUpperCase().slice(0,3)}${Date.now().toString().slice(-6)}`;
+        }
+
+        const newQuestion = new Question(questionData);
+        await newQuestion.save();
+        imported.push(newQuestion);
+      }
+    }
+
+    res.status(201).json({ message: `Imported ${imported.length} questions`, imported });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Failed to import', error: error.message });
   }
 };
 

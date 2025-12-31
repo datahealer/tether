@@ -49,6 +49,7 @@ import subscriptionRoutes from './subscription';
 import profileRoutes from './profile';
 import logsRoutes from './logs';
 import notificationRoutes from './notification';
+import adminCategoryRoutes from './admin/category'
 
 
 const router = Router();
@@ -62,6 +63,7 @@ router.use('/tethers', tetherRoutes);
 // Admin routes (correctly prefixed)
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/questions', adminQuestionRoutes);
+router.use('/admin/categories', adminCategoryRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/profile', profileRoutes);
 router.use('/logs', logsRoutes);

@@ -3,6 +3,7 @@ import { rootRoute } from './__root';
 import { Login } from '../pages/Login';
 import { Signup } from '../pages/Signup';
 import { Dashboard } from '../pages/Dashboard';
+import { CategoryDashboard } from '../pages/CategoryDashboard';
 
 export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -48,10 +49,22 @@ export const dashboardRoute = createRoute({
     }
   },
 });
+export const categoryDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/categories',
+  component: CategoryDashboard,
+  beforeLoad: ({ context }) => {
+    if (!context.auth?.isAuthenticated) {
+      throw redirect({ to: '/login' });
+    }
+  },
+}
+);
 
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   signupRoute,
   dashboardRoute,
+  categoryDashboardRoute
 ]);

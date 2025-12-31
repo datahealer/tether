@@ -132,6 +132,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       case 'COUPLE_INVITE':
         router.push('/onboarding/partner-invite');
         break;
+      case 'PARTNER_REFRESHED':
+        router.push({
+          pathname: data.route || '/home/category-question',
+          params: {
+            categoryId: data.categoryId,
+          },
+        });
+        break;  
 
       default:
         router.push('/home/category-packs');

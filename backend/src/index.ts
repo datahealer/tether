@@ -150,23 +150,33 @@ const initializeServices = async () => {
   try {
     await initializeDatabase();
 
+    // ──────────────────────── FCM Initialization ────────────────────────
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      // Full JSON string in env (rare, but supported)
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       await fcmProvider.initialize({ serviceAccount });
-      console.log('FCM initialized successfully');
+      console.log('FCM initialized from FIREBASE_SERVICE_ACCOUNT env var');
     } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-      await fcmProvider.initialize({ serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH });
-      console.log('FCM initialized successfully');
+      // Recommended way — path to JSON file
+      await fcmProvider.initialize({
+        serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+      });
+      console.log('FCM initialized from file path');
     } else {
-      console.warn('FCM not initialized - FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH not set');
+      console.warn(
+        'No Firebase credentials provided. Notifications will use default credentials (may not work locally).'
+      );
+      // Optional: still initialize with default credentials
+      await fcmProvider.initialize({});
     }
 
+    // Start notification scheduler (only in non-test env)
     if (process.env.NODE_ENV !== 'test') {
       notificationScheduler.start();
     }
   } catch (error) {
     console.error('Service initialization error:', error);
-    throw error;
+    // Don't throw — app can still run without notifications
   }
 };
 

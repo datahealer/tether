@@ -9,6 +9,8 @@ export enum NotificationType {
   BOTH_ANSWERED = 'both_answered',
   COUPLE_INVITE = 'couple_invite',
   SYSTEM = 'system',
+
+  PARTNER_REFRESHED='partner_refreshed'
 }
 
 export enum NotificationStatus {

@@ -12,7 +12,7 @@ const coupleCategoryStateSchema = new Schema<ICoupleCategoryState>(
     },
     categoryId: {
       type: String,
-      enum: Object.values(CategoryId),
+      // enum: Object.values(CategoryId),
       required: true,
       index: true,
     },
