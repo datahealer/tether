@@ -63,7 +63,7 @@
     "jest": "^29.0.0",
     "nodemon": "^3.1.11",
     "prettier": "^3.0.0",
-    "serverless": "^4.29.0",
+    "serverless": "^4.29.3",
     "serverless-dotenv-plugin": "^6.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
