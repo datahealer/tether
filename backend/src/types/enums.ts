@@ -46,6 +46,8 @@ export enum QuestionState {
   UNANSWERED_EXPIRED = 'unanswered_expired',
   WAITING_FOR_PARTNER = 'waiting_for_partner',
   COMPLETED = 'completed',
+  answers = "answers",
+  _id = "_id",
 }
 
 export enum Tier {

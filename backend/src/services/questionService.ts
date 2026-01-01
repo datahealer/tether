@@ -660,52 +660,55 @@ static async skipQuestion(
   /**
    * Get current active tethers for a couple
    */
-  static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
-    const activeStates = await CoupleQuestionState.find({
+  /**
+ * Get current active tethers for a couple
+ */
+static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
+  const activeStates = await CoupleQuestionState.find({
     coupleId,
     state: { $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] },
   })
-  .sort({ servedDate: -1 }) // ← New: newest first
-  .populate('categoryId');
+    .sort({ servedDate: -1 })
+    .populate('categoryId');
 
-  // Dedup by categoryId - keep only latest per category
-  const uniqueTethers = new Map();
+  // Dedup: keep only latest per category
+  const categoryMap = new Map<string, any>();
   for (const state of activeStates) {
-    if (!uniqueTethers.has(state.categoryId)) {
-      uniqueTethers.set(state.categoryId, state);
+    const catId = state.categoryId?.toString() || state.categoryId;
+    if (!categoryMap.has(catId)) {
+      categoryMap.set(catId, state);
     }
   }
-    const tethers = [];
-    for (const state of activeStates) {
-      const question = await Question.findOne({ questionId: state.questionId });
-      if (question) {
-        // Get category name from populated categoryId or fetch from Category collection
-        const categoryDoc = state.categoryId as any;
-        const categoryName = categoryDoc?.name || state.categoryId;
 
-        const firstAnswer = state.answers[0];
-        const secondAnswer = state.answers[1];
+  const tethers = [];
+  for (const state of categoryMap.values()) {
+    const question = await Question.findOne({ questionId: state.questionId });
+    if (!question) continue;
 
-        tethers.push({
-          questionId: question.questionId,
-          question: question.question,
-          categoryId: state.categoryId.toString(),
-          categoryName,
-          difficulty: question.difficulty,
-          tone: question.tone,
-          state: state.state,
-          servedAt: state.servedDate?.toISOString(),
-          expiresAt: state.expiryTimestamp?.toISOString(),
-          userAnswer: firstAnswer?.text,
-          partnerAnswer: secondAnswer?.text,
-          answeredAt: firstAnswer?.timestamp?.toISOString() || secondAnswer?.timestamp?.toISOString(),
-        });
-      }
-    }
+    const categoryDoc = state.categoryId as any;
+    const categoryName = categoryDoc?.name || state.categoryId;
 
-    return tethers;
+    const firstAnswer = state.answers[0];
+    const secondAnswer = state.answers[1];
+
+    tethers.push({
+      questionId: question.questionId,
+      question: question.question,
+      categoryId: state.categoryId.toString(),
+      categoryName,
+      difficulty: question.difficulty,
+      tone: question.tone,
+      state: state.state,
+      servedAt: state.servedDate?.toISOString(),
+      expiresAt: state.expiryTimestamp?.toISOString(),
+      userAnswer: firstAnswer?.text,
+      partnerAnswer: secondAnswer?.text,
+      answeredAt: firstAnswer?.timestamp?.toISOString() || secondAnswer?.timestamp?.toISOString(),
+    });
   }
 
+  return tethers;
+}
   /**
    * Get category progress for a couple
    */

@@ -1,9 +1,9 @@
 import { schedule } from 'node-cron';
-import Notification, { NotificationStatus } from '../../models/Notification';
-import { Tether } from '../../models/Tether';
+import {CoupleQuestionState} from '../../models/CoupleQuestionState';
+import Question from '../../models/Question';
 import Couple from '../../models/Couple';
 import User from '../../models/User';
-import { Rhythm, TetherStatus } from '../../types/enums';
+import { Rhythm } from '../../types/enums';
 import notificationService from './notification.service';
 
 class NotificationScheduler {
@@ -12,7 +12,6 @@ class NotificationScheduler {
   start(): void {
     this.scheduleExpiringReminders();
     this.scheduleGentleReminders();
-    this.schedulePendingNotifications();
     this.scheduleRetryFailed();
     console.log('Notification scheduler started');
   }
@@ -23,6 +22,9 @@ class NotificationScheduler {
     console.log('Notification scheduler stopped');
   }
 
+  /**
+   * Send reminders 1-2 hours before tether expires
+   */
   private scheduleExpiringReminders(): void {
     const job = schedule('0 * * * *', async () => {
       try {
@@ -30,35 +32,30 @@ class NotificationScheduler {
         const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
         const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-        const expiringTethers = await Tether.find({
-          status: { $in: [TetherStatus.ACTIVE, TetherStatus.WAITING_FOR_PARTNER] },
-          expiresAt: {
+        const expiringStates = await CoupleQuestionState.find({
+          state: { $in: ['served', 'waiting_for_partner'] },
+          expiryTimestamp: {
             $gte: oneHourFromNow,
             $lte: twoHoursFromNow,
           },
         }).populate('coupleId');
 
-        for (const tether of expiringTethers) {
-          const couple = tether.coupleId as any;
-          if (!couple) continue;
+        for (const state of expiringStates) {
+          const couple = state.coupleId as any;
+          if (!couple?._id) continue;
 
+          if (!state.expiryTimestamp) continue;
           const hoursRemaining = Math.ceil(
-            (tether.expiresAt.getTime() - now.getTime()) / (60 * 60 * 1000)
+            (state.expiryTimestamp.getTime() - now.getTime()) / (60 * 60 * 1000)
           );
 
-          const existingNotification = await Notification.findOne({
-            tetherId: tether._id,
-            type: 'question_expiring',
-            status: { $in: [NotificationStatus.SENT, NotificationStatus.PENDING] },
-          }).lean();
-
-          if (!existingNotification && couple._id) {
-            await notificationService.sendQuestionExpiringNotification(
-              couple._id.toString(),
-              tether._id.toString(),
-              hoursRemaining
-            );
-          }
+          // Avoid duplicate notifications
+          // (You can add a flag in state if needed, or just send once per expiry window)
+          await notificationService.sendQuestionExpiringNotification(
+            couple._id.toString(),
+            state._id.toString(),
+            hoursRemaining
+          );
         }
       } catch (error) {
         console.error('Error in expiring reminders scheduler:', error);
@@ -68,12 +65,14 @@ class NotificationScheduler {
     this.jobs.push(job);
   }
 
+  /**
+   * Gentle reminders based on rhythm and inactivity
+   */
   private scheduleGentleReminders(): void {
     const job = schedule('0 9,18 * * *', async () => {
       try {
         const couples = await Couple.find({ status: 'active' })
-          .populate('user1Id user2Id')
-          .lean();
+          .populate('user1Id user2Id');
 
         for (const couple of couples) {
           const user1 = couple.user1Id as any;
@@ -81,30 +80,29 @@ class NotificationScheduler {
 
           if (!user1 || !user2) continue;
 
-          const rhythm = user1.onboardingData?.rhythm || user2.onboardingData?.rhythm;
-          if (!rhythm) continue;
+          const rhythm = user1.onboardingData?.rhythm || user2.onboardingData?.rhythm || Rhythm.EVERY_DAY;
 
           const shouldSend = this.shouldSendGentleReminder(rhythm, new Date());
           if (!shouldSend) continue;
 
-          const lastTether = await Tether.findOne({
+          // Find last completed tether
+          const lastCompleted = await CoupleQuestionState.findOne({
             coupleId: couple._id,
-            status: TetherStatus.BOTH_ANSWERED,
+            state: 'completed',
           })
-          .sort({ droppedAt: -1 })
-          .lean();
+            .sort({ updatedAt: -1 });
 
-          if (lastTether) {
-            const daysSinceLastTether = Math.floor(
-              (Date.now() - new Date(lastTether.droppedAt).getTime()) / (24 * 60 * 60 * 1000)
+          if (lastCompleted) {
+            const daysSince = Math.floor(
+              (Date.now() - lastCompleted.updatedAt.getTime()) / (24 * 60 * 60 * 1000)
             );
 
-            if (this.shouldRemindBasedOnRhythm(rhythm, daysSinceLastTether)) {
-              await notificationService.sendGentleReminder(
-                couple._id.toString(),
-                rhythm
-              );
+            if (this.shouldRemindBasedOnRhythm(rhythm, daysSince)) {
+              await notificationService.sendGentleReminder(couple._id.toString(), rhythm);
             }
+          } else {
+            // No completed tethers yet — maybe send a welcome nudge?
+            await notificationService.sendGentleReminder(couple._id.toString(), rhythm);
           }
         }
       } catch (error) {
@@ -115,44 +113,9 @@ class NotificationScheduler {
     this.jobs.push(job);
   }
 
-  private schedulePendingNotifications(): void {
-    const job = schedule('*/5 * * * *', async () => {
-      try {
-        const now = new Date();
-        const pendingNotifications = await Notification.find({
-          status: NotificationStatus.PENDING,
-          scheduledFor: { $lte: now },
-        }).limit(50);
-
-        for (const notification of pendingNotifications) {
-          if (!notification.deviceToken) continue;
-          if (notification.platform === 'web') continue;
-
-          const result = await notificationService['deliverNotification'](
-            notification,
-            notification.deviceToken,
-            notification.platform as 'ios' | 'android'
-          );
-
-          if (result.success) {
-            notification.status = NotificationStatus.SENT;
-            notification.sentAt = new Date();
-          } else {
-            notification.status = NotificationStatus.FAILED;
-            notification.errorMessage = result.error;
-            notification.retryCount = 1;
-          }
-
-          await notification.save();
-        }
-      } catch (error) {
-        console.error('Error in pending notifications scheduler:', error);
-      }
-    });
-
-    this.jobs.push(job);
-  }
-
+  /**
+   * Retry failed notifications every 6 hours
+   */
   private scheduleRetryFailed(): void {
     const job = schedule('0 */6 * * *', async () => {
       try {

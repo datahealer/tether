@@ -1,101 +1,90 @@
 import notificationService from './notification.service';
 import { NotificationType } from '../../models/Notification';
-import { Tether } from '../../models/Tether';
+import {CoupleQuestionState} from '../../models/CoupleQuestionState';
+import Question from '../../models/Question';
 import Couple from '../../models/Couple';
 import User from '../../models/User';
-import { TetherStatus } from '../../types/enums';
 
 export class NotificationTriggers {
-  static async onTetherCreated(coupleId: string, tetherId: string): Promise<void> {
+  /**
+   * Triggered when a user answers a tether
+   * @param questionStateId - The _id of the CoupleQuestionState document
+   */
+  static async onTetherAnswered(questionStateId: string): Promise<void> {
     try {
-      const tether = await Tether.findById(tetherId).populate('question');
-      if (!tether) return;
+      const questionState = await CoupleQuestionState.findById(questionStateId)
+        .populate<{ coupleId: any }>('coupleId');
 
-      const questionText = (tether.question as any)?.question || 'New tether available';
-      await notificationService.sendNewTetherNotification(
+      if (!questionState || questionState.answers.length < 1) return;
+
+      // Only notify when second answer is submitted
+      if (questionState.answers.length !== 2) return;
+
+      const question = await Question.findOne({ questionId: questionState.questionId });
+      if (!question) return;
+
+      const couple = questionState.coupleId;
+      if (!couple) return;
+
+      // Find who just answered (last in answers array)
+      const lastAnswererId = questionState.answers[1].userId;
+      const lastAnswerer = await User.findById(lastAnswererId);
+      const responderName = lastAnswerer?.name || 'Your partner';
+
+      // Find the other partner
+      const otherUserId =
+        couple.user1Id.toString() === lastAnswererId.toString()
+          ? couple.user2Id
+          : couple.user1Id;
+
+      if (!otherUserId) return;
+
+      await notificationService.sendNotification({
+        userId: otherUserId.toString(),
+        type: NotificationType.PARTNER_ANSWERED,
+        title: `${responderName} answered!`,
+        body: 'Your partner has responded to the tether!',
+        data: {
+          type: 'PARTNER_ANSWERED',
+          categoryId: questionState.categoryId,
+          route: '/home/category-question',
+        },
+      });
+
+      console.log(`Sent PARTNER_ANSWERED notification to user ${otherUserId}`);
+    } catch (error) {
+      console.error('Error in onTetherAnswered trigger:', error);
+    }
+  }
+
+  /**
+   * When a new tether is dropped
+   */
+  static async onTetherCreated(coupleId: string, questionStateId: string): Promise<void> {
+    try {
+      const questionState = await CoupleQuestionState.findById(questionStateId);
+      if (!questionState) return;
+
+      const question = await Question.findOne({ questionId: questionState.questionId });
+      if (!question) return;
+
+      await notificationService.sendToCouple(
         coupleId,
-        tetherId,
-        questionText
+        NotificationType.NEW_TETHER,
+        () => ({
+          title: 'New Tether Available! 💬',
+          body: question.question.substring(0, 100) + (question.question.length > 100 ? '...' : ''),
+          data: { categoryId: questionState.categoryId },
+        })
       );
     } catch (error) {
       console.error('Error sending new tether notification:', error);
     }
   }
 
-  static async onTetherAnswered(
-    tetherId: string,
-    userId: string,
-    coupleId: string
-  ): Promise<void> {
-    try {
-      const tether = await Tether.findById(tetherId);
-      if (!tether) return;
-
-      const user = await User.findById(userId);
-      if (!user) return;
-
-      const responderName = user.name || 'Your partner';
-
-      if (tether.status === TetherStatus.WAITING_FOR_PARTNER) {
-        await notificationService.sendPartnerAnsweredNotification(
-          coupleId,
-          tetherId,
-          responderName
-        );
-      } else if (tether.status === TetherStatus.BOTH_ANSWERED) {
-        const couple = await Couple.findById(coupleId);
-        if (couple) {
-          const user1 = await User.findById(couple.user1Id);
-          const user2 = await User.findById(couple.user2Id);
-
-          if (user1 && user1._id.toString() !== userId) {
-            await notificationService.sendNotification({
-              userId: user1._id.toString(),
-              type: NotificationType.BOTH_ANSWERED,
-              title: 'Both Answered!',
-              body: 'You both completed the tether!',
-              data: { tetherId, type: NotificationType.BOTH_ANSWERED },
-              coupleId,
-              tetherId,
-            });
-          }
-
-          if (user2 && user2._id.toString() !== userId) {
-            await notificationService.sendNotification({
-              userId: user2._id.toString(),
-              type: NotificationType.BOTH_ANSWERED,
-              title: 'Both Answered!',
-              body: 'You both completed the tether!',
-              data: { tetherId, type: NotificationType.BOTH_ANSWERED },
-              coupleId,
-              tetherId,
-            });
-          }
-
-          const newStreak = (couple.sharedData?.currentStreak || 0) + 1;
-          if (newStreak === 7 || newStreak === 30 || newStreak === 100) {
-            if (user1) {
-              await notificationService.sendMilestoneNotification(
-                user1._id.toString(),
-                `${newStreak} Day Streak! 🎉`,
-                { streak: newStreak, tetherId }
-              );
-            }
-            if (user2) {
-              await notificationService.sendMilestoneNotification(
-                user2._id.toString(),
-                `${newStreak} Day Streak! 🎉`,
-                { streak: newStreak, tetherId }
-              );
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error sending answer notification:', error);
-    }
-  }
-
+  /**
+   * When couple is formed
+   */
   static async onCoupleCreated(coupleId: string): Promise<void> {
     try {
       const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
@@ -130,6 +119,9 @@ export class NotificationTriggers {
     }
   }
 
+  /**
+   * Milestone achieved
+   */
   static async onMilestone(userId: string, milestone: string, data?: Record<string, any>): Promise<void> {
     try {
       await notificationService.sendMilestoneNotification(userId, milestone, data);

@@ -29,6 +29,7 @@ export interface NotificationData {
 
 class NotificationService {
   private expoPushToken: string | null = null;
+ 
 
   /**
    * Initialize notification service and register device token
