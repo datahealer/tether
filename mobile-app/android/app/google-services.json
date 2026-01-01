@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "245843988276",
+    "project_id": "tether-b3366",
+    "storage_bucket": "tether-b3366.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245843988276:android:9cba7e9b2ddf41e1b85f61",
+        "android_client_info": {
+          "package_name": "com.tether.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhDUgT3MoOdOjTgABiVbaEtMErasVZJ0E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
