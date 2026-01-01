@@ -40,4 +40,29 @@ app-example
 
 # generated native folders
 /ios
-/android
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/gradle/
+/android/settings.gradle
+/android/gradlew.bat
+/android/app/src
+/android/app/build.gradle
+/android/app/debug.keystore
+/android/app/proguard-rules.pro
+/android/.gitignore
+/android/build.gradle
+/android/gradle.properties
+/android/gradlew
+
+
+/android/.idea
+
+local.properties
+/android/*.iml
+*.hprof
+/android/.cxx
+
+
+# But allow google-services.json
+!/android/app/google-services.json
