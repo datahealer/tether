@@ -39,7 +39,7 @@ router.post('/trial/start', startTrial);
  * @swagger
  * /api/subscription/subscribe:
  *   post:
- *     summary: Subscribe to a plan
+ *     summary: Subscribe to a premium plan
  *     tags: [Subscription]
  *     security:
  *       - bearerAuth: []
@@ -54,11 +54,26 @@ router.post('/trial/start', startTrial);
  *             properties:
  *               planId:
  *                 type: string
+ *                 description: RevenueCat plan identifier
  *     responses:
  *       200:
  *         description: Subscription successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Subscription'
+ *       400:
+ *         description: Invalid plan ID or subscription error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/subscribe', subscribeToPlan);
 
@@ -90,15 +105,34 @@ router.get('/status', getSubscriptionStatus);
  * @swagger
  * /api/subscription/cancel:
  *   post:
- *     summary: Cancel subscription
+ *     summary: Cancel active subscription
  *     tags: [Subscription]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Subscription cancelled
+ *         description: Subscription cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: No active subscription to cancel
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/cancel', cancelSubscription);
 

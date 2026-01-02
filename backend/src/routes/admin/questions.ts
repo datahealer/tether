@@ -157,6 +157,59 @@ router.get('/stats', getQuestionStats);
 router.get('/:id', getQuestionById);
 router.put('/:id', updateQuestion);
 router.delete('/:id', deleteQuestion);
+
+/**
+ * @swagger
+ * /api/admin/questions/import:
+ *   post:
+ *     summary: Import questions from Excel file
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Excel file (.xlsx) containing questions
+ *     responses:
+ *       200:
+ *         description: Questions imported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 imported:
+ *                   type: number
+ *                   description: Number of questions imported
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Any errors encountered during import
+ *       400:
+ *         description: Invalid file format or missing file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/import', upload.single('file'), importQuestionsFromExcel);
 
 export default router;

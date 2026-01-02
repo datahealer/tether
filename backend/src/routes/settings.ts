@@ -39,11 +39,34 @@ router.patch('/push-token', authMiddleware, updatePushToken);
  *     tags: [Settings]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               gentleReminders:
+ *                 type: boolean
+ *               milestoneAlerts:
+ *                 type: boolean
+ *               newTetherAlerts:
+ *                 type: boolean
  *     responses:
  *       200:
- *         description: Notification settings updated
+ *         description: Notification settings updated (coming soon)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.patch('/notifications', authMiddleware, (req, res) => {
   res.json({ message: 'Coming soon' });

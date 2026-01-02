@@ -591,6 +591,110 @@ const swaggerDefinition = {
           },
         },
       },
+      Category: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+          },
+          categoryId: {
+            type: 'string',
+            enum: ['communication', 'intimacy', 'playfulness', 'trust', 'love_languages', 'future', 'vulnerability', 'conflict', 'erotic', 'gratitude'],
+          },
+          name: {
+            type: 'string',
+          },
+          colorCode: {
+            type: 'string',
+            description: 'Hex color code',
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+          },
+          totalQuestions: {
+            type: 'number',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+          },
+        },
+      },
+      CategoryProgress: {
+        type: 'object',
+        properties: {
+          coupleId: {
+            type: 'string',
+          },
+          categoryId: {
+            type: 'string',
+          },
+          categoryName: {
+            type: 'string',
+          },
+          colorCode: {
+            type: 'string',
+          },
+          answeredCount: {
+            type: 'number',
+          },
+          totalQuestions: {
+            type: 'number',
+          },
+          skippedCount: {
+            type: 'number',
+          },
+          isComplete: {
+            type: 'boolean',
+          },
+          unlocked: {
+            type: 'boolean',
+          },
+          unlockExpiry: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+          },
+          lastActivityAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+          },
+        },
+      },
+      CoupleStats: {
+        type: 'object',
+        properties: {
+          currentStreak: {
+            type: 'number',
+            description: 'Current consecutive days streak',
+          },
+          totalCompleted: {
+            type: 'number',
+            description: 'Total tethers completed',
+          },
+          lastTetherDate: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+          },
+          milestones: {
+            type: 'array',
+            items: {
+              type: 'object',
+            },
+          },
+          rhythm: {
+            type: 'string',
+            enum: ['Every day', 'A few times a week', 'Once a week', "We'll decide as we go"],
+          },
+        },
+      },
     },
   },
 };

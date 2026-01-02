@@ -120,7 +120,109 @@ router.put('/', authMiddleware, updateProfile);
 router.post('/photo', authMiddleware, upload.single('photo'), uploadProfilePhoto);
 router.delete('/photo', authMiddleware, deleteProfilePhoto);
 
-// FCM Token routes for push notifications
+/**
+ * @swagger
+ * /api/profile/fcm-token:
+ *   post:
+ *     summary: Register FCM token for push notifications
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - platform
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Firebase Cloud Messaging token
+ *               platform:
+ *                 type: string
+ *                 enum: [ios, android]
+ *                 description: Platform of the device
+ *     responses:
+ *       200:
+ *         description: FCM token registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request (missing token or platform)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   delete:
+ *     summary: Unregister FCM token (on logout)
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Firebase Cloud Messaging token to unregister
+ *     responses:
+ *       200:
+ *         description: FCM token unregistered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request (missing token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/fcm-token', authMiddleware, registerFCMToken);
 router.delete('/fcm-token', authMiddleware, unregisterFCMToken);
 
