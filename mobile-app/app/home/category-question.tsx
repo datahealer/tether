@@ -533,7 +533,52 @@ export default function CategoryQuestionScreen() {
       }
     } catch (error: any) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error.message || 'Failed to draw new question');
+      
+      // Handle specific skip errors gracefully
+      const errorCode = error.response?.data?.error;
+      
+      if (errorCode === 'ALREADY_ANSWERED') {
+        Alert.alert(
+          'Already Answered',
+          'You\'ve already answered this question. Waiting for your partner to respond.',
+          [
+            { text: 'View History', onPress: () => router.push('/home/tether-history') },
+            { text: 'OK', onPress: () => router.back(), style: 'cancel' },
+          ]
+        );
+      } else if (errorCode === 'ALREADY_COMPLETED') {
+        Alert.alert(
+          'Already Completed',
+          'This question has been answered by both of you!',
+          [
+            { text: 'View History', onPress: () => router.push('/home/tether-history') },
+            { text: 'OK', onPress: () => router.back(), style: 'cancel' },
+          ]
+        );
+      } else if (errorCode === 'ALREADY_SKIPPED') {
+        Alert.alert(
+          'Already Skipped',
+          'You\'ve already skipped this question. A new one should be available.',
+          [{ text: 'Refresh', onPress: () => loadActiveTethers(true) }]
+        );
+      } else if (errorCode === 'NO_REFRESHES') {
+        Alert.alert(
+          'No Refreshes Left',
+          'You\'ve used all your refreshes for today. Upgrade to Premium for more!',
+          [
+            { text: 'Upgrade', onPress: () => router.push('/home/draw-locked-upsell') },
+            { text: 'OK', style: 'cancel' },
+          ]
+        );
+      } else if (errorCode === 'QUESTION_NOT_FOUND') {
+        Alert.alert(
+          'Question Unavailable',
+          'This question is no longer available. Let\'s get you a fresh one!',
+          [{ text: 'OK', onPress: () => loadActiveTethers(true) }]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to draw new question');
+      }
     } finally {
       setIsSkipping(false);
     }
@@ -582,7 +627,26 @@ export default function CategoryQuestionScreen() {
       }
     } catch (error: any) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error.message || 'Failed to submit answer');
+      
+      // Handle 'already answered' error gracefully
+      if (error.response?.data?.error === 'ALREADY_ANSWERED') {
+        const data = error.response.data.data;
+        const previousAnswer = data?.userAnswer || 'your previous response';
+        const partnerStatus = data?.partnerAnswer 
+          ? `\n\nYour partner said: "${data.partnerAnswer}"`
+          : '\n\nWaiting for your partner to respond...';
+        
+        Alert.alert(
+          'Already Answered',
+          `You already answered this question.\n\nYour answer: "${previousAnswer}"${partnerStatus}`,
+          [
+            { text: 'View History', onPress: () => router.push('/home/tether-history') },
+            { text: 'OK', onPress: () => router.back(), style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to submit answer');
+      }
     }
   };
 

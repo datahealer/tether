@@ -62,11 +62,12 @@ export const getActiveTethers = async (req: Request, res: Response) => {
  * Submit an answer
  */
 export const submitAnswer = async (req: Request, res: Response) => {
+  const userId = req.user?._id;
+  const { questionId, answer } = req.body;
+  
   try {
-    const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { questionId, answer } = req.body;
     if (!questionId || !answer) return res.status(400).json({ message: 'questionId and answer required' });
 
     const user = await User.findById(userId);
@@ -127,6 +128,54 @@ export const submitAnswer = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error submitting answer:', error);
+    
+    // Handle 'already answered' case gracefully
+    if (error.message === 'Already answered this question') {
+      try {
+        // Fetch the existing answer to return to the user
+        const user = await User.findById(userId);
+        if (!user?.coupleId) {
+          return res.status(404).json({ message: 'Not in a couple' });
+        }
+        
+        const questionState = await CoupleQuestionState.findOne({
+          coupleId: user.coupleId,
+          questionId,
+        });
+        
+        if (!userId) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const userAnswer = questionState?.answers.find(
+          (a) => a.userId.toString() === userId.toString()
+        );
+        
+        const partnerAnswer = questionState?.answers.find(
+          (a) => a.userId.toString() !== userId.toString()
+        );
+        
+        return res.status(409).json({
+          success: false,
+          error: 'ALREADY_ANSWERED',
+          message: 'You have already answered this question',
+          data: {
+            state: questionState?.state,
+            userAnswer: userAnswer?.text,
+            partnerAnswer: partnerAnswer?.text,
+            answeredAt: userAnswer?.timestamp,
+          },
+        });
+      } catch (fetchError) {
+        console.error('Error fetching answer details:', fetchError);
+        return res.status(409).json({
+          success: false,
+          error: 'ALREADY_ANSWERED',
+          message: 'You have already answered this question',
+        });
+      }
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to submit answer',
@@ -138,11 +187,12 @@ export const submitAnswer = async (req: Request, res: Response) => {
  * Skip/refresh a tether
  */
 export const skipTether = async (req: Request, res: Response) => {
+  const userId = req.user?._id;
+  const { questionId } = req.body;
+  
   try {
-    const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { questionId } = req.body;
     if (!questionId) return res.status(400).json({ message: 'questionId required' });
 
     const user = await User.findById(userId);
@@ -166,7 +216,103 @@ export const skipTether = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     console.error('Skip tether error:', error);
-    res.status(500).json({ message: error.message || 'Failed to skip tether' });
+    
+    // Handle specific skip errors gracefully
+    if (error.message === 'Cannot skip this question') {
+      try {
+        const user = await User.findById(userId);
+        if (!user?.coupleId) {
+          return res.status(404).json({ message: 'Not in a couple' });
+        }
+        
+        // Get the question state to provide context
+        const questionState = await CoupleQuestionState.findOne({
+          coupleId: user.coupleId,
+          questionId,
+        });
+        
+        if (!questionState) {
+          return res.status(404).json({
+            success: false,
+            error: 'QUESTION_NOT_FOUND',
+            message: 'This question is no longer available',
+          });
+        }
+        
+        // Provide specific feedback based on state
+        if (questionState.state === QuestionState.COMPLETED) {
+          return res.status(409).json({
+            success: false,
+            error: 'ALREADY_COMPLETED',
+            message: 'This question has already been answered by both of you',
+            data: {
+              state: questionState.state,
+            },
+          });
+        } else if (questionState.state === QuestionState.WAITING_FOR_PARTNER) {
+          return res.status(409).json({
+            success: false,
+            error: 'ALREADY_ANSWERED',
+            message: 'You\'ve already answered this question. Waiting for your partner to respond.',
+            data: {
+              state: questionState.state,
+            },
+          });
+        } else if (questionState.state === QuestionState.SKIPPED_REFRESH) {
+          return res.status(409).json({
+            success: false,
+            error: 'ALREADY_SKIPPED',
+            message: 'This question has already been skipped',
+            data: {
+              state: questionState.state,
+            },
+          });
+        }
+        
+        // Generic fallback
+        return res.status(409).json({
+          success: false,
+          error: 'CANNOT_SKIP',
+          message: 'This question cannot be skipped at this time',
+          data: {
+            state: questionState.state,
+          },
+        });
+      } catch (fetchError) {
+        console.error('Error fetching skip details:', fetchError);
+        return res.status(409).json({
+          success: false,
+          error: 'CANNOT_SKIP',
+          message: 'This question cannot be skipped at this time',
+        });
+      }
+    }
+    
+    // Handle no refreshes remaining
+    if (error.message === 'No refreshes remaining today') {
+      return res.status(429).json({
+        success: false,
+        error: 'NO_REFRESHES',
+        message: 'You\'ve used all your refreshes for today',
+        data: {
+          refreshesRemaining: 0,
+        },
+      });
+    }
+    
+    // Handle question not found
+    if (error.message === 'Question not found') {
+      return res.status(404).json({
+        success: false,
+        error: 'QUESTION_NOT_FOUND',
+        message: 'This question is no longer available',
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to skip tether'
+    });
   }
 };
 

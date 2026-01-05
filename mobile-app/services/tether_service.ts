@@ -121,9 +121,19 @@ export async function submitAnswer(
       const errorText = await response.text();
       console.error('API Error:', response.status, errorText);
       try {
-        const error = JSON.parse(errorText);
-        throw new Error(error.message || 'Failed to submit answer');
-      } catch {
+        const errorData = JSON.parse(errorText);
+        
+        // Create error object with response data for special handling
+        const error: any = new Error(errorData.message || 'Failed to submit answer');
+        error.response = {
+          status: response.status,
+          data: errorData,
+        };
+        throw error;
+      } catch (parseError: any) {
+        // If we already threw above, re-throw it
+        if (parseError.response) throw parseError;
+        // Otherwise generic error
         throw new Error(`Server error: ${response.status}`);
       }
     }
@@ -158,9 +168,19 @@ export async function skipTether(
       const errorText = await response.text();
       console.error('API Error:', response.status, errorText);
       try {
-        const error = JSON.parse(errorText);
-        throw new Error(error.message || 'Failed to skip tether');
-      } catch {
+        const errorData = JSON.parse(errorText);
+        
+        // Create error object with response data for special handling
+        const error: any = new Error(errorData.message || 'Failed to skip tether');
+        error.response = {
+          status: response.status,
+          data: errorData,
+        };
+        throw error;
+      } catch (parseError: any) {
+        // If we already threw above, re-throw it
+        if (parseError.response) throw parseError;
+        // Otherwise generic error
         throw new Error(`Server error: ${response.status}`);
       }
     }
