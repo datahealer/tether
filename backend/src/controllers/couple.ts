@@ -323,6 +323,15 @@ export const joinCouple = async (req: Request, res: Response) => {
       },
       { $set: { status: 'expired' } }
     );
+    
+    // Send couple creation notifications
+    try {
+      const { NotificationTriggers } = await import('../services/notification/triggers');
+      await NotificationTriggers.onCoupleCreated(couple._id.toString());
+      console.log('📲 Sent couple creation notifications');
+    } catch (notifError) {
+      console.error('Error sending couple creation notifications:', notifError);
+    }
 
     res.json({
       success: true,

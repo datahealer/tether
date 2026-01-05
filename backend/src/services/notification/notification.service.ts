@@ -3,6 +3,7 @@ import Couple from '../../models/Couple';
 import Notification, { NotificationType, NotificationStatus, INotification } from '../../models/Notification';
 import { Platform, Rhythm } from '../../types/enums';
 import fcmProvider from './providers/fcm.provider';
+import expoProvider from './providers/expo.provider';
 
 interface SendNotificationOptions {
   userId: string;
@@ -236,22 +237,40 @@ class NotificationService {
     platform: 'ios' | 'android'
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const result = await fcmProvider.sendNotification(
-        token,
-        notification.title,
-        notification.body,
-        notification.data
-      );
+      // Detect if token is an Expo Push Token
+      const isExpoToken = /^Expo(nent)?PushToken\[.+\]$/.test(token);
+      
+      let result: { success: boolean; messageId?: string; error?: string };
+      
+      if (isExpoToken) {
+        console.log(`📱 Sending via Expo Push: ${token.substring(0, 30)}...`);
+        result = await expoProvider.sendNotification(
+          token,
+          notification.title,
+          notification.body,
+          notification.data
+        );
+      } else {
+        console.log(`🔥 Sending via FCM: ${token.substring(0, 30)}...`);
+        result = await fcmProvider.sendNotification(
+          token,
+          notification.title,
+          notification.body,
+          notification.data
+        );
+      }
 
       if (!result.success) {
-        if (result.error === 'INVALID_TOKEN') {
+        if (result.error === 'INVALID_TOKEN' || result.error?.includes('INVALID_TOKEN')) {
           await this.removeInvalidToken(notification.userId.toString(), token, platform);
         }
         return { success: false, error: result.error };
       }
 
+      console.log(`✅ Notification sent successfully: ${result.messageId}`);
       return { success: true };
     } catch (error: any) {
+      console.error('❌ Notification delivery error:', error);
       return { success: false, error: error.message };
     }
   }

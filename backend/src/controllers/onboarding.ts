@@ -300,6 +300,15 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     console.log('🎯 Dropping initial tethers for new couple');
     await QuestionServiceEngine.dropTethersForCouple(couple._id, true); // force = true
     console.log('✅ New couple setup complete!');
+    
+    // Send couple creation notifications
+    try {
+      const { NotificationTriggers } = await import('../services/notification/triggers');
+      await NotificationTriggers.onCoupleCreated(couple._id.toString());
+      console.log('📲 Sent couple creation notifications');
+    } catch (notifError) {
+      console.error('Error sending couple creation notifications:', notifError);
+    }
 
     res.status(200).json({
       success: true,

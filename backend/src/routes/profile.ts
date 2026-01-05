@@ -9,6 +9,7 @@ import {
   registerFCMToken,
   unregisterFCMToken,
 } from '../controllers/profile';
+import notificationService from '../services/notification/notification.service';
 
 const router = Router();
 
@@ -123,5 +124,28 @@ router.delete('/photo', authMiddleware, deleteProfilePhoto);
 // FCM Token routes for push notifications
 router.post('/fcm-token', authMiddleware, registerFCMToken);
 router.delete('/fcm-token', authMiddleware, unregisterFCMToken);
+
+router.post('/test-notification', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as any).user.userId;
+    
+    await notificationService.sendNotification({
+      userId,
+      type: 'new_tether' as any,
+      title: 'New Tether Question!',
+      body: "You've got a new Intimacy question to answer",
+      data: {
+        categoryId: 'intimacy',
+        tetherQuestion: 'test_question_id',
+      },
+    });
+
+    res.json({ message: 'Test notification sent' });
+  } catch (error) {
+    console.error('Test notification error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
+  }
+});
 
 export default router;

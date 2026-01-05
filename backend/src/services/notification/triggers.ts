@@ -17,8 +17,8 @@ export class NotificationTriggers {
 
       if (!questionState || questionState.answers.length < 1) return;
 
-      // Only notify when second answer is submitted
-      if (questionState.answers.length !== 2) return;
+      // Only notify when FIRST answer is submitted (so partner knows to answer)
+      if (questionState.answers.length !== 1) return;
 
       const question = await Question.findOne({ questionId: questionState.questionId });
       if (!question) return;
@@ -26,14 +26,14 @@ export class NotificationTriggers {
       const couple = questionState.coupleId;
       if (!couple) return;
 
-      // Find who just answered (last in answers array)
-      const lastAnswererId = questionState.answers[1].userId;
-      const lastAnswerer = await User.findById(lastAnswererId);
-      const responderName = lastAnswerer?.name || 'Your partner';
+      // Find who just answered (first in answers array)
+      const answererUserId = questionState.answers[0].userId;
+      const answerer = await User.findById(answererUserId);
+      const responderName = answerer?.name || 'Your partner';
 
-      // Find the other partner
+      // Find the other partner (who hasn't answered yet)
       const otherUserId =
-        couple.user1Id.toString() === lastAnswererId.toString()
+        couple.user1Id.toString() === answererUserId.toString()
           ? couple.user2Id
           : couple.user1Id;
 
@@ -42,18 +42,19 @@ export class NotificationTriggers {
       await notificationService.sendNotification({
         userId: otherUserId.toString(),
         type: NotificationType.PARTNER_ANSWERED,
-        title: `${responderName} answered!`,
-        body: 'Your partner has responded to the tether!',
+        title: `${responderName} answered! 💬`,
+        body: 'Your partner has responded to the tether. Share your thoughts too!',
         data: {
           type: 'PARTNER_ANSWERED',
           categoryId: questionState.categoryId,
+          questionId: questionState.questionId,
           route: '/home/category-question',
         },
       });
 
-      console.log(`Sent PARTNER_ANSWERED notification to user ${otherUserId}`);
+      console.log(`✅ Sent PARTNER_ANSWERED notification to user ${otherUserId}`);
     } catch (error) {
-      console.error('Error in onTetherAnswered trigger:', error);
+      console.error('❌ Error in onTetherAnswered trigger:', error);
     }
   }
 
@@ -127,6 +128,44 @@ export class NotificationTriggers {
       await notificationService.sendMilestoneNotification(userId, milestone, data);
     } catch (error) {
       console.error('Error sending milestone notification:', error);
+    }
+  }
+
+  /**
+   * When both partners have answered a tether
+   */
+  static async onBothAnswered(questionStateId: string): Promise<void> {
+    try {
+      const questionState = await CoupleQuestionState.findById(questionStateId)
+        .populate<{ coupleId: any }>('coupleId');
+
+      if (!questionState || questionState.answers.length !== 2) return;
+
+      const couple = questionState.coupleId;
+      if (!couple) return;
+
+      const question = await Question.findOne({ questionId: questionState.questionId });
+      if (!question) return;
+
+      // Notify both partners that they've both completed the tether
+      await notificationService.sendToCouple(
+        couple._id.toString(),
+        NotificationType.BOTH_ANSWERED,
+        () => ({
+          title: 'Tether Complete! 🎉',
+          body: 'You both answered! Tap to see what your partner said.',
+          data: {
+            type: 'BOTH_ANSWERED',
+            categoryId: questionState.categoryId,
+            questionId: questionState.questionId,
+            route: '/home/category-question',
+          },
+        })
+      );
+
+      console.log(`✅ Sent BOTH_ANSWERED notification for question ${questionState.questionId}`);
+    } catch (error) {
+      console.error('❌ Error in onBothAnswered trigger:', error);
     }
   }
 }

@@ -145,41 +145,29 @@ export const sendCoupleNotification = async (
   data?: Record<string, any>
 ): Promise<void> => {
   try {
-    const couple = await Couple.findById(coupleId);
-    if (!couple) return;
-
-    const user1 = await User.findById(couple.user1Id);
-    const user2 = await User.findById(couple.user2Id);
-
-    const users = [user1, user2].filter((u) => u !== null);
-
-    // Send notifications to both users
-    for (const user of users) {
-      if (!user) continue;
-
-      // Check notification preferences
-      const prefs = user.notificationPreferences;
-      
-      // Different notification types
-      const isMilestone = data?.type === 'milestone';
-      const isNewTether = data?.type === 'new_tether';
-      const isReminder = data?.type === 'reminder';
-
-      if (isMilestone && !prefs.milestoneAlerts) continue;
-      if (isNewTether && !prefs.newTetherAlerts) continue;
-      if (isReminder && !prefs.gentleReminders) continue;
-
-      // Send to FCM tokens
-      if (user.fcmTokens && user.fcmTokens.length > 0) {
-        // TODO: Implement actual FCM sending
-        console.log(`Sending notification to ${user.email}:`, {
-          title,
-          body,
-          tokens: user.fcmTokens,
-          data,
-        });
-      }
+    // Use the proper notification service
+    const notificationService = (await import('../services/notification/notification.service')).default;
+    const { NotificationType } = await import('../models/Notification');
+    
+    // Determine notification type
+    let notificationType = NotificationType.SYSTEM;
+    if (data?.type === 'milestone') {
+      notificationType = NotificationType.MILESTONE;
+    } else if (data?.type === 'new_tether') {
+      notificationType = NotificationType.NEW_TETHER;
+    } else if (data?.type === 'reminder') {
+      notificationType = NotificationType.GENTLE_REMINDER;
     }
+    
+    await notificationService.sendToCouple(
+      coupleId.toString(),
+      notificationType,
+      () => ({ title, body, data }),
+      undefined,
+      data
+    );
+    
+    console.log(`✅ Sent couple notification: ${title}`);
   } catch (error) {
     console.error('Error sending couple notification:', error);
   }

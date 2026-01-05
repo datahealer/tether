@@ -349,6 +349,18 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
         servedDate: createdState.servedDate,
       });
       
+      // Send notification to both partners
+      try {
+        const { NotificationTriggers } = await import('./notification/triggers');
+        await NotificationTriggers.onTetherCreated(
+          coupleId.toString(),
+          createdState._id.toString()
+        );
+        console.log(`📲 Sent NEW_TETHER notification for ${question.questionId}`);
+      } catch (notifError) {
+        console.error('Error sending new tether notification:', notifError);
+      }
+      
       droppedCount++;
     }
 
@@ -487,6 +499,36 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
     }
 
     await couple.save();
+    
+    // Send milestone notifications
+    if (achievedMilestones.length > 0) {
+      try {
+        const { NotificationTriggers } = await import('./notification/triggers');
+        const user1 = couple.user1Id;
+        const user2 = couple.user2Id;
+        
+        for (const milestone of achievedMilestones) {
+          if (user1) {
+            await NotificationTriggers.onMilestone(
+              user1.toString(),
+              milestone.message,
+              { count: milestone.count, type: 'tether_milestone' }
+            );
+          }
+          if (user2) {
+            await NotificationTriggers.onMilestone(
+              user2.toString(),
+              milestone.message,
+              { count: milestone.count, type: 'tether_milestone' }
+            );
+          }
+          console.log(`🏆 Sent milestone notification for ${milestone.count} tethers`);
+        }
+      } catch (notifError) {
+        console.error('Error sending milestone notifications:', notifError);
+      }
+    }
+    
     return achievedMilestones;
   }
 

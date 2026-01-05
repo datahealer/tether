@@ -58,6 +58,9 @@ export const getActiveTethers = async (req: Request, res: Response) => {
 /**
  * Submit an answer
  */
+/**
+ * Submit an answer
+ */
 export const submitAnswer = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
@@ -69,6 +72,19 @@ export const submitAnswer = async (req: Request, res: Response) => {
     const user = await User.findById(userId);
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
+    // Get question state BEFORE submitting to know how many answers existed
+    const questionStateBefore = await CoupleQuestionState.findOne({
+      coupleId: user.coupleId,
+      questionId,
+    });
+
+    if (!questionStateBefore) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    const answerCountBefore = questionStateBefore.answers.length;
+
+    // Submit the answer
     const result = await QuestionServiceEngine.submitAnswer(
       user.coupleId,
       userId,
@@ -76,17 +92,30 @@ export const submitAnswer = async (req: Request, res: Response) => {
       answer
     );
 
-    // Find the updated question state to get _id
-    const questionState = await CoupleQuestionState.findOne({
+    // Get the updated question state
+    const questionStateAfter = await CoupleQuestionState.findOne({
       coupleId: user.coupleId,
       questionId,
     });
 
-    if (questionState && questionState.answers.length === 2) {
-      // Trigger notification when both have answered
-      NotificationTriggers.onTetherAnswered(questionState._id.toString()).catch(err => {
-        console.error('Failed to trigger answer notification:', err);
-      });
+    if (!questionStateAfter) {
+      return res.status(500).json({ message: 'Failed to retrieve updated question state' });
+    }
+
+    // Fire appropriate notification based on transition
+    try {
+      if (answerCountBefore === 0) {
+        // First answer → notify the partner that you answered
+        await NotificationTriggers.onTetherAnswered(questionStateAfter._id.toString());
+        console.log('Triggered PARTNER_ANSWERED notification');
+      } else if (answerCountBefore === 1) {
+        // Second answer → both completed → notify both
+        await NotificationTriggers.onBothAnswered(questionStateAfter._id.toString());
+        console.log('Triggered BOTH_ANSWERED notification');
+      }
+    } catch (notificationError) {
+      console.error('Failed to send answer notification:', notificationError);
+      // Don't fail the whole request if notification fails
     }
 
     res.json({
@@ -98,7 +127,10 @@ export const submitAnswer = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error submitting answer:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to submit answer' });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to submit answer',
+    });
   }
 };
 

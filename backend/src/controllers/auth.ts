@@ -347,6 +347,8 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
+    console.log('🔑 Google Login - Access Token:', newAccessToken);
+
     res.status(200).json({
       success: true,
       accessToken: newAccessToken,
@@ -402,6 +404,8 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
     
     // Store refresh token
     await user.addRefreshToken(refreshToken);
+
+    console.log('🔑 Apple Login - Access Token:', accessToken);
 
     res.status(200).json({
       success: true,
@@ -544,7 +548,8 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
-    console.log('✅ Email signup successful:', email);
+    console.log('✅ Email login successful:', email);
+    console.log('🔑 Login - Access Token:', accessToken);
 
     res.status(201).json({
       success: true,
@@ -562,7 +567,7 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
       },
     });
   } catch (error: any) {
-    console.error('❌ Email signup error:', error);
+    console.error('❌ Email login error:', error);
     res.status(500).json({
       error: error.message || 'Failed to login',
     });
@@ -607,6 +612,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     await user.addRefreshToken(newRefreshToken);
 
     console.log('✅ Token refreshed for user:', user.email);
+    console.log('🔑 Refreshed - Access Token:', newAccessToken);
 
     res.status(200).json({
       success: true,
