@@ -70,38 +70,38 @@ export const CategoryDashboard: React.FC = () => {
        <div className="flex gap-8">
     <Link
       to="/dashboard"
-      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
-      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl font-semibold transition-colors"
     >
       Questions
     </Link>
     <Link
       to="/categories"
-      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
-      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl font-semibold transition-colors"
     >
       Categories
     </Link>
   </div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Category Management</h1>
-          <p className="text-purple-200">Create and manage relationship categories</p>
-        </div>
+      <div className="flex items-center justify-between">
+       
         <button 
     onClick={() => setShowModal(true)}
-    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+    className="bg-[#FF7E3D] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
   >
     <Plus size={20} />
     Add Category
   </button>
       </div>
       </div>
-
+ <div className='mb-4'>
+          <h1 className="text-3xl font-bold text-[#1F2935] mb-2">Category Management</h1>
+          <p className="text-[#1F2935]">Create and manage relationship categories</p>
+        </div>
       {error && (
-        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl mb-6">
+        <div className="bg-red-500/20 border border-red-500/50 text-red-800 px-4 py-3 rounded-xl mb-6">
           Failed to load categories
         </div>
       )}

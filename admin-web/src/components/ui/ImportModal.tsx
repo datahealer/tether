@@ -46,10 +46,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-white/20 rounded-2xl p-8 max-w-md w-full">
+      <div className="bg-white border border-white/20 rounded-2xl p-8 max-w-md w-full">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Import Questions from Excel</h2>
-          <button onClick={onClose} className="text-white hover:bg-white/10 p-2 rounded-lg">
+          <h2 className="text-2xl font-bold text-[#1F2935]">Import Questions from Excel</h2>
+          <button onClick={onClose} className="text-[#1F2935] hover:bg-white/10 p-2 rounded-lg">
             <X size={24} />
           </button>
         </div>
@@ -62,15 +62,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
 
         <div className="space-y-6">
           <div
-            className="border-2 border-dashed border-white/30 rounded-xl p-8 text-center hover:border-purple-500 transition-colors"
+            className="border-2 border-dashed border-[#FF7E3D] rounded-xl p-8 text-center hover:border-purple-500 transition-colors"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
               if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
             }}
           >
-            <Upload size={48} className="mx-auto text-purple-300 mb-4" />
-            <p className="text-purple-200 mb-2">Drop Excel file here or click to browse</p>
+            <Upload size={48} className="mx-auto text-[#FF7E3D] mb-4" />
+            <p className="text-[#626262] mb-2">Drop Excel file here or click to browse</p>
             <input
               type="file"
               accept=".xlsx,.xls"
@@ -80,17 +80,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             />
             <label
               htmlFor="excel-upload"
-              className="cursor-pointer inline-block px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20"
+              className="cursor-pointer inline-block px-6 py-3  border border-[#FF7E3D] bg-white/10 rounded-xl text-[#1F2935] hover:bg-white/20"
             >
               Choose File
             </label>
-            {file && <p className="mt-4 text-purple-200">{file.name}</p>}
+            {file && <p className="mt-4 text-[#626262]">{file.name}</p>}
           </div>
 
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20"
+              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-[#1F2935] hover:bg-white/20"
               disabled={uploading}
             >
               Cancel
@@ -98,7 +98,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             <button
               onClick={handleImport}
               disabled={!file || uploading}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-[#FF7E3D] text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 flex items-center gap-2"
             >
               {uploading ? 'Importing...' : 'Import Questions'}
             </button>
