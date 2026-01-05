@@ -178,7 +178,7 @@ const [showImportModal, setShowImportModal] = useState(false);
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader className="animate-spin text-purple-400" size={48} />
+          <Loader className="animate-spin text-[#FF7E3D]" size={48} />
         </div>
       </DashboardLayout>
     );
@@ -191,16 +191,16 @@ const [showImportModal, setShowImportModal] = useState(false);
   <div className="flex gap-8">
     <Link
       to="/dashboard"
-      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
-      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl font-semibold transition-colors"
     >
       Questions
     </Link>
     <Link
       to="/categories"
-      activeProps={{ className: 'text-darkOrange border-b-2 border-darkOrange pb-2' }}
-      inactiveProps={{ className: 'text-white/70 hover:text-white' }}
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl font-semibold transition-colors"
     >
       Categories
@@ -208,7 +208,7 @@ const [showImportModal, setShowImportModal] = useState(false);
   </div>
    <button
           onClick={handleAddQuestion}
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/50"
+          className="flex items-center gap-2 bg-[#FF7E3D] text-white px-6 py-3 rounded-xl font-medium"
         >
           <Plus size={20} />
           Add Question
@@ -216,13 +216,13 @@ const [showImportModal, setShowImportModal] = useState(false);
         </div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Question Dashboard</h1>
-          <p className="text-purple-200">Manage and analyze your question bank</p>
+          <h1 className="text-3xl font-bold text-[#1F2935] mb-2">Question Dashboard</h1>
+          <p className="text-[#626262]">Manage and analyze your question bank</p>
         </div>
        
        <button
   onClick={() => setShowImportModal(true)}
-  className="flex items-center gap-2 bg-white/10 border border-white/20 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-all"
+  className="flex items-center gap-2 bg-[#FF7E3D] text-white px-6 py-3 rounded-xl hover:bg-white/20 hover:border hover:border-[#FF7E3D] hover:text-[#FF7E3D] transition-all"
 >
   <Upload size={20} />
   Import Excel
@@ -265,8 +265,8 @@ const [showImportModal, setShowImportModal] = useState(false);
       />
 
       {/* Pagination */}
-      <div className="flex items-center justify-between bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4">
-        <p className="text-purple-200">
+      <div className="flex items-center justify-between bg-white border border-white/10 rounded-2xl px-6 py-4">
+        <p className="text-[#626262]">
           Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
           {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of{' '}
           {filteredQuestions.length} questions
@@ -275,7 +275,7 @@ const [showImportModal, setShowImportModal] = useState(false);
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-[#1F2935] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
           >
             Previous
           </button>
@@ -287,8 +287,8 @@ const [showImportModal, setShowImportModal] = useState(false);
                 onClick={() => setCurrentPage(page)}
                 className={`px-4 py-2 rounded-lg transition-all ${
                   currentPage === page
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                    ? 'bg-[#FF7E3D] text-white border border-[#FF7E3D]'
+                    : 'bg-white/10 border border-white/20 text-[#1F2935] hover:bg-white/20'
                 }`}
               >
                 {page}
@@ -298,7 +298,7 @@ const [showImportModal, setShowImportModal] = useState(false);
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-[#1F2935] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
           >
             Next
           </button>

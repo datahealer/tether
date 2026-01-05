@@ -64,14 +64,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-gradient-to-br from-slate-900 to-purple-900 border border-white/20 rounded-2xl p-8 max-w-lg w-full my-8">
+      <div className="bg-white border border-[#626262] rounded-2xl p-8 max-w-lg w-full my-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-[#1F2935]">
             {category ? 'Edit Category' : 'Add New Category'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-[#1F2935]"
             type="button"
             disabled={isSubmitting}
           >
@@ -88,12 +88,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Category Name *</label>
+            <label className="block text-[#626262] text-sm mb-2">Category Name *</label>
             <input
               type="text"
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="e.g. Communication"
               required
               disabled={isSubmitting}
@@ -102,26 +102,26 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
           {/* Color Picker */}
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Brand Color *</label>
+            <label className="block text-[#626262] text-sm mb-2">Brand Color *</label>
             <div className="flex items-center gap-4">
               <input
                 type="color"
                 value={formData.colorCode}
                 onChange={(e) => setFormData({ ...formData, colorCode: e.target.value })}
-                className="w-20 h-12 rounded-lg cursor-pointer border border-white/20"
+                className="w-20 h-12 rounded-lg cursor-pointer border border-[#626262]"
                 disabled={isSubmitting}
               />
               <input
                 type="text"
                 value={formData.colorCode}
                 onChange={(e) => setFormData({ ...formData, colorCode: e.target.value })}
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-mono"
+                className="flex-1 bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] font-mono"
                 placeholder="#FF7E3D"
                 disabled={isSubmitting}
               />
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <span className="text-purple-200 text-sm">Preview:</span>
+              <span className="text-[#626262] text-sm">Preview:</span>
               <div
                 className="w-16 h-16 rounded-xl shadow-lg"
                 style={{ backgroundColor: formData.colorCode }}
@@ -131,11 +131,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Description (Optional)</label>
+            <label className="block text-[#626262] text-sm mb-2">Description (Optional)</label>
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] resize-none"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D] min-h-[100px] resize-none"
               placeholder="Short description shown in app..."
               disabled={isSubmitting}
             />
@@ -146,7 +146,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all disabled:opacity-50"
+              className="px-6 py-3 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
               disabled={isSubmitting}
             >
               Cancel
@@ -154,7 +154,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>

@@ -35,14 +35,15 @@ export const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF4E2] to-[#FF9E6D]
+ flex items-center justify-center p-4">
+      <div className="bg-white border border-gray-100 shadow-lg rounded-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#FF7E3D] rounded-2xl mb-4">
             <UserPlus size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-purple-200">Join the admin dashboard</p>
+          <h1 className="text-3xl font-bold text-[#1F2935] mb-2">Create Account</h1>
+          <p className="text-[#626262]">Join the admin dashboard</p>
         </div>
 
         {error && (
@@ -53,36 +54,36 @@ export const Signup: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Name</label>
+            <label className="block text-[#626262] text-sm mb-2">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white/10 border border-[#D0C5BC] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="John Doe"
               required
             />
           </div>
 
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Email</label>
+            <label className="block text-[#626262] text-sm mb-2">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white/10 border border-[#D0C5BC] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="admin@tether.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Password</label>
+            <label className="block text-[#626262] text-sm mb-2">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white/10 border border-[#D0C5BC] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="••••••••"
               required
               minLength={6}
@@ -90,12 +91,12 @@ export const Signup: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-purple-200 text-sm mb-2">Confirm Password</label>
+            <label className="block text-[#626262] text-sm mb-2">Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white/10 border border-[#D0C5BC] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="••••••••"
               required
             />
@@ -104,15 +105,15 @@ export const Signup: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#FF7E3D] text-white py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-purple-200 mt-6">
+        <p className="text-center text-[#626262] mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-purple-400 hover:text-purple-300 font-medium">
+          <Link to="/login" className="text-[#FF7E3D] font-semibold ">
             Sign in
           </Link>
         </p>
