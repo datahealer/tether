@@ -53,7 +53,7 @@ export const QuestionsTable: React.FC<QuestionsTableProps> = ({
                   {q.question}
                 </td>
                 <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-purple-500/20 text-purple-800 rounded-lg text-sm">
+                  <span className="px-3 py-1 bg-[#626262]-500/20 text-[#626262]-800 rounded-lg text-sm">
                     {q.categoryId}
                   </span>
                 </td>

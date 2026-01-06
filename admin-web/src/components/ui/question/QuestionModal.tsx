@@ -194,7 +194,7 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
             <textarea
               value={formData.question}
               onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#626262] min-h-[100px]"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#626262] min-h-[100px]"
               placeholder="Enter question text..."
               required
               disabled={isSubmitting}
@@ -414,14 +414,14 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
             <textarea
               value={formData.writerNotes}
               onChange={(e) => setFormData({ ...formData, writerNotes: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#626262] min-h-[80px]"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#626262] min-h-[80px]"
               placeholder="Optional notes for writers..."
               disabled={isSubmitting}
             />
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-white/10 sticky bg-[#FFF4E2] bottom-0  pb-4">
+          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-white/10 pb-4">
             <button
               type="button"
               onClick={onClose}
@@ -432,7 +432,7 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-[#FF7E3D] text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-[#FF7E3D] text-white rounded-xl font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

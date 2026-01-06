@@ -105,7 +105,7 @@ export const Signup: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#FF7E3D] text-white py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#FF7E3D] text-white py-3 rounded-xl font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-[#626262]-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>

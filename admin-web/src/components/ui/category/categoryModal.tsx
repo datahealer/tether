@@ -93,7 +93,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               type="text"
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="e.g. Communication"
               required
               disabled={isSubmitting}
@@ -135,7 +135,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D] min-h-[100px] resize-none"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D] min-h-[100px] resize-none"
               placeholder="Short description shown in app..."
               disabled={isSubmitting}
             />
@@ -154,7 +154,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
