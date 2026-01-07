@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Purchase from '../models/Purchase';
+import { getRevenueCatService } from '../services/revenuecat/revenuecat.service';
 
 // Helper function to get userId
 const getUserId = (req: Request): string | undefined => {
@@ -73,6 +74,52 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
     user.subscribed = true;
     await user.save();
 
+    // Update UserEntitlement to TRIAL tier for both partners in the couple
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const { Tier } = await import('../questionServiceEngine');
+    const Couple = (await import('../models/Couple')).default;
+
+    if (user.coupleId) {
+      const couple = await Couple.findById(user.coupleId);
+      if (couple) {
+        const partnerIds = [couple.user1Id, couple.user2Id];
+        
+        for (const partnerId of partnerIds) {
+          const entitlement = await UserEntitlement.findOne({ userId: partnerId });
+          if (entitlement) {
+            entitlement.tier = Tier.TRIAL;
+            entitlement.refreshesDefault = 3; // Premium/trial users get 3 refreshes
+            await entitlement.save();
+            console.log(`✅ Updated entitlement to TRIAL for user ${partnerId}`);
+          } else {
+            await UserEntitlement.create({
+              userId: partnerId,
+              tier: Tier.TRIAL,
+              refreshesDefault: 3,
+              refreshesPermanent: 0,
+            });
+            console.log(`✅ Created TRIAL entitlement for user ${partnerId}`);
+          }
+        }
+      }
+    } else {
+      // No couple yet, just update this user's entitlement
+      const entitlement = await UserEntitlement.findOne({ userId: user._id });
+      if (entitlement) {
+        entitlement.tier = Tier.TRIAL;
+        entitlement.refreshesDefault = 3;
+        await entitlement.save();
+      } else {
+        await UserEntitlement.create({
+          userId: user._id,
+          tier: Tier.TRIAL,
+          refreshesDefault: 3,
+          refreshesPermanent: 0,
+        });
+      }
+      console.log(`✅ Updated/created TRIAL entitlement for user ${user._id}`);
+    }
+
     console.log('✅ Trial started for user:', user.email);
 
     res.status(200).json({
@@ -102,9 +149,24 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
 
 /**
  * POST /api/subscription/subscribe
- * Subscribe to a paid plan
+ * [DEPRECATED] Subscribe to a paid plan
+ * 
+ * ⚠️ THIS ENDPOINT IS DEPRECATED
+ * Users must subscribe through the mobile app using RevenueCat SDK.
+ * Real payments are processed through App Store/Google Play.
+ * Backend receives webhook notifications from RevenueCat.
  */
 export const subscribeToPlan = async (req: Request, res: Response): Promise<void> => {
+  // Return 410 Gone - Endpoint deprecated
+  res.status(410).json({
+    error: 'This endpoint is deprecated',
+    message: 'Please use in-app purchases through the mobile app. Subscriptions are now handled via RevenueCat SDK.',
+    documentation: 'See PAYMENT_INTEGRATION_ACTION_PLAN.md for implementation details',
+  });
+  return;
+  
+  /* ORIGINAL IMPLEMENTATION DISABLED FOR SECURITY
+  // This allowed users to subscribe without actual payment - SECURITY RISK
   try {
     const userId = getUserId(req);
     const { planType, purchaseToken } = req.body;
@@ -131,19 +193,43 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       yearly: {
         amount: 44.99,
         duration: 365,
+        productId: 'premium_yearly',
       },
       monthly: {
         amount: 6.49,
         duration: 30,
+        productId: 'premium_monthly',
       },
     };
 
     const plan = planDetails[planType as 'yearly' | 'monthly'];
+    
+    // Process through RevenueCat if purchaseToken provided
+    let revenueCatData = null;
+    if (purchaseToken) {
+      try {
+        const revenueCat = getRevenueCatService();
+        revenueCatData = await revenueCat.processPurchase({
+          app_user_id: userId,
+          product_id: plan.productId,
+          price: plan.amount * 100,
+          currency: 'USD',
+          store: user.platform === 'ios' ? 'app_store' : 'play_store',
+          transaction_id: purchaseToken,
+          period: planType === 'yearly' ? 'P1Y' : 'P1M',
+        });
+      } catch (error: any) {
+        console.error('RevenueCat purchase processing error:', error);
+        res.status(400).json({
+          error: 'Failed to validate purchase with RevenueCat',
+          details: error.message,
+        });
+        return;
+      }
+    }
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + plan.duration);
-
-    // TODO: Validate purchaseToken with app store/play store
-    // For now, we'll assume validation is successful
 
     // Create purchase record
     const purchase = await Purchase.create({
@@ -156,6 +242,11 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       expiresAt,
       autoRenew: true,
       purchaseToken,
+      ...(revenueCatData && {
+        revenueCatTransactionId: purchaseToken,
+        revenueCatProductId: plan.productId,
+        revenueCatStore: user.platform === 'ios' ? 'app_store' : 'play_store',
+      }),
     });
 
     // Update user subscription status
@@ -187,6 +278,7 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       error: error.message || 'Failed to subscribe',
     });
   }
+  */
 };
 
 /**

@@ -591,6 +591,38 @@ const swaggerDefinition = {
           },
         },
       },
+      RevenueCatUser: {
+        type: 'object',
+        properties: {
+          request_id: {
+            type: 'string',
+          },
+          subscriber: {
+            type: 'object',
+            properties: {
+              entitlements: {
+                type: 'object',
+                additionalProperties: true,
+              },
+              subscriptions: {
+                type: 'object',
+                additionalProperties: true,
+              },
+              first_seen: {
+                type: 'string',
+                format: 'date-time',
+              },
+              last_seen: {
+                type: 'string',
+                format: 'date-time',
+              },
+              original_app_user_id: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
     },
   },
 };

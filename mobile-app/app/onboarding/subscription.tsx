@@ -325,7 +325,7 @@
 //     color: Colors.darkOrange,
 //   },
 // });
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -340,7 +340,15 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { useAuth } from '@/context/auth_context';
-import { startTrial, subscribeToPlan, getAvailablePlans } from '../../services/subscription';
+import {
+  initializeRevenueCat,
+  getSubscriptionPackages,
+  purchaseSubscription,
+  startTrial,
+  getAvailablePlans,
+  checkRevenueCatSubscription,
+} from '../../services/subscription';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 type PlanType = 'yearly' | 'monthly' | 'trial';
 
@@ -349,8 +357,37 @@ export default function SubscriptionScreen() {
   const { user, signIn } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('yearly');
   const [isLoading, setIsLoading] = useState(false);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const plans = getAvailablePlans();
+
+  // Initialize RevenueCat on mount
+  useEffect(() => {
+    initializeRevenueCatSDK();
+  }, []);
+
+  const initializeRevenueCatSDK = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Initializing RevenueCat...');
+      await initializeRevenueCat(user.id);
+      
+      // Load available packages
+      const availablePackages = await getSubscriptionPackages();
+      setPackages(availablePackages);
+      setIsInitialized(true);
+      
+      console.log('✅ RevenueCat initialized with', availablePackages.length, 'packages');
+    } catch (error) {
+      console.error('Failed to initialize RevenueCat:', error);
+      Alert.alert(
+        'Setup Error',
+        'Failed to load subscription options. Please try again later.'
+      );
+    }
+  };
 
   const handleSelectPlan = (planId: PlanType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -401,39 +438,82 @@ export default function SubscriptionScreen() {
       return;
     }
 
+    if (!isInitialized) {
+      Alert.alert('Not Ready', 'Subscription service is still loading. Please wait...');
+      return;
+    }
+
     try {
       setIsLoading(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // TODO: Integrate with in-app purchases
-      // For now, we'll simulate the purchase
-      Alert.alert(
-        'Payment Required',
-        'In-app purchase integration coming soon!',
-        [
-          {
-            text: 'Use Trial Instead',
-            onPress: handleStartTrial,
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
+      console.log(`🚀 Subscribing to ${selectedPlan} plan...`);
+      
+      // Find the corresponding package from RevenueCat
+      const packageToPurchase = packages.find(pkg => {
+        const identifier = pkg.product.identifier;
+        return selectedPlan === 'yearly' 
+          ? identifier.includes('yearly') 
+          : identifier.includes('monthly');
+      });
 
-      // When actual IAP is integrated:
-      // const purchaseToken = await requestPurchase(selectedPlan);
-      // const response = await subscribeToPlan(selectedPlan, purchaseToken);
-      // Update user context and navigate
+      if (!packageToPurchase) {
+        throw new Error(`No ${selectedPlan} package available. Please contact support.`);
+      }
+
+      console.log('📦 Purchasing package:', packageToPurchase.product.identifier);
+      
+      // Purchase through App Store/Play Store via RevenueCat SDK
+      const result = await purchaseSubscription(packageToPurchase);
+      
+      if (result.success && result.isPremium) {
+        console.log('✅ Purchase successful!');
+        
+        // Update user context
+        if (user) {
+          await signIn({
+            ...user,
+            subscribed: true,
+          });
+        }
+
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        Alert.alert(
+          'Welcome to Premium! 🎉',
+          `You now have access to all premium features!`,
+          [
+            {
+              text: 'Get Started',
+              onPress: () => router.replace('/home/category-packs'),
+            },
+          ]
+        );
+      }
 
     } catch (error: any) {
       console.error('❌ Subscribe error:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
+      // Check if user cancelled
+      if (error.message === 'Purchase cancelled') {
+        // User cancelled - no alert needed
+        return;
+      }
+      
       Alert.alert(
-        'Error',
-        error.message || 'Failed to subscribe. Please try again.'
+        'Purchase Failed',
+        error.message || 'Failed to complete purchase. Please try again.',
+        [
+          {
+            text: 'Try Trial Instead',
+            onPress: handleStartTrial,
+          },
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]
       );
     } finally {
       setIsLoading(false);

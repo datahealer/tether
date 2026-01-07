@@ -39,28 +39,17 @@ router.post('/trial/start', startTrial);
  * @swagger
  * /api/subscription/subscribe:
  *   post:
- *     summary: Subscribe to a plan
+ *     deprecated: true
+ *     summary: [DEPRECATED] Subscribe to a plan - Use RevenueCat SDK in mobile app
  *     tags: [Subscription]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - planId
- *             properties:
- *               planId:
- *                 type: string
  *     responses:
- *       200:
- *         description: Subscription successful
- *       401:
- *         description: Unauthorized
+ *       410:
+ *         description: Endpoint deprecated - Use in-app purchases via RevenueCat SDK
  */
-router.post('/subscribe', subscribeToPlan);
+// DISABLED: Users must use RevenueCat SDK for real payments
+// router.post('/subscribe', subscribeToPlan);
 
 /**
  * @swagger

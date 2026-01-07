@@ -51,6 +51,7 @@ import logsRoutes from './logs';
 import notificationRoutes from './notification';
 import adminCategoryRoutes from './admin/category'
 
+import revenueCatRoutes from './revenuecat';
 
 const router = Router();
 
@@ -68,6 +69,7 @@ router.use('/subscription', subscriptionRoutes);
 router.use('/profile', profileRoutes);
 router.use('/logs', logsRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/revenuecat', revenueCatRoutes);
 
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

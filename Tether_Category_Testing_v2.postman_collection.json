@@ -1,0 +1,371 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Tether - Category Unlocking Tests",
+    "description": "Test category scoring and unlocking based on onboarding data",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Scenario 1: Long Distance + Communication Focus",
+      "item": [
+        {
+          "name": "1. Partner 1 - Sign Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('TOKEN_P1', jsonData.accessToken);",
+                  "    pm.environment.set('USER_ID_P1', jsonData.user.id);",
+                  "    console.log('✅ Partner 1 signed up, token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"partner1_{{$timestamp}}@test.com\",\n  \"password\": \"Test123!\",\n  \"name\": \"Alice Smith\",\n  \"platform\": \"ios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/signup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Partner 1 - Update Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\",\n  \"partnerFirstName\": \"Bob\",\n  \"dateOfBirth\": \"1995-06-15\",\n  \"gender\": \"Female\",\n  \"relationshipStatus\": \"dating\",\n  \"relationshipDuration\": \"1-3-years\",\n  \"livingType\": [\"Long distance\"],\n  \"hasChildren\": false,\n  \"goals\": [\"communication\", \"trust\", \"intimacy\"],\n  \"emotionalNeeds\": [\"Love & Security\", \"Belonging\"],\n  \"rhythm\": \"Every day\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/update",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "update"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Partner 1 - Generate Invite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('INVITE_CODE', jsonData.invite.code);",
+                  "    console.log('✅ Invite code: ' + jsonData.invite.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/invite/generate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "invite", "generate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Partner 2 - Sign Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('TOKEN_P2', jsonData.accessToken);",
+                  "    pm.environment.set('USER_ID_P2', jsonData.user.id);",
+                  "    console.log('✅ Partner 2 signed up, token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"partner2_{{$timestamp}}@test.com\",\n  \"password\": \"Test123!\",\n  \"name\": \"Bob Johnson\",\n  \"platform\": \"ios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/signup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Partner 2 - Update Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Bob\",\n  \"partnerFirstName\": \"Alice\",\n  \"dateOfBirth\": \"1994-09-22\",\n  \"gender\": \"Male\",\n  \"relationshipStatus\": \"dating\",\n  \"relationshipDuration\": \"1-3-years\",\n  \"livingType\": [\"Long distance\"],\n  \"hasChildren\": false,\n  \"goals\": [\"communication\", \"vulnerability\"],\n  \"emotionalNeeds\": [\"Love & Security\", \"Growth\"],\n  \"rhythm\": \"Every day\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/update",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "update"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Partner 2 - Accept Invite (Creates Couple)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('COUPLE_ID', jsonData.couple.id);",
+                  "    console.log('✅ Couple created! ID: ' + jsonData.couple.id);",
+                  "    console.log('🔍 Check server logs for category scores!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"{{INVITE_CODE}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/invite/accept",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "invite", "accept"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7. Partner 1 - Start Trial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/subscription/trial/start",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "subscription", "trial", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8. Partner 1 - Complete Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/complete",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9. Partner 2 - Complete Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P2}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/onboarding/complete",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "onboarding", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10. Verify Category Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/tethers/categories/progress",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tethers", "categories", "progress"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11. Get Active Tethers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN_P1}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/tethers/active",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tethers", "active"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

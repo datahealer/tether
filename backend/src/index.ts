@@ -75,6 +75,7 @@ import { swaggerSpec } from './config/swagger';
 import { morganFormat } from './utils/logger';
 import notificationScheduler from './services/notification/scheduler';
 import fcmProvider from './services/notification/providers/fcm.provider';
+import { initializeRevenueCat } from './services/revenuecat/revenuecat.service';
 
 dotenv.config({ path: `./config/env/${process.env.NODE_ENV || 'development'}.env` });
 
@@ -115,7 +116,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.use('/api', router);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
@@ -155,28 +157,41 @@ const initializeServices = async () => {
       // Full JSON string in env (rare, but supported)
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       await fcmProvider.initialize({ serviceAccount });
-      console.log('FCM initialized from FIREBASE_SERVICE_ACCOUNT env var');
+      console.log('✅ FCM initialized from FIREBASE_SERVICE_ACCOUNT env var');
     } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
       // Recommended way — path to JSON file
       await fcmProvider.initialize({
         serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
       });
-      console.log('FCM initialized from file path');
+      console.log('✅ FCM initialized from file path');
     } else {
       console.warn(
-        'No Firebase credentials provided. Notifications will use default credentials (may not work locally).'
+        '⚠️  No Firebase credentials provided. Notifications will use default credentials (may not work locally).'
       );
       // Optional: still initialize with default credentials
       await fcmProvider.initialize({});
     }
 
-    // Start notification scheduler (only in non-test env)
+    // ──────────────────────── RevenueCat Initialization ────────────────────────
+    if (process.env.REVENUECAT_API_KEY) {
+      initializeRevenueCat({
+        apiKey: process.env.REVENUECAT_API_KEY,
+        sandbox: process.env.REVENUECAT_SANDBOX === 'true',
+      });
+      console.log('✅ RevenueCat initialized successfully');
+      console.log(`   Mode: ${process.env.REVENUECAT_SANDBOX === 'true' ? 'SANDBOX' : 'PRODUCTION'}`);
+    } else {
+      console.warn('⚠️  RevenueCat not initialized - REVENUECAT_API_KEY not set');
+    }
+
+    // ──────────────────────── Notification Scheduler ────────────────────────
     if (process.env.NODE_ENV !== 'test') {
       notificationScheduler.start();
+      console.log('✅ Notification scheduler started');
     }
   } catch (error) {
-    console.error('Service initialization error:', error);
-    // Don't throw — app can still run without notifications
+    console.error('❌ Service initialization error:', error);
+    // Don't throw — app can still run without some services
   }
 };
 
