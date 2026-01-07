@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/auth";
-import { useNavigate } from "@tanstack/react-router";
-import { LogOut, ChevronDown } from "lucide-react";
+import { useNavigate,Link } from "@tanstack/react-router";
+import { LogOut, ChevronDown,User } from "lucide-react";
 import LogoIcon from "../../assets/logo.png";
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -67,10 +67,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {/* Dropdown Menu */}
               {profileOpen && (
                 <div className="absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-black/5 z-50">
-                  <ul className="py-2 text-sm text-[#1F2935] hover:bg-red-50 ">
+                  <ul className="py-2 text-sm text-[#1F2935] ">
+                    <li>
+    <Link
+      to="/profile"
+      className="px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100"
+    >
+      <User size={16} />
+      Profile
+    </Link>
+  </li>
+                    
                     <li
                       onClick={handleLogout}
-                      className="px-4 py-2 text-red-600 cursor-pointer flex items-center gap-2"
+                      className="px-4 py-2 text-red-600 cursor-pointer flex items-center gap-2 hover:bg-red-100"
                     >
                       <LogOut size={16} />
                       Logout

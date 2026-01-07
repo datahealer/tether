@@ -4,6 +4,8 @@ import { Login } from '../pages/Login';
 import { Signup } from '../pages/Signup';
 import { Dashboard } from '../pages/Dashboard';
 import { CategoryDashboard } from '../pages/CategoryDashboard';
+import { ForgotPassword } from '../pages/ForgotPasword';
+import { Profile } from '../pages/Profile';
 
 export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -49,6 +51,27 @@ export const dashboardRoute = createRoute({
     }
   },
 });
+export const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/forgot-password',
+  component: ForgotPassword,
+  beforeLoad: ({ context }) => {
+    // Redirect to dashboard if already authenticated
+    if (context.auth?.isAuthenticated) {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
+});
+export const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  component: Profile,
+  beforeLoad: ({ context }) => {
+    if (!context.auth?.isAuthenticated) {
+      throw redirect({ to: '/login' });
+    }
+  },
+});
 export const categoryDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/categories',
@@ -59,6 +82,8 @@ export const categoryDashboardRoute = createRoute({
     }
   },
 }
+
+
 );
 
 export const routeTree = rootRoute.addChildren([
@@ -66,5 +91,7 @@ export const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   dashboardRoute,
+  forgotPasswordRoute,
+  profileRoute,
   categoryDashboardRoute
 ]);

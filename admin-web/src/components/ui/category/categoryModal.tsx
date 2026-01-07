@@ -121,7 +121,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               />
                  <div className="mt-3">
                   <div
-                className="w-12 h-12 rounded-xl shadow-lg"
+                className="w-12 h-12 rṇounded-xl shadow-lg"
                 style={{ backgroundColor: formData.colorCode }}
               />
               <span className="text-[#626262] text-sm">Preview:</span>
