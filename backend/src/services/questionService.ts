@@ -693,11 +693,27 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
     const couple = await Couple.findById(coupleId);
     if (!couple) return [];
 
+    // Ensure sharedData is initialized
+    if (!couple.sharedData) {
+      couple.sharedData = {
+        currentStreak: 0,
+        totalTethersCompleted: 0,
+        milestoneRecords: [],
+      };
+      console.log('⚠️ Initialized missing sharedData for couple:', coupleId);
+    }
+
     const now = new Date();
     const bothAnsweredBeforeExpiry = now <= expiryTimestamp;
 
     // Update total completed
     couple.sharedData.totalTethersCompleted += 1;
+    
+    console.log('✅ Updated couple stats:', {
+      coupleId,
+      totalCompleted: couple.sharedData.totalTethersCompleted,
+      currentStreak: couple.sharedData.currentStreak,
+    });
 
     // Update streak
     if (bothAnsweredBeforeExpiry) {

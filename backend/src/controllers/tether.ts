@@ -425,13 +425,30 @@ export const getCoupleStats = async (req: Request, res: Response) => {
     const couple = await Couple.findById(user.coupleId);
     if (!couple) return res.status(404).json({ message: 'Couple not found' });
 
+    // Ensure sharedData is initialized
+    if (!couple.sharedData) {
+      couple.sharedData = {
+        currentStreak: 0,
+        totalTethersCompleted: 0,
+        milestoneRecords: [],
+      };
+      await couple.save();
+      console.log('⚠️ Initialized missing sharedData for couple:', couple._id);
+    }
+
+    console.log('📊 Couple stats:', {
+      coupleId: couple._id,
+      totalCompleted: couple.sharedData.totalTethersCompleted,
+      currentStreak: couple.sharedData.currentStreak,
+    });
+
     res.json({
       success: true,
       stats: {
-        currentStreak: couple.sharedData.currentStreak,
-        totalCompleted: couple.sharedData.totalTethersCompleted,
+        currentStreak: couple.sharedData.currentStreak || 0,
+        totalCompleted: couple.sharedData.totalTethersCompleted || 0,
         lastTetherDate: couple.sharedData.lastTetherDate,
-        milestones: couple.sharedData.milestoneRecords,
+        milestones: couple.sharedData.milestoneRecords || [],
         rhythm: couple.rhythm,
       },
     });
@@ -450,13 +467,83 @@ export const initializeCoupleCategories = async (req: Request, res: Response) =>
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const user = await User.findById(userId);
-    if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
+    if (!user || !user.coupleId) return res.status(400).json({ message: 'Not in a couple' });
 
     await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
 
     res.json({ success: true, message: 'Categories initialized successfully' });
   } catch (error: any) {
     console.error('Error initializing categories:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to initialize categories' });
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get tether history (completed and expired tethers)
+ */
+export const getTetherHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const user = await User.findById(userId);
+    if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
+
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = parseInt(req.query.skip as string) || 0;
+
+    // Get completed tethers (where both partners answered)
+    const completedTethers = await CoupleQuestionState.find({
+      coupleId: user.coupleId,
+      state: QuestionState.COMPLETED,
+    })
+      .sort({ 'answers.1.timestamp': -1 }) // Sort by when second partner answered (most recent first)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await CoupleQuestionState.countDocuments({
+      coupleId: user.coupleId,
+      state: QuestionState.COMPLETED,
+    });
+
+    // Get question details and map to response format
+    const history = await Promise.all(
+      completedTethers.map(async (tether) => {
+        const question = await mongoose.model('Question').findOne({ questionId: tether.questionId });
+        const category = await Category.findOne({ categoryId: tether.categoryId });
+
+        // Find user's answer and partner's answer
+        const userAnswer = tether.answers.find(
+          (a) => a.userId.toString() === userId.toString()
+        );
+        const partnerAnswer = tether.answers.find(
+          (a) => a.userId.toString() !== userId.toString()
+        );
+
+        return {
+          questionId: tether.questionId,
+          question: question?.question || 'Question not found',
+          categoryId: tether.categoryId,
+          categoryName: category?.name || tether.categoryId,
+          userAnswer: userAnswer?.text || '',
+          partnerAnswer: partnerAnswer?.text || '',
+          answeredAt: userAnswer?.timestamp?.toISOString() || new Date().toISOString(),
+          partnerAnsweredAt: partnerAnswer?.timestamp?.toISOString() || new Date().toISOString(),
+          completedAt: (tether.answers[1]?.timestamp || tether.updatedAt).toISOString(),
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      history,
+      total,
+      limit,
+      skip,
+    });
+  } catch (error: any) {
+    console.error('Error getting tether history:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to get tether history' });
   }
 };

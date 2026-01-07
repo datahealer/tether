@@ -12,11 +12,13 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 export default function BothExpiredScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuth();
+  const tetherStats = useTetherStats();
   
   const categoryName = (params.categoryName as string) || 'Deep Connection';
   const question = (params.question as string) || 'What is something small your partner does that makes you smile?';
@@ -36,7 +38,12 @@ export default function BothExpiredScreen() {
       showLogo={true} 
       showHeartLogo={false}
       showChatIcon={true}
-      chatCount={5}
+      chatCount={tetherStats.count}
+      chatIconActive={tetherStats.isActive}
+      onChatPress={() => {
+        tetherStats.markAsViewed();
+        router.push('/home/tether-history');
+      }}
       showSettingsIcon={true}
     >
       <ScrollView 

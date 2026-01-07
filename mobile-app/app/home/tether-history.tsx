@@ -15,6 +15,8 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { getTetherHistory, type TetherHistory } from '@/services/tether_service';
+import { useOnboarding } from '@/context/onboarding_context';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 interface TetherAnswer {
   categoryName: string;
@@ -44,14 +46,23 @@ const emojis = ['❤️', '😂', '🔥', '👏'];
 export default function TetherHistoryScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { onboardingData } = useOnboarding();
+  const tetherStats = useTetherStats();
   const [selectedEmoji, setSelectedEmoji] = useState<{ [key: number]: string }>({});
   const [tetherHistory, setTetherHistory] = useState<TetherAnswer[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Get partner name from user's onboarding data
+  const partnerName = user?.onboardingData?.partnerFirstName || 
+                      onboardingData.partnerFirstName || 
+                      'Partner';
   
   const nextQuestionDate = 'Tomorrow at your Tether Time';
 
   useEffect(() => {
     loadHistory();
+    // Mark tethers as viewed when this screen opens
+    tetherStats.markAsViewed();
   }, []);
 
   const loadHistory = async () => {
@@ -175,7 +186,7 @@ export default function TetherHistoryScreen() {
                     {/* Partner Answer */}
                     <View style={styles.answerSection}>
                       <View style={styles.answerLabel}>
-                        <Text style={styles.answerLabelText}>[Partner's] Answer</Text>
+                        <Text style={styles.answerLabelText}>{partnerName}'s Answer</Text>
                       </View>
                       <Text style={styles.answerText}>{answer.partnerAnswer}</Text>
                     </View>

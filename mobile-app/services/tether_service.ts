@@ -295,7 +295,16 @@ export async function getTetherStats(): Promise<TetherStats> {
       }
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('📥 Raw stats response:', data);
+    
+    // Backend returns { success: true, stats: { totalCompleted, currentStreak, ... } }
+    return {
+      totalAnswered: data.stats?.totalCompleted || 0,
+      currentStreak: data.stats?.currentStreak || 0,
+      longestStreak: data.stats?.longestStreak || 0,
+      lastAnsweredDate: data.stats?.lastTetherDate,
+    };
   } catch (error) {
     console.error('Error fetching tether stats:', error);
     throw error;
@@ -331,7 +340,14 @@ export async function getTetherHistory(
       }
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('📜 Tether history response:', data);
+    
+    // Backend returns { success: true, history: [...], total: N }
+    return {
+      history: data.history || [],
+      total: data.total || 0,
+    };
   } catch (error) {
     console.error('Error fetching tether history:', error);
     throw error;
