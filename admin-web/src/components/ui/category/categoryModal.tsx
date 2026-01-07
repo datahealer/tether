@@ -119,14 +119,17 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 placeholder="#FF7E3D"
                 disabled={isSubmitting}
               />
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-[#626262] text-sm">Preview:</span>
-              <div
-                className="w-16 h-16 rounded-xl shadow-lg"
+                 <div className="mt-3">
+                  <div
+                className="w-12 h-12 rounded-xl shadow-lg"
                 style={{ backgroundColor: formData.colorCode }}
               />
+              <span className="text-[#626262] text-sm">Preview:</span>
             </div>
+              
+              
+            </div>
+         
           </div>
 
           {/* Description */}
@@ -146,7 +149,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
+              className="px-4 py-2 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
               disabled={isSubmitting}
             >
               Cancel
@@ -154,7 +157,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>

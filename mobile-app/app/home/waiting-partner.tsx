@@ -62,7 +62,7 @@ export default function WaitingPartnerScreen() {
             <View style={styles.categoryHeader}>
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryText}>{categoryName}</Text>
-              </View>
+              </View>vv
               <View style={styles.timeContainer}>
                 <Text style={styles.timeLabel}>Time left</Text>
                 <Text style={styles.timeValue}>{timeLeft}</Text>
