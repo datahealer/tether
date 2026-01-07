@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,88 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { useAuth } from '@/context/auth_context';
+import {
+  getSubscriptionStatus,
+  cancelSubscription,
+  getAvailablePlans,
+  initializeRevenueCat,
+  getSubscriptionPackages,
+  purchaseSubscription,
+  checkRevenueCatSubscription,
+} from '../../../services/subscription';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 type PlanType = 'trial' | 'monthly' | 'yearly' | 'free';
 
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
+  const { user, signIn } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('trial');
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const plans = getAvailablePlans();
+
+  useEffect(() => {
+    initializeAndLoadStatus();
+  }, []);
+
+  const initializeAndLoadStatus = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Initialize RevenueCat
+      await initializeRevenueCat(user.id);
+      const availablePackages = await getSubscriptionPackages();
+      setPackages(availablePackages);
+      setIsInitialized(true);
+
+      // Load subscription status
+      await loadSubscriptionStatus();
+    } catch (error) {
+      console.error('Failed to initialize:', error);
+    }
+  };
+
+  const loadSubscriptionStatus = async () => {
+    try {
+      // Check RevenueCat status
+      const rcStatus = await checkRevenueCatSubscription();
+      
+      if (rcStatus.isPremium) {
+        setCurrentSubscription({
+          isSubscribed: true,
+          planType: rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly',
+          expiresAt: rcStatus.expirationDate,
+          autoRenew: true,
+        });
+        
+        setSelectedPlan(rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly');
+      } else {
+        // Fallback to backend status
+        const status = await getSubscriptionStatus();
+        setCurrentSubscription(status);
+        
+        if (status.isSubscribed && status.planType) {
+          setSelectedPlan(status.planType as PlanType);
+        } else {
+          setSelectedPlan('free');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load subscription status:', error);
+    }
+  };
 
   const handleSelectPlan = async (plan: PlanType) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -25,8 +95,18 @@ export default function ManageSubscriptionScreen() {
   };
 
   const handleSaveChanges = async () => {
+    if (selectedPlan === currentSubscription?.planType) {
+      Alert.alert('Same Plan', 'You are already on this plan.');
+      return;
+    }
+
+    if (!isInitialized && selectedPlan !== 'free') {
+      Alert.alert('Not Ready', 'Subscription service is still loading. Please wait...');
+      return;
+    }
+
     if (selectedPlan === 'free') {
-      // Show confirmation modal
+      // Show confirmation modal for cancellation
       Alert.alert(
         'Switch to Free Experience?',
         'You will keep Premium access until the end of your current billing period. If you cancel during the 7-day trial you will not be charged.',
@@ -36,16 +116,89 @@ export default function ManageSubscriptionScreen() {
             text: 'Confirm Cancellation',
             style: 'destructive',
             onPress: async () => {
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.back();
+              try {
+                setIsLoading(true);
+                await cancelSubscription();
+                
+                // Update user context
+                if (user) {
+                  await signIn({
+                    ...user,
+                    subscribed: false,
+                  });
+                }
+                
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert('Success', 'Your subscription has been cancelled.');
+                router.back();
+              } catch (error: any) {
+                console.error('Cancellation error:', error);
+                Alert.alert('Error', error.message || 'Failed to cancel subscription');
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsLoading(false);
+              }
             },
           },
         ]
       );
     } else {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      // Plan upgrade/change via RevenueCat
+      try {
+        setIsLoading(true);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        // Find the package for selected plan
+        const packageToPurchase = packages.find(pkg => {
+          const identifier = pkg.product.identifier;
+          return selectedPlan === 'yearly' 
+            ? identifier.includes('yearly') 
+            : selectedPlan === 'monthly'
+              ? identifier.includes('monthly')
+              : identifier.includes('trial');
+        });
+
+        if (!packageToPurchase && selectedPlan !== 'trial') {
+          throw new Error(`No ${selectedPlan} package available`);
+        }
+
+        if (packageToPurchase) {
+          console.log('📦 Changing plan to:', packageToPurchase.product.identifier);
+          
+          const result = await purchaseSubscription(packageToPurchase);
+          
+          if (result.success && result.isPremium) {
+            // Update user context
+            if (user) {
+              await signIn({
+                ...user,
+                subscribed: true,
+              });
+            }
+            
+            await loadSubscriptionStatus();
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            
+            Alert.alert(
+              'Success!',
+              'Your subscription has been updated.',
+              [{ text: 'OK', onPress: () => router.back() }]
+            );
+          }
+        }
+
+      } catch (error: any) {
+        console.error('Plan change error:', error);
+        
+        if (error.message === 'Purchase cancelled') {
+          return; // User cancelled - no alert
+        }
+        
+        Alert.alert('Error', error.message || 'Failed to change plan');
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -66,6 +219,30 @@ export default function ManageSubscriptionScreen() {
           View your plan, change it or cancel at any time.
         </Text>
 
+        {/* Current Subscription Status */}
+        {currentSubscription && (
+          <View style={styles.statusBanner}>
+            <Text style={styles.statusTitle}>
+              {currentSubscription.isSubscribed ? '✅ Active Subscription' : '⚠️ No Active Subscription'}
+            </Text>
+            {currentSubscription.isSubscribed && (
+              <>
+                <Text style={styles.statusText}>
+                  Plan: {currentSubscription.planType?.toUpperCase()}
+                </Text>
+                {currentSubscription.expiresAt && (
+                  <Text style={styles.statusText}>
+                    Expires: {new Date(currentSubscription.expiresAt).toLocaleDateString()}
+                  </Text>
+                )}
+                <Text style={styles.statusText}>
+                  Auto-renew: {currentSubscription.autoRenew ? 'Yes' : 'No'}
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+
         {/* Choose Your Plan Section */}
         <Text style={styles.sectionTitle}>Choose Your Plan</Text>
 
@@ -77,6 +254,7 @@ export default function ManageSubscriptionScreen() {
           ]}
           onPress={() => handleSelectPlan('trial')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planContent}>
             <View style={styles.planLeft}>
@@ -97,6 +275,7 @@ export default function ManageSubscriptionScreen() {
           ]}
           onPress={() => handleSelectPlan('monthly')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planContent}>
             <View style={styles.planLeft}>
@@ -117,6 +296,7 @@ export default function ManageSubscriptionScreen() {
           ]}
           onPress={() => handleSelectPlan('yearly')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planContent}>
             <View style={styles.planLeft}>
@@ -135,13 +315,16 @@ export default function ManageSubscriptionScreen() {
         </TouchableOpacity>
 
         {/* Cancel Your Premium Plan */}
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleCancelPlan}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.cancelButtonText}>Cancel Your Premium Plan</Text>
-        </TouchableOpacity>
+        {currentSubscription?.isSubscribed && (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelPlan}
+            activeOpacity={0.8}
+            disabled={isLoading}
+          >
+            <Text style={styles.cancelButtonText}>Cancel Your Premium Plan</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Free Experience */}
         <TouchableOpacity
@@ -151,6 +334,7 @@ export default function ManageSubscriptionScreen() {
           ]}
           onPress={() => handleSelectPlan('free')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planContent}>
             <View style={styles.planLeft}>
@@ -168,11 +352,19 @@ export default function ManageSubscriptionScreen() {
 
         {/* Save Changes Button */}
         <TouchableOpacity
-          style={styles.saveButton}
+          style={[
+            styles.saveButton,
+            isLoading && styles.saveButtonDisabled,
+          ]}
           onPress={handleSaveChanges}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+          {isLoading ? (
+            <ActivityIndicator color={Colors.white} size="small" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </OnboardingLayout>
@@ -288,11 +480,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     paddingVertical: 18,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: 56,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     fontFamily: 'InterTight-SemiBold',
@@ -301,5 +498,26 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.white,
     letterSpacing: 0.45,
+  },
+  statusBanner: {
+    backgroundColor: Colors.veryLightOrange,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.darkOrange,
+  },
+  statusTitle: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.semibold,
+    color: Colors.darkOrange,
+    marginBottom: Spacing.sm,
+  },
+  statusText: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.small + 2,
+    color: Colors.black,
+    marginBottom: Spacing.xs,
   },
 });

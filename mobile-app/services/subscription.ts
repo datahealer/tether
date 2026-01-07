@@ -1,7 +1,25 @@
 import { authenticatedFetch } from './auth_service';
 import Constants from 'expo-constants';
+import {
+  initializeRevenueCat as initRevenueCat,
+  getOfferings,
+  purchasePackage as revenueCatPurchase,
+  restorePurchases as revenueCatRestore,
+  checkSubscriptionStatus as revenueCatCheckStatus,
+  logoutRevenueCat,
+} from './revenuecat';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+
+// RevenueCat types
+export interface RevenueCatUser {
+  subscriber: {
+    entitlements: Record<string, any>;
+    subscriptions: Record<string, any>;
+    original_app_user_id: string;
+  };
+}
 
 export interface SubscriptionPlan {
   id: 'yearly' | 'monthly' | 'trial';
@@ -23,7 +41,57 @@ export interface SubscriptionStatus {
 }
 
 /**
- * Start a subscription trial
+ * Initialize RevenueCat when user logs in
+ */
+export const initializeRevenueCat = async (userId: string): Promise<void> => {
+  return initRevenueCat(userId);
+};
+
+/**
+ * Get available subscription packages from RevenueCat
+ * Returns packages configured in your RevenueCat dashboard
+ */
+export const getSubscriptionPackages = async (): Promise<PurchasesPackage[]> => {
+  try {
+    const offerings = await getOfferings();
+    
+    if (!offerings || !offerings.availablePackages.length) {
+      throw new Error('No subscription packages available');
+    }
+    
+    return offerings.availablePackages;
+  } catch (error) {
+    console.error('❌ Failed to get packages:', error);
+    throw error;
+  }
+};
+
+/**
+ * Purchase a subscription package through RevenueCat
+ * This triggers the native App Store/Play Store payment flow
+ */
+export const purchaseSubscription = async (
+  packageToPurchase: PurchasesPackage
+): Promise<{
+  success: boolean;
+  isPremium: boolean;
+}> => {
+  try {
+    const result = await revenueCatPurchase(packageToPurchase);
+    
+    // Wait a moment for backend webhook to process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    return result;
+  } catch (error: any) {
+    console.error('❌ Purchase error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Start trial through backend (for testing/backwards compatibility)
+ * Note: In production, trials should also go through RevenueCat
  */
 export const startTrial = async (): Promise<{
   success: boolean;
@@ -53,7 +121,8 @@ export const startTrial = async (): Promise<{
 };
 
 /**
- * Subscribe to a paid plan
+ * [DEPRECATED] Subscribe to a paid plan via backend
+ * This function is deprecated - use purchaseSubscription() with RevenueCat instead
  */
 export const subscribeToPlan = async (
   planType: 'yearly' | 'monthly',
@@ -63,34 +132,49 @@ export const subscribeToPlan = async (
   subscription: SubscriptionStatus;
   user: any;
 }> => {
+  throw new Error(
+    'This method is deprecated. Use purchaseSubscription() with RevenueCat SDK for real payments.'
+  );
+};
+
+/**
+ * Restore previous purchases through RevenueCat
+ */
+export const restoreSubscriptionPurchases = async (): Promise<{
+  success: boolean;
+  isPremium: boolean;
+}> => {
   try {
-    console.log('🚀 Subscribing to plan:', planType);
+    const result = await revenueCatRestore();
     
-    const response = await authenticatedFetch(`${API_URL}/api/subscription/subscribe`, {
-      method: 'POST',
-      body: JSON.stringify({
-        planType,
-        purchaseToken, // For app store receipt validation
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to subscribe');
-    }
-
-    const data = await response.json();
-    console.log('✅ Subscription successful');
+    // Wait for backend to sync
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    return data;
+    return result;
   } catch (error) {
-    console.error('❌ Subscribe error:', error);
+    console.error('❌ Restore purchases error:', error);
     throw error;
   }
 };
 
 /**
- * Get current subscription status
+ * Check subscription status from RevenueCat
+ */
+export const checkRevenueCatSubscription = async (): Promise<{
+  isPremium: boolean;
+  expirationDate?: string;
+  productId?: string;
+}> => {
+  try {
+    return await revenueCatCheckStatus();
+  } catch (error) {
+    console.error('❌ Check subscription error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get current subscription status from backend
  */
 export const getSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
   try {
@@ -135,7 +219,8 @@ export const cancelSubscription = async (): Promise<{
 };
 
 /**
- * Get available plans
+ * Get available plans (static data for display)
+ * Actual products come from RevenueCat, but use this for UI display
  */
 export const getAvailablePlans = (): SubscriptionPlan[] => {
   return [
@@ -169,4 +254,19 @@ export const getAvailablePlans = (): SubscriptionPlan[] => {
       duration: 7,
     },
   ];
+};
+
+/**
+ * Map plan type to RevenueCat package identifier
+ */
+export const getPlanIdentifier = (planType: 'yearly' | 'monthly'): string => {
+  // These must match your RevenueCat product identifiers
+  return planType === 'yearly' ? 'tether_yearly' : 'tether_monthly';
+};
+
+/**
+ * Logout from RevenueCat
+ */
+export const logoutFromRevenueCat = async (): Promise<void> => {
+  return logoutRevenueCat();
 };

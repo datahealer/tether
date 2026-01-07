@@ -404,6 +404,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/context/auth_context';
 import LanguageModal from '@/components/ui/profile/LanguageModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { restoreSubscriptionPurchases } from '@/services/subscription';
 
 
 interface SettingsItemProps {
@@ -433,10 +434,11 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, value, onPress
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, signIn } = useAuth();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [isRestoringPurchases, setIsRestoringPurchases] = useState(false);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -478,6 +480,54 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleRestorePurchases = async () => {
+    try {
+      setIsRestoringPurchases(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      console.log('🔄 Restoring purchases...');
+      
+      const result = await restoreSubscriptionPurchases();
+      
+      if (result.isPremium) {
+        // Update user context
+        if (user) {
+          await signIn({
+            ...user,
+            subscribed: true,
+          });
+        }
+        
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        Alert.alert(
+          'Purchases Restored! 🎉',
+          'Your premium subscription has been restored.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        
+        Alert.alert(
+          'No Purchases Found',
+          'We couldn\'t find any purchases to restore. If you believe this is an error, please contact support.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      console.error('❌ Restore purchases error:', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      
+      Alert.alert(
+        'Restore Failed',
+        error.message || 'Failed to restore purchases. Please try again or contact support.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsRestoringPurchases(false);
+    }
+  };
+
   const handlePress = async (action: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
@@ -498,7 +548,7 @@ export default function SettingsScreen() {
         router.push('/onboarding/settings/manage-subscription');
         break;
       case 'restore':
-        Alert.alert('Coming Soon', 'Restore purchases coming soon');
+        handleRestorePurchases();
         break;
       case 'privacy':
         router.push('/onboarding/settings/privacy-control');

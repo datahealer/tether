@@ -268,20 +268,29 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     await accepter.save();
 
     // ✅ CREATE USER ENTITLEMENTS FOR BOTH PARTNERS
+    // Both partners should have the same tier (highest tier wins)
+    const hasAnyPremium = inviter.subscribed || accepter.subscribed;
+    const coupleTier = hasAnyPremium ? Tier.PREMIUM : Tier.FREE;
+    const coupleRefreshes = hasAnyPremium ? 3 : 1;
+
     for (const currentUserId of [invite.inviterId, userId]) {
       const existingEntitlement = await UserEntitlement.findOne({ userId: currentUserId });
 
       if (!existingEntitlement) {
-        const userDoc = currentUserId.toString() === invite.inviterId.toString() ? inviter : accepter;
-
         await UserEntitlement.create({
           userId: currentUserId,
-          tier: userDoc.subscribed ? Tier.PREMIUM : Tier.FREE,
-          refreshesDefault: userDoc.subscribed ? 3 : 1,
+          tier: coupleTier,
+          refreshesDefault: coupleRefreshes,
           refreshesPermanent: 0,
         });
 
-        console.log(`✅ Created UserEntitlement for user ${currentUserId} (tier: ${userDoc.subscribed ? 'PREMIUM' : 'FREE'})`);
+        console.log(`✅ Created UserEntitlement for user ${currentUserId} (tier: ${coupleTier})`);
+      } else {
+        // Update existing entitlement to match couple tier
+        existingEntitlement.tier = coupleTier;
+        existingEntitlement.refreshesDefault = coupleRefreshes;
+        await existingEntitlement.save();
+        console.log(`✅ Updated UserEntitlement for user ${currentUserId} to tier: ${coupleTier}`);
       }
     }
 

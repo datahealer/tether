@@ -35,61 +35,274 @@ const COOLDOWN_DAYS = 14;
 const MILESTONE_COUNTS = [5, 10, 25, 50, 100];
 
 export class QuestionServiceEngine {
-  // static initializeCategoriesForCouple: any;
-  // Add this method inside QuestionServiceEngine class
-private static determineFreeCategoriesForCouple(couple: any): string[] {
-  const user1 = couple.user1Id;
-  const user2 = couple.user2Id;
-
-  const allGoals = [
-    ...(user1?.onboardingData?.goals || []),
-    ...(user2?.onboardingData?.goals || []),
-  ];
-  const allLiving = [
-    ...(user1?.onboardingData?.livingType || []),
-    ...(user2?.onboardingData?.livingType || []),
-  ];
-
-  const goalCategoryMap: Record<string, string> = {
-    [GoalTag.COMMUNICATION]: CategoryId.COMMUNICATION,
-    [GoalTag.INTIMACY]: CategoryId.INTIMACY,
-    [GoalTag.TRUST]: CategoryId.TRUST,
-    [GoalTag.PLAYFULNESS]: CategoryId.PLAYFULNESS,
-    [GoalTag.VULNERABILITY]: CategoryId.VULNERABILITY,
-    [GoalTag.FUTURE]: CategoryId.FUTURE,
-    [GoalTag.GRATITUDE]: CategoryId.GRATITUDE,
-    [GoalTag.CONFLICT]: CategoryId.CONFLICT,
-    [GoalTag.LOVE_LANGUAGES]: CategoryId.LOVE_LANGUAGES,
-  };
-
-  const unlocked: string[] = [];
-
-  // First: unlock based on goals
-  for (const goal of allGoals) {
-    const catId = goalCategoryMap[goal];
-    if (catId && !unlocked.includes(catId)) {
-      unlocked.push(catId);
-      break;
+  /**
+   * Calculate category relevance score based on union of both partners' onboarding data
+   * Uses weighted scoring algorithm to determine best fit categories
+   */
+  private static calculateCategoryScore(
+    categoryId: CategoryId,
+    coupleProfile: {
+      goals: string[];
+      livingType: string[];
+      emotionalNeeds: string[];
+      relationshipStage?: string;
     }
-  }
+  ): number {
+    let score = 0;
 
-  // Second: kids → playfulness or gratitude
-  if (allLiving.includes(LivingType.KIDS)) {
-    if (!unlocked.includes(CategoryId.PLAYFULNESS)) {
-      unlocked.push(CategoryId.PLAYFULNESS);
-    } else if (!unlocked.includes(CategoryId.GRATITUDE)) {
-      unlocked.push(CategoryId.GRATITUDE);
+    // Goal-to-Category mapping with weights (use normalized lowercase keys)
+    const goalCategoryMap: Record<string, { categoryId: CategoryId; weight: number }[]> = {
+      'communication': [
+        { categoryId: CategoryId.COMMUNICATION, weight: 10 },
+        { categoryId: CategoryId.CONFLICT, weight: 3 },
+      ],
+      'intimacy': [
+        { categoryId: CategoryId.INTIMACY, weight: 10 },
+        { categoryId: CategoryId.EROTIC, weight: 5 },
+        { categoryId: CategoryId.VULNERABILITY, weight: 4 },
+      ],
+      'trust': [
+        { categoryId: CategoryId.TRUST, weight: 10 },
+        { categoryId: CategoryId.VULNERABILITY, weight: 5 },
+      ],
+      'playfulness': [
+        { categoryId: CategoryId.PLAYFULNESS, weight: 10 },
+        { categoryId: CategoryId.GRATITUDE, weight: 3 },
+      ],
+      'vulnerability': [
+        { categoryId: CategoryId.VULNERABILITY, weight: 10 },
+        { categoryId: CategoryId.INTIMACY, weight: 4 },
+      ],
+      'future': [
+        { categoryId: CategoryId.FUTURE, weight: 10 },
+        { categoryId: CategoryId.TRUST, weight: 3 },
+      ],
+      'gratitude': [
+        { categoryId: CategoryId.GRATITUDE, weight: 10 },
+        { categoryId: CategoryId.PLAYFULNESS, weight: 3 },
+      ],
+      'conflict': [
+        { categoryId: CategoryId.CONFLICT, weight: 10 },
+        { categoryId: CategoryId.COMMUNICATION, weight: 5 },
+      ],
+      'love_languages': [
+        { categoryId: CategoryId.LOVE_LANGUAGES, weight: 10 },
+        { categoryId: CategoryId.INTIMACY, weight: 3 },
+      ],
+      'spark': [
+        { categoryId: CategoryId.PLAYFULNESS, weight: 8 },
+        { categoryId: CategoryId.EROTIC, weight: 6 },
+        { categoryId: CategoryId.INTIMACY, weight: 4 },
+      ],
+    };
+
+    // Emotional Need-to-Category mapping (use normalized lowercase keys)
+    const emotionalNeedCategoryMap: Record<string, { categoryId: CategoryId; weight: number }[]> = {
+      'love_security': [
+        { categoryId: CategoryId.TRUST, weight: 6 },
+        { categoryId: CategoryId.INTIMACY, weight: 5 },
+      ],
+      'recognition': [
+        { categoryId: CategoryId.GRATITUDE, weight: 7 },
+        { categoryId: CategoryId.COMMUNICATION, weight: 4 },
+      ],
+      'autonomy': [
+        { categoryId: CategoryId.TRUST, weight: 5 },
+        { categoryId: CategoryId.CONFLICT, weight: 4 },
+      ],
+      'growth': [
+        { categoryId: CategoryId.FUTURE, weight: 7 },
+        { categoryId: CategoryId.VULNERABILITY, weight: 4 },
+      ],
+      'play': [
+        { categoryId: CategoryId.PLAYFULNESS, weight: 8 },
+        { categoryId: CategoryId.GRATITUDE, weight: 3 },
+      ],
+      'belonging': [
+        { categoryId: CategoryId.INTIMACY, weight: 6 },
+        { categoryId: CategoryId.LOVE_LANGUAGES, weight: 5 },
+      ],
+    };
+
+    // LivingType-to-Category mapping (use normalized lowercase keys)
+    const livingTypeCategoryMap: Record<string, { categoryId: CategoryId; weight: number }[]> = {
+      'apart_long_distance': [
+        { categoryId: CategoryId.COMMUNICATION, weight: 5 },
+        { categoryId: CategoryId.TRUST, weight: 4 },
+      ],
+      'together': [
+        { categoryId: CategoryId.PLAYFULNESS, weight: 3 },
+        { categoryId: CategoryId.INTIMACY, weight: 3 },
+      ],
+      'kids': [
+        { categoryId: CategoryId.PLAYFULNESS, weight: 6 },
+        { categoryId: CategoryId.GRATITUDE, weight: 5 },
+        { categoryId: CategoryId.COMMUNICATION, weight: 4 },
+      ],
+      'no_kids': [
+        { categoryId: CategoryId.FUTURE, weight: 3 },
+      ],
+    };
+
+    // Calculate score from goals (highest weight)
+    for (const goal of coupleProfile.goals) {
+      const normalizedGoal = goal.toLowerCase().replace(/\s+/g, '_');
+      const mappings = goalCategoryMap[normalizedGoal];
+      if (mappings) {
+        for (const mapping of mappings) {
+          if (mapping.categoryId === categoryId) {
+            score += mapping.weight;
+          }
+        }
+      }
     }
+
+    // Calculate score from emotional needs
+    for (const need of coupleProfile.emotionalNeeds) {
+      const normalizedNeed = need.toLowerCase().replace(/\s+/g, '_');
+      const mappings = emotionalNeedCategoryMap[normalizedNeed];
+      if (mappings) {
+        for (const mapping of mappings) {
+          if (mapping.categoryId === categoryId) {
+            score += mapping.weight;
+          }
+        }
+      }
+    }
+
+    // Calculate score from living type
+    for (const living of coupleProfile.livingType) {
+      const normalizedLiving = living.toLowerCase().replace(/\s+/g, '_').replace(/,/g, '');
+      const mappings = livingTypeCategoryMap[normalizedLiving];
+      if (mappings) {
+        for (const mapping of mappings) {
+          if (mapping.categoryId === categoryId) {
+            score += mapping.weight;
+          }
+        }
+      }
+    }
+
+    return score;
   }
 
-  // Fallback: default to Communication + Intimacy
-  if (unlocked.length < 2) {
-    if (!unlocked.includes(CategoryId.COMMUNICATION)) unlocked.push(CategoryId.COMMUNICATION);
-    if (unlocked.length < 2 && !unlocked.includes(CategoryId.INTIMACY)) unlocked.push(CategoryId.INTIMACY);
+  /**
+   * Normalize onboarding data values to match enum keys
+   */
+  private static normalizeOnboardingData(data: string[]): string[] {
+    return data
+      .map(item => {
+        // Remove JSON wrapper if present
+        if (item.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(item);
+            return parsed.attribution || parsed.value || item;
+          } catch {
+            return item;
+          }
+        }
+        return item;
+      })
+      .map(item => {
+        // Normalize to lowercase with underscores
+        const normalized = item.toLowerCase().trim();
+        
+        // Map common UI values to enum values
+        const mappings: Record<string, string> = {
+          'spark': 'spark',
+          'connection': 'communication',
+          'communication': 'communication',
+          'fun': 'playfulness',
+          'playfulness': 'playfulness',
+          'intimacy': 'intimacy',
+          'trust': 'trust',
+          'vulnerability': 'vulnerability',
+          'future': 'future',
+          'gratitude': 'gratitude',
+          'conflict': 'conflict',
+          'love languages': 'love_languages',
+          'love_languages': 'love_languages',
+          // Living types
+          'long distance': 'apart_long_distance',
+          'apart, long distance': 'apart_long_distance',
+          'together': 'together',
+          'kids': 'kids',
+          'no kids': 'no_kids',
+          // Emotional needs
+          'love & security': 'love_security',
+          'love and security': 'love_security',
+          'recognition': 'recognition',
+          'autonomy': 'autonomy',
+          'growth': 'growth',
+          'play': 'play',
+          'belonging': 'belonging',
+        };
+        
+        return mappings[normalized] || normalized;
+      })
+      .filter(item => item && item.length > 0);
   }
 
-  return unlocked.slice(0, 2);
-}
+  /**
+   * Determine which 2 categories to unlock for free tier based on scoring algorithm
+   */
+  private static determineFreeCategoriesForCouple(couple: any): string[] {
+    const user1 = couple.user1Id;
+    const user2 = couple.user2Id;
+
+    // Create union of all onboarding data from both partners
+    const rawGoals = [
+      ...(user1?.onboardingData?.goals || []),
+      ...(user2?.onboardingData?.goals || []),
+    ];
+    const rawLivingTypes = [
+      ...(user1?.onboardingData?.livingType || []),
+      ...(user2?.onboardingData?.livingType || []),
+    ];
+    const rawEmotionalNeeds = [
+      ...(user1?.onboardingData?.emotionalNeeds || []),
+      ...(user2?.onboardingData?.emotionalNeeds || []),
+    ];
+
+    // Normalize and remove duplicates
+    const uniqueGoals = [...new Set(this.normalizeOnboardingData(rawGoals))];
+    const uniqueLivingTypes = [...new Set(this.normalizeOnboardingData(rawLivingTypes))];
+    const uniqueEmotionalNeeds = [...new Set(this.normalizeOnboardingData(rawEmotionalNeeds))];
+
+    const coupleProfile = {
+      goals: uniqueGoals,
+      livingType: uniqueLivingTypes,
+      emotionalNeeds: uniqueEmotionalNeeds,
+      relationshipStage: user1?.onboardingData?.relationshipStatus || user2?.onboardingData?.relationshipStatus,
+    };
+
+    console.log('Couple Profile for Category Selection:', JSON.stringify(coupleProfile, null, 2));
+
+    // Calculate scores for all categories
+    const categoryScores: Array<{ categoryId: CategoryId; score: number }> = [];
+
+    for (const categoryId of Object.values(CategoryId)) {
+      const score = this.calculateCategoryScore(categoryId, coupleProfile);
+      categoryScores.push({ categoryId, score });
+    }
+
+    // Sort by score descending
+    categoryScores.sort((a, b) => b.score - a.score);
+
+    console.log('Category Scores:', JSON.stringify(categoryScores, null, 2));
+
+    // Select top 2 categories
+    const topCategories = categoryScores.slice(0, 2).map(cs => cs.categoryId);
+
+    // Fallback to Communication + Intimacy if no scores
+    if (categoryScores[0].score === 0 && categoryScores[1].score === 0) {
+      console.log('No onboarding data matched - defaulting to Communication + Intimacy');
+      return [CategoryId.COMMUNICATION, CategoryId.INTIMACY];
+    }
+
+    console.log(`Top 2 categories selected: ${topCategories.join(', ')}`);
+    return topCategories;
+  }
 
 /**
  * Initialize categories for a new couple based on their onboarding data
@@ -132,6 +345,7 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
   /**
    * Get personalization weight for a question based on couple's profile
+   * Uses comprehensive scoring across all onboarding dimensions
    */
   private static calculatePersonalizationScore(
     question: IQuestion,
@@ -144,30 +358,41 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
   ): number {
     let score = 0;
 
-    // Living type match
+    // Living type match (Weight: 5 points per match)
     const livingTypeMatches = question.livingType.filter((lt) =>
       coupleProfile.livingType.includes(lt)
     );
-    score += livingTypeMatches.length * 3;
+    score += livingTypeMatches.length * 5;
 
-    // Goal tag match
+    // Goal tag match (Weight: 8 points per match - highest priority)
     const goalMatches = question.goalTag.filter((g) =>
       coupleProfile.goals.includes(g)
     );
-    score += goalMatches.length * 2;
+    score += goalMatches.length * 8;
 
-    // Emotional need match
+    // Emotional need match (Weight: 6 points per match)
     const emotionalMatches = question.emotionalNeed.filter((en) =>
       coupleProfile.emotionalNeeds.includes(en)
     );
-    score += emotionalMatches.length * 2;
+    score += emotionalMatches.length * 6;
 
-    // Relationship stage match
+    // Relationship stage match (Weight: 4 points)
     if (
       coupleProfile.relationshipStage &&
       question.relationshipStage.includes(coupleProfile.relationshipStage as any)
     ) {
-      score += 1;
+      score += 4;
+    }
+
+    // Bonus: Questions that match multiple dimensions get an extra boost
+    const dimensionsMatched = 
+      (livingTypeMatches.length > 0 ? 1 : 0) +
+      (goalMatches.length > 0 ? 1 : 0) +
+      (emotionalMatches.length > 0 ? 1 : 0) +
+      (coupleProfile.relationshipStage && question.relationshipStage.includes(coupleProfile.relationshipStage as any) ? 1 : 0);
+    
+    if (dimensionsMatched >= 3) {
+      score += 5; // Multi-dimensional match bonus
     }
 
     return score;
@@ -269,8 +494,15 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
     scoredQuestions.sort((a, b) => b.score - a.score);
 
+    // Log top 5 scored questions for debugging
+    console.log(`  📊 Top 5 scored questions for ${categoryId}:`);
+    scoredQuestions.slice(0, 5).forEach((sq, idx) => {
+      console.log(`     ${idx + 1}. Score: ${sq.score} - Q: ${sq.question.questionId}`);
+    });
+
     // Return top personalized question (convert to plain object)
     const topQuestion = await Question.findById(scoredQuestions[0].question._id);
+    console.log(`  ✅ Selected question ${topQuestion?.questionId} with score ${scoredQuestions[0].score}`);
     return topQuestion;
   }
 

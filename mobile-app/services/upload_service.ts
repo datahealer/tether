@@ -41,4 +41,3 @@ export const uploadProfilePhoto = async (imageUri: string): Promise<string> => {
     throw error;
   }
 };
-

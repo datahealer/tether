@@ -1,21 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import {
+  getSubscriptionStatus,
+  subscribeToPlan,
+  getAvailablePlans,
+} from '../../../services/subscription';
 
 type PlanType = 'yearly' | 'monthly';
 
 export default function PremiumScreen() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('yearly');
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+
+  const plans = getAvailablePlans().filter(p => p.id !== 'trial');
+
+  useEffect(() => {
+    loadSubscriptionStatus();
+  }, []);
+
+  const loadSubscriptionStatus = async () => {
+    try {
+      const status = await getSubscriptionStatus();
+      setCurrentSubscription(status);
+      if (status.planType) {
+        setSelectedPlan(status.planType as PlanType);
+      }
+    } catch (error) {
+      console.error('Failed to load subscription status:', error);
+    }
+  };
 
   const handleSelectPlan = async (plan: PlanType) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -23,9 +50,61 @@ export default function PremiumScreen() {
   };
 
   const handleUpdatePlan = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    // Check if user is trying to select the same plan they already have
+    if (currentSubscription?.planType === selectedPlan) {
+      Alert.alert(
+        'Same Plan',
+        `You're already subscribed to the ${selectedPlan} plan.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // Show confirmation for plan change
+      Alert.alert(
+        'Change Plan',
+        `Switch to ${selectedPlan} plan?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setIsLoading(false),
+          },
+          {
+            text: 'Confirm',
+            onPress: async () => {
+              try {
+                // TODO: Integrate with in-app purchases for plan upgrade
+                Alert.alert(
+                  'Plan Update',
+                  'In-app purchase integration coming soon! For now, use the test screen to simulate purchases.',
+                  [{ text: 'OK' }]
+                );
+
+                // When actual IAP is integrated:
+                // const purchaseToken = await requestPurchase(selectedPlan);
+                // await subscribeToPlan(selectedPlan, purchaseToken);
+                // await loadSubscriptionStatus();
+
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch (error: any) {
+                console.error('Plan update error:', error);
+                Alert.alert('Error', error.message || 'Failed to update plan');
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsLoading(false);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,6 +122,20 @@ export default function PremiumScreen() {
         </Text>
         <Text style={styles.badge}>One Subscription for two partners.</Text>
 
+        {/* Current Plan Info */}
+        {currentSubscription?.isSubscribed && (
+          <View style={styles.currentPlanBanner}>
+            <Text style={styles.currentPlanText}>
+              Current Plan: {currentSubscription.planType?.toUpperCase()}
+            </Text>
+            {currentSubscription.expiresAt && (
+              <Text style={styles.currentPlanSubtext}>
+                Expires: {new Date(currentSubscription.expiresAt).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Yearly Plan */}
         <TouchableOpacity
           style={[
@@ -51,6 +144,7 @@ export default function PremiumScreen() {
           ]}
           onPress={() => handleSelectPlan('yearly')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planHeader}>
             <Text style={styles.planTitle}>Yearly</Text>
@@ -58,7 +152,7 @@ export default function PremiumScreen() {
               <Text style={styles.saveBadgeText}>SAVE 40%</Text>
             </View>
           </View>
-          <Text style={styles.planSubtitle}>14-day trial (then billed yearly)</Text>
+          <Text style={styles.planSubtitle}>Billed annually at $44.99</Text>
           <Text style={styles.planPrice}>$3.75 per month</Text>
         </TouchableOpacity>
 
@@ -70,6 +164,7 @@ export default function PremiumScreen() {
           ]}
           onPress={() => handleSelectPlan('monthly')}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <View style={styles.planHeader}>
             <Text style={styles.planTitle}>Monthly</Text>
@@ -82,11 +177,21 @@ export default function PremiumScreen() {
 
         {/* Update Plan Button */}
         <TouchableOpacity
-          style={styles.updateButton}
+          style={[
+            styles.updateButton,
+            isLoading && styles.updateButtonDisabled,
+          ]}
           onPress={handleUpdatePlan}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
-          <Text style={styles.updateButtonText}>Update plan</Text>
+          {isLoading ? (
+            <ActivityIndicator color={Colors.white} size="small" />
+          ) : (
+            <Text style={styles.updateButtonText}>
+              {currentSubscription?.planType === selectedPlan ? 'Current Plan' : 'Update plan'}
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Footer Text */}
@@ -189,12 +294,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     paddingVertical: 18,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
     marginBottom: Spacing.md,
+    minHeight: 56,
+  },
+  updateButtonDisabled: {
+    opacity: 0.6,
   },
   updateButtonText: {
     fontFamily: 'InterTight-SemiBold',
@@ -204,6 +314,26 @@ const styles = StyleSheet.create({
     color: Colors.white,
     letterSpacing: 0.45,
   },
+  currentPlanBanner: {
+    backgroundColor: Colors.veryLightOrange,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.darkOrange,
+  },
+  currentPlanText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.darkOrange,
+    marginBottom: Spacing.xs,
+  },
+  currentPlanSubtext: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.small,
+    color: Colors.inputText,
+  },
   footerText: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.small + 2,
@@ -212,3 +342,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
