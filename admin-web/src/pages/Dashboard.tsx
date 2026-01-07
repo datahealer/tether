@@ -214,7 +214,7 @@ const [showImportModal, setShowImportModal] = useState(false);
           Add Question
         </button>
         </div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col items-start gap-4 md:items-center md:flex-row justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-[#1F2935] mb-2">Question Dashboard</h1>
           <p className="text-[#626262]">Manage and analyze your question bank</p>
