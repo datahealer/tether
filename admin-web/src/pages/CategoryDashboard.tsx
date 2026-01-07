@@ -58,7 +58,7 @@ export const CategoryDashboard: React.FC = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader className="animate-spin text-purple-400" size={48} />
+          <Loader className="animate-spin text-[#FF7E3D]" size={48} />
         </div>
       </DashboardLayout>
     );
@@ -66,25 +66,25 @@ export const CategoryDashboard: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-12 border-b border-white/10 pb-6">
-       <div className="flex gap-8">
-    <Link
-      to="/dashboard"
-      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
-      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl font-semibold transition-colors"
-    >
-      Questions
-    </Link>
-    <Link
-      to="/categories"
-      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
-      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl font-semibold transition-colors"
-    >
-      Categories
-    </Link>
-  </div>
+      <div className="flex items-start md:items-center  flex-col md:flex-row gap-4  justify-between mb-12 border-b border-white/10 pb-6">
+    <div className="flex gap-8">
+       <Link
+         to="/dashboard"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Questions
+       </Link>
+       <Link
+         to="/categories"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Categories
+       </Link>
+     </div>
       <div className="flex items-center justify-between">
        
         <button 

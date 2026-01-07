@@ -17,6 +17,7 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
 }) => {
   return (
     <div className="bg-white border border-white/10 rounded-2xl overflow-hidden">
+      <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="bg-white/5">
@@ -72,6 +73,7 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
       {categories.length === 0 && (
         <div className="p-8 text-center text-[#626262]">No categories found</div>
       )}
+    </div>
     </div>
   );
 };

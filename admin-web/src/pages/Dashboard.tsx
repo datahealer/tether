@@ -187,13 +187,13 @@ const [showImportModal, setShowImportModal] = useState(false);
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-12 border-b border-white/10 pb-6">
+      <div className="flex items-start md:items-center flex-col md:flex-row gap-4 justify-between mb-12 border-b border-white/10 pb-6">
   <div className="flex gap-8">
     <Link
       to="/dashboard"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl font-semibold transition-colors"
+      className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
     >
       Questions
     </Link>
@@ -201,7 +201,7 @@ const [showImportModal, setShowImportModal] = useState(false);
       to="/categories"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl font-semibold transition-colors"
+      className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
     >
       Categories
     </Link>
@@ -214,7 +214,7 @@ const [showImportModal, setShowImportModal] = useState(false);
           Add Question
         </button>
         </div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col items-start gap-4 md:items-center md:flex-row justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-[#1F2935] mb-2">Question Dashboard</h1>
           <p className="text-[#626262]">Manage and analyze your question bank</p>
@@ -234,7 +234,7 @@ const [showImportModal, setShowImportModal] = useState(false);
 
 
       {error && (
-        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl mb-6">
+        <div className="bg-red-500/20 border border-red-500/50 text-red-800 px-4 py-3 rounded-xl mb-6">
           {error}
         </div>
       )}
@@ -265,45 +265,59 @@ const [showImportModal, setShowImportModal] = useState(false);
       />
 
       {/* Pagination */}
-      <div className="flex items-center justify-between bg-white border border-white/10 rounded-2xl px-6 py-4">
-        <p className="text-[#626262]">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-          {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of{' '}
-          {filteredQuestions.length} questions
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-[#1F2935] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-          >
-            Previous
-          </button>
-          {[...Array(Math.min(5, totalPages))].map((_, i) => {
-            const page = i + 1;
-            return (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  currentPage === page
-                    ? 'bg-[#FF7E3D] text-white border border-[#FF7E3D]'
-                    : 'bg-white/10 border border-white/20 text-[#1F2935] hover:bg-white/20'
-                }`}
-              >
-                {page}
-              </button>
-            );
-          })}
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-[#1F2935] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white border border-white/10 rounded-2xl px-4 sm:px-6 py-4">
+  
+  {/* Info text */}
+  <p className="text-[#626262] text-sm sm:text-base text-center sm:text-left">
+    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+    {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of{" "}
+    {filteredQuestions.length} questions
+  </p>
+
+  {/* Pagination buttons */}
+  <div className="flex flex-wrap justify-center sm:justify-end gap-2">
+    
+    <button
+      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+      disabled={currentPage === 1}
+      className="px-3 sm:px-4 py-2 text-sm sm:text-base
+        bg-white/10 border border-white/20 rounded-lg text-[#1F2935]
+        disabled:opacity-50 disabled:cursor-not-allowed
+        hover:bg-white/20 transition-all"
+    >
+      Prev
+    </button>
+
+    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+      const page = i + 1;
+      return (
+        <button
+          key={page}
+          onClick={() => setCurrentPage(page)}
+          className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg transition-all ${
+            currentPage === page
+              ? "bg-[#FF7E3D] text-white border border-[#FF7E3D]"
+              : "bg-white/10 border border-white/20 text-[#1F2935] hover:bg-white/20"
+          }`}
+        >
+          {page}
+        </button>
+      );
+    })}
+
+    <button
+      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+      disabled={currentPage === totalPages}
+      className="px-3 sm:px-4 py-2 text-sm sm:text-base
+        bg-white/10 border border-white/20 rounded-lg text-[#1F2935]
+        disabled:opacity-50 disabled:cursor-not-allowed
+        hover:bg-white/20 transition-all"
+    >
+      Next
+    </button>
+
+  </div>
+</div>
 
       <QuestionModal
         isOpen={showModal}

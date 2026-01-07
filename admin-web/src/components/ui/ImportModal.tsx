@@ -62,7 +62,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
 
         <div className="space-y-6">
           <div
-            className="border-2 border-dashed border-[#FF7E3D] rounded-xl p-8 text-center hover:border-purple-500 transition-colors"
+            className="border-2 border-dashed border-[#FF7E3D] rounded-xl p-8 text-center hover:border-[#626262]-500 transition-colors"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -90,7 +90,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-[#1F2935] hover:bg-white/20"
+              className="px-6 py-3 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20"
               disabled={uploading}
             >
               Cancel
@@ -98,7 +98,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             <button
               onClick={handleImport}
               disabled={!file || uploading}
-              className="px-6 py-3 bg-[#FF7E3D] text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-[#FF7E3D] text-white rounded-xl font-medium hover:from-[#626262]-600 hover:to-pink-600 disabled:opacity-50 flex items-center gap-2"
             >
               {uploading ? 'Importing...' : 'Import Questions'}
             </button>

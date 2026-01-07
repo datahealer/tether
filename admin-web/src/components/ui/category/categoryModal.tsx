@@ -93,7 +93,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               type="text"
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D]"
               placeholder="e.g. Communication"
               required
               disabled={isSubmitting}
@@ -119,14 +119,17 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 placeholder="#FF7E3D"
                 disabled={isSubmitting}
               />
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-[#626262] text-sm">Preview:</span>
-              <div
-                className="w-16 h-16 rounded-xl shadow-lg"
+                 <div className="mt-3">
+                  <div
+                className="w-12 h-12 rounded-xl shadow-lg"
                 style={{ backgroundColor: formData.colorCode }}
               />
+              <span className="text-[#626262] text-sm">Preview:</span>
             </div>
+              
+              
+            </div>
+         
           </div>
 
           {/* Description */}
@@ -135,7 +138,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D] min-h-[100px] resize-none"
+              className="w-full bg-white/10 border border-[#626262] rounded-xl px-4 py-3 text-[#1F2935] placeholder-[#626262]-300 focus:outline-none focus:ring-2 focus:ring-[#FF7E3D] min-h-[100px] resize-none"
               placeholder="Short description shown in app..."
               disabled={isSubmitting}
             />
@@ -146,7 +149,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
+              className="px-4 py-2 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
               disabled={isSubmitting}
             >
               Cancel
@@ -154,7 +157,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-[#FF7E3D] rounded-xl text-white font-medium hover:from-[#626262]-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
