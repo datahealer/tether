@@ -9,7 +9,7 @@
 
 
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet,  ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { useOnboarding } from '@/context/onboarding_context';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import * as Haptics from 'expo-haptics';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 const relationshipOptions = [
   { id: 'dating', label: 'Dating' },
@@ -71,7 +72,7 @@ export default function RelationshipStatusScreen() {
         <View style={styles.optionsContainer}>
           {relationshipOptions.map((option) => (
             <View key={option.id}>
-              <TouchableOpacity
+              <DebouncedButton
                 style={[
                   styles.optionItem,
                   selected === option.id && styles.optionItemSelected,
@@ -88,7 +89,7 @@ export default function RelationshipStatusScreen() {
                 {selected === option.id && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
                 )}
-              </TouchableOpacity>
+              </DebouncedButton>
               
               {option.id === 'other' && selected === 'other' && (
                 <View style={styles.otherInputContainer}>
@@ -110,7 +111,7 @@ export default function RelationshipStatusScreen() {
       </ScrollView>
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.primaryButton,
             (!selected || (selected === 'other' && !otherText.trim())) && styles.buttonDisabled
@@ -120,7 +121,7 @@ export default function RelationshipStatusScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

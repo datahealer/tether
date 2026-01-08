@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function PrivacyScreen() {
   const router = useRouter();
@@ -41,13 +42,13 @@ export default function PrivacyScreen() {
         <View style={{ flex: 1 }} />
 
         {/* Continue Button */}
-        <TouchableOpacity 
+        <DebouncedButton
           style={styles.continueButton}
           onPress={handleContinue}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

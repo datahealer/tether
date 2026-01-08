@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useTetherStats } from '@/hooks/useTetherStats';
+import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 interface PricingOption {
   id: string;
@@ -44,6 +45,7 @@ export default function DrawLockedUpsellScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string>('6');
   const tetherStats = useTetherStats();
+  const { push: debouncedPush} = useNavigationDebounce();
 
   const handleSelectOption = async (optionId: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -68,7 +70,7 @@ export default function DrawLockedUpsellScreen() {
       chatIconActive={tetherStats.isActive}
       onChatPress={() => {
         tetherStats.markAsViewed();
-        router.push('/home/tether-history');
+        debouncedPush('/home/tether-history');
       }}
       showSettingsIcon={true}
     >

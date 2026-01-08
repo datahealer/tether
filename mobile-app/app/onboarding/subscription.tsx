@@ -3,7 +3,7 @@
 //   View,
 //   Text,
 //   StyleSheet,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   ScrollView,
 //   Alert,
 // } from 'react-native';
@@ -102,7 +102,7 @@
 //             const isTrial = plan.id === 'trial';
             
 //             return (
-//               <TouchableOpacity
+//               <DebouncedButton
 //                 key={plan.id}
 //                 style={[
 //                   styles.planCard,
@@ -149,7 +149,7 @@
 //                     {plan.billing}
 //                   </Text>
 //                 )}
-//               </TouchableOpacity>
+//               </DebouncedButton>
 //             );
 //           })}
 //         </View>
@@ -158,13 +158,13 @@
 //         <View style={{ flex: 1, minHeight: Spacing.lg }} />
 
 //         {/* Start Trial Button */}
-//         <TouchableOpacity
+//         <DebouncedButton
 //           style={styles.startButton}
 //           onPress={handleStartTrial}
 //           activeOpacity={0.8}
 //         >
 //           <Text style={styles.buttonText}>Start 7 Days Of Free Premium</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 
 //         {/* Trial Info */}
 //         <Text style={styles.trialInfo}>
@@ -330,7 +330,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -349,6 +349,7 @@ import {
   checkRevenueCatSubscription,
 } from '../../services/subscription';
 import type { PurchasesPackage } from 'react-native-purchases';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type PlanType = 'yearly' | 'monthly' | 'trial';
 
@@ -548,7 +549,7 @@ export default function SubscriptionScreen() {
             const isTrial = plan.id === 'trial';
             
             return (
-              <TouchableOpacity
+              <DebouncedButton
                 key={plan.id}
                 style={[
                   styles.planCard,
@@ -596,7 +597,7 @@ export default function SubscriptionScreen() {
                     {plan.billing}
                   </Text>
                 )}
-              </TouchableOpacity>
+              </DebouncedButton>
             );
           })}
         </View>
@@ -605,7 +606,7 @@ export default function SubscriptionScreen() {
         <View style={{ flex: 1, minHeight: Spacing.lg }} />
 
         {/* Start Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.startButton,
             isLoading && styles.startButtonDisabled,
@@ -624,7 +625,7 @@ export default function SubscriptionScreen() {
               }
             </Text>
           )}
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Trial Info */}
         <Text style={styles.trialInfo}>

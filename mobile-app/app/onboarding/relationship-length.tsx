@@ -1,6 +1,6 @@
 
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useOnboarding } from '@/context/onboarding_context';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import * as Haptics from 'expo-haptics';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 const durationOptions = [
   { id: 'just-started', label: 'Just started' },
@@ -52,7 +53,7 @@ export default function RelationshipDurationScreen() {
 
         <View style={styles.optionsContainer}>
           {durationOptions.map((option) => (
-            <TouchableOpacity
+            <DebouncedButton
               key={option.id}
               style={[
                 styles.optionItem,
@@ -70,13 +71,13 @@ export default function RelationshipDurationScreen() {
               {selected === option.id && (
                 <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
               )}
-            </TouchableOpacity>
+            </DebouncedButton>
           ))}
         </View>
       </ScrollView>
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.primaryButton,
             !selected && styles.buttonDisabled
@@ -86,7 +87,7 @@ export default function RelationshipDurationScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

@@ -449,6 +449,7 @@ import {
   type TetherStats,
 } from '@/services/tether_service';
 import { useTetherStats } from '@/hooks/useTetherStats';
+import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 export default function CategoryQuestionScreen() {
   const router = useRouter();
@@ -456,6 +457,7 @@ export default function CategoryQuestionScreen() {
   const { user } = useAuth();
   const { onboardingData } = useOnboarding();
   const tetherStats = useTetherStats();
+  const { push: debouncedPush} = useNavigationDebounce();
 
   const categoryId = params.categoryId as string;
   const categoryTitle = params.categoryTitle as string;
@@ -673,7 +675,7 @@ export default function CategoryQuestionScreen() {
       chatIconActive={tetherStats.isActive}
       onChatPress={() => {
         tetherStats.markAsViewed();
-        router.push('/home/tether-history');
+        debouncedPush('/home/tether-history');
       }}
       showSettingsIcon={true}
     >

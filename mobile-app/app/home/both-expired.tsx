@@ -13,12 +13,14 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { useTetherStats } from '@/hooks/useTetherStats';
+import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 export default function BothExpiredScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuth();
   const tetherStats = useTetherStats();
+  const { push: debouncedPush} = useNavigationDebounce();
   
   const categoryName = (params.categoryName as string) || 'Deep Connection';
   const question = (params.question as string) || 'What is something small your partner does that makes you smile?';
@@ -42,7 +44,7 @@ export default function BothExpiredScreen() {
       chatIconActive={tetherStats.isActive}
       onChatPress={() => {
         tetherStats.markAsViewed();
-        router.push('/home/tether-history');
+        debouncedPush('/home/tether-history');
       }}
       showSettingsIcon={true}
     >

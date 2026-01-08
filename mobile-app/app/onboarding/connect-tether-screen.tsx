@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function ConnectTethersScreen() {
   const router = useRouter();
@@ -58,13 +59,13 @@ export default function ConnectTethersScreen() {
         <View style={{ flex: 1 }} />
 
         {/* Tether Us Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={styles.tetherButton}
           onPress={handleTetherUs}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Tether Us</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

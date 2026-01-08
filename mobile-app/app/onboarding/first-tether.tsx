@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+
   TextInput,
   ScrollView,
   Alert,
@@ -15,6 +15,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function FirstTetherScreen() {
   const router = useRouter();
@@ -124,14 +125,14 @@ export default function FirstTetherScreen() {
           </View>
 
           {/* Draw Another Button */}
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.drawAnotherButton}
             onPress={handleDrawAnother}
             activeOpacity={0.8}
           >
             <Ionicons name="refresh" size={16} color={Colors.darkOrange} />
             <Text style={styles.drawAnotherText}>Draw Another</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Refresh Info */}
           <Text style={styles.refreshInfo}>0 Shared refresh remaining</Text>
@@ -141,7 +142,7 @@ export default function FirstTetherScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
         {/* Share Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.shareButton,
             (!response.trim() || loading) && styles.shareButtonDisabled,
@@ -153,7 +154,7 @@ export default function FirstTetherScreen() {
           <Text style={styles.buttonText}>
             {loading ? 'Sharing...' : 'Share My First Tether'}
           </Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );

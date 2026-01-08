@@ -7,7 +7,7 @@
 //   Text, 
 //   StyleSheet, 
 //   TextInput, 
-//   TouchableOpacity, 
+//   DebouncedButton, 
 //   Switch, 
 //   Alert,
 //   KeyboardAvoidingView,
@@ -144,7 +144,7 @@
 //               onFocus={() => setPasswordFocused(true)}
 //               onBlur={() => setPasswordFocused(false)}
 //             />
-//             <TouchableOpacity 
+//             <DebouncedButton 
 //               onPress={() => {
 //                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 //                 setShowPassword(!showPassword);
@@ -155,7 +155,7 @@
 //                 size={20} 
 //                 color={Colors.inputText} 
 //               />
-//             </TouchableOpacity>
+//             </DebouncedButton>
 //           </View>
 
 //           {/* Save Password Toggle: SF Pro Display Medium, 16, Line Height 24, Left Align */}
@@ -181,7 +181,7 @@
 //           </View>
 
 //           {/* Google Sign In Button */}
-//           <TouchableOpacity 
+//           <DebouncedButton 
 //             style={styles.googleButton}
 //             onPress={handleGoogleSignIn}
 //             disabled={!request || loading}
@@ -189,13 +189,13 @@
 //           >
 //             <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
 //             <Text style={styles.googleButtonText}>Sign in with Google</Text>
-//           </TouchableOpacity>
+//           </DebouncedButton>
 
 //           {/* Spacer */}
 //           <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
 //           {/* Create Account Button: 358x65, Corner Radius 32, Dark Orange */}
-//           <TouchableOpacity 
+//           <DebouncedButton 
 //             style={[
 //               styles.button,
 //               loading && styles.buttonDisabled
@@ -207,7 +207,7 @@
 //             <Text style={styles.buttonText}>
 //               {loading ? 'Creating...' : 'Create account'}
 //             </Text>
-//           </TouchableOpacity>
+//           </DebouncedButton>
 //         </ScrollView>
 //       </KeyboardAvoidingView>
 //     </OnboardingLayout>
@@ -354,7 +354,7 @@ import {
   Text, 
   StyleSheet, 
   TextInput, 
-  TouchableOpacity, 
+   
   Switch, 
   Alert,
   KeyboardAvoidingView,
@@ -368,7 +368,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useAuth } from '@/context/auth_context';
 import {  signInWithGoogle,processGoogleSignIn, signInWithApple } from '@/services/auth_service';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '../../theme/constants';
-
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 export default function AccountCreationScreen() {
   const router = useRouter();
   const { signUp, signIn, signOut, user } = useAuth();
@@ -506,9 +506,9 @@ export default function AccountCreationScreen() {
       showLogoutAvatar={true}
       // rightButton={
       //   !user ? (
-      //     <TouchableOpacity onPress={handleSkip}>
+      //     <DebouncedButton onPress={handleSkip}>
       //       <Text style={styles.skipText}>Skip</Text>
-      //     </TouchableOpacity>
+      //     </DebouncedButton>
       //   ) : undefined
       // }
     >
@@ -541,21 +541,21 @@ export default function AccountCreationScreen() {
       <Text style={styles.userEmail}>{user.email}</Text>
     </View>
 
-    <TouchableOpacity 
+    <DebouncedButton 
       style={styles.continueButton}
       onPress={handleSkip}
       activeOpacity={0.8}
     >
       <Text style={styles.buttonText}>Continue</Text>
-    </TouchableOpacity>
+    </DebouncedButton>
 
-    <TouchableOpacity 
+    <DebouncedButton 
       style={styles.logoutButton}
       onPress={handleLogout}
     >
       <Ionicons name="log-out-outline" size={20} color={Colors.darkOrange} />
       <Text style={styles.logoutButtonText}>Logout</Text>
-    </TouchableOpacity>
+    </DebouncedButton>
   </View>
           ) : (
             <>
@@ -599,7 +599,7 @@ export default function AccountCreationScreen() {
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                 />
-                <TouchableOpacity 
+                <DebouncedButton 
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setShowPassword(!showPassword);
@@ -610,7 +610,7 @@ export default function AccountCreationScreen() {
                 style={styles.inputIcon}
                 resizeMode="contain"
               />
-                </TouchableOpacity>
+                </DebouncedButton>
               </View>
 
               {/* Save Password Toggle */}
@@ -637,7 +637,7 @@ export default function AccountCreationScreen() {
 
               {/* Platform-specific Auth Button */}
               {/* {Platform.OS === 'ios' ? (
-                <TouchableOpacity 
+                <DebouncedButton 
                   style={styles.authButton}
                   onPress={handleAppleSignIn}
                   disabled={loading}
@@ -645,9 +645,9 @@ export default function AccountCreationScreen() {
                 >
                   <Ionicons name="logo-apple" size={20} color={Colors.black} style={styles.buttonIcon} />
                   <Text style={styles.authButtonText}>Sign in with Apple</Text>
-                </TouchableOpacity>
+                </DebouncedButton>
               ) : (
-                <TouchableOpacity 
+                <DebouncedButton 
                   style={styles.authButton}
                   onPress={handleGoogleSignIn}
                   disabled={!request || loading}
@@ -655,14 +655,14 @@ export default function AccountCreationScreen() {
                 >
                   <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
                   <Text style={styles.authButtonText}>Sign in with Google</Text>
-                </TouchableOpacity>
+                </DebouncedButton>
               )} */}
 
               {/* Spacer */}
               <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
               {/* Create Account Button */}
-              <TouchableOpacity 
+              <DebouncedButton 
                 style={[
                   styles.button,
                   loading && styles.buttonDisabled
@@ -674,17 +674,17 @@ export default function AccountCreationScreen() {
                 <Text style={styles.buttonText}>
                   {loading ? 'Creating...' : 'Create account'}
                 </Text>
-              </TouchableOpacity>
+              </DebouncedButton>
 
               {/* Already have account */}
-              <TouchableOpacity 
+              <DebouncedButton 
                 style={styles.loginLink}
                 onPress={() => router.push('/onboarding/login')}
               >
                 <Text style={styles.loginLinkText}>
                   Already have an account? <Text style={styles.loginLinkBold}>Sign in</Text>
                 </Text>
-              </TouchableOpacity>
+              </DebouncedButton>
             </>
           )}
         </ScrollView>

@@ -24,7 +24,7 @@ export default function Index() {
         
         // Check if user has completed onboarding
         if (user.onboarded) {
-          router.replace('/onboarding/home');
+          router.replace('/home/category-packs');
         } else {
           // User is authenticated but hasn't completed onboarding
           router.replace('/onboarding/welcome');

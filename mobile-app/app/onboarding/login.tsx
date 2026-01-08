@@ -4,7 +4,7 @@ import {
   Text, 
   StyleSheet, 
   TextInput, 
-  TouchableOpacity, 
+   
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +18,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useAuth } from '@/context/auth_context';
 import { signInWithGoogle, processGoogleSignIn, signInWithApple } from '@/services/auth_service';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '../../theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -107,9 +108,9 @@ const handleGoogleSignIn = async () => {
       showBackButton={true}
       
       // rightButton={
-      //   <TouchableOpacity onPress={() => router.push('/onboarding/privacy')}>
+      //   <DebouncedButton onPress={() => router.push('/onboarding/privacy')}>
       //     <Text style={styles.skipText}>Skip</Text>
-      //   </TouchableOpacity>
+      //   </DebouncedButton>
       // }
     >
       <KeyboardAvoidingView 
@@ -166,7 +167,7 @@ const handleGoogleSignIn = async () => {
               onFocus={() => setPasswordFocused(true)}
               onBlur={() => setPasswordFocused(false)}
             />
-            <TouchableOpacity 
+            <DebouncedButton 
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setShowPassword(!showPassword);
@@ -177,16 +178,16 @@ const handleGoogleSignIn = async () => {
                 style={styles.inputIcon}
                 resizeMode="contain"
               />
-            </TouchableOpacity>
+            </DebouncedButton>
           </View>
 
           {/* Forgot Password */}
-          <TouchableOpacity 
+          <DebouncedButton 
             style={styles.forgotPasswordContainer}
             onPress={handleForgotPassword}
           >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* OR Divider */}
           <View style={styles.dividerContainer}>
@@ -197,7 +198,7 @@ const handleGoogleSignIn = async () => {
 
           {/* Platform-specific Auth Button */}
           {Platform.OS === 'ios' ? (
-            <TouchableOpacity 
+            <DebouncedButton 
               style={styles.authButton}
               onPress={handleAppleSignIn}
               disabled={loading}
@@ -205,9 +206,9 @@ const handleGoogleSignIn = async () => {
             >
               <Ionicons name="logo-apple" size={20} color={Colors.black} style={styles.buttonIcon} />
               <Text style={styles.authButtonText}>Sign in with Apple</Text>
-            </TouchableOpacity>
+            </DebouncedButton>
           ) : (
-            <TouchableOpacity 
+            <DebouncedButton 
               style={styles.authButton}
               onPress={handleGoogleSignIn}
               disabled={!Request || loading}
@@ -215,14 +216,14 @@ const handleGoogleSignIn = async () => {
             >
               <Ionicons name="logo-google" size={20} color={Colors.black} style={styles.buttonIcon} />
               <Text style={styles.authButtonText}>Sign in with Google</Text>
-            </TouchableOpacity>
+            </DebouncedButton>
           )}
 
           {/* Spacer */}
           <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
           {/* Login Button */}
-          <TouchableOpacity 
+          <DebouncedButton 
             style={[
               styles.button,
               loading && styles.buttonDisabled
@@ -234,17 +235,17 @@ const handleGoogleSignIn = async () => {
             <Text style={styles.buttonText}>
               {loading ? 'Signing in...' : 'Sign in'}
             </Text>
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Don't have account */}
-          <TouchableOpacity 
+          <DebouncedButton 
             style={styles.signupLink}
             onPress={() => router.back()}
           >
             <Text style={styles.signupLinkText}>
               Don't have an account? <Text style={styles.signupLinkBold}>Sign up</Text>
             </Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         </ScrollView>
       </KeyboardAvoidingView>
     </OnboardingLayout>

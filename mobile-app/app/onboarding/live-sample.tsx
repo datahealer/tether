@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet,  TextInput, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function LiveSampleScreen() {
   const router = useRouter();
@@ -13,13 +14,13 @@ export default function LiveSampleScreen() {
       style={styles.container}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <DebouncedButton onPress={() => router.back()}>
           <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
         <Text style={styles.progress}>6/8</Text>
-        <TouchableOpacity onPress={() => router.push('/onboarding/account-creation')}>
+        <DebouncedButton onPress={() => router.push('/onboarding/account-creation')}>
           <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
@@ -43,16 +44,16 @@ export default function LiveSampleScreen() {
       </ScrollView>
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <DebouncedButton
           style={styles.primaryButton}
           onPress={() => router.push('/onboarding/account-creation')}
         >
           <Text style={styles.primaryButtonText}>Looks Good, Let's Start</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
 
-        <TouchableOpacity onPress={() => router.push('/onboarding/account-creation')}>
+        <DebouncedButton onPress={() => router.push('/onboarding/account-creation')}>
           <Text style={styles.linkText}>Skip For Now</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </LinearGradient>
   );

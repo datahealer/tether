@@ -1,4 +1,4 @@
-// import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+// import { View, Text, StyleSheet, DebouncedButton } from 'react-native';
 // import { LinearGradient } from 'expo-linear-gradient';
 // import { useRouter } from 'expo-router';
 
@@ -10,9 +10,9 @@
 //       colors={['#F5E6D3', '#E8D4C0', '#F0DDD0']}
 //       style={styles.container}
 //     >
-//       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+//       <DebouncedButton style={styles.backButton} onPress={() => router.back()}>
 //         <Text style={styles.backText}>←</Text>
-//       </TouchableOpacity>
+//       </DebouncedButton>
 
 //       <View style={styles.content}>
 //         <View style={styles.iconContainer}>
@@ -27,16 +27,16 @@
 //       </View>
 
 //       <View style={styles.bottomContainer}>
-//         <TouchableOpacity
+//         <DebouncedButton
 //           style={styles.primaryButton}
 //           onPress={() => router.push('/onboarding/relationship-status')}
 //         >
 //           <Text style={styles.primaryButtonText}>Got It</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 
-//         <TouchableOpacity onPress={() => {}}>
+//         <DebouncedButton onPress={() => {}}>
 //           <Text style={styles.linkText}>Learn More</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //       </View>
 //     </LinearGradient>
 //   );
@@ -110,11 +110,12 @@
 //   },
 // });
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet,  Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function UnderstandingScreen() {
   const router = useRouter();
@@ -152,13 +153,13 @@ export default function UnderstandingScreen() {
         <View style={{ flex: 1 }} />
 
         {/* Continue Button */}
-        <TouchableOpacity 
+        <DebouncedButton 
           style={styles.continueButton}
           onPress={handleContinue}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>I Understand</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

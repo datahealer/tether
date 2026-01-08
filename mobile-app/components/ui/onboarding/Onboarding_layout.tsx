@@ -816,6 +816,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontWeights } from '../../../theme/constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 // Preload all 81 static .webp frames
 // Files are located in assets/loops/ and named:
@@ -948,6 +949,7 @@ export default function OnboardingLayout({
 }: OnboardingLayoutProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { push: debouncedPush, isNavigating } = useNavigationDebounce();
   const [currentFrame, setCurrentFrame] = useState(0);
 
   useEffect(() => {
@@ -1035,13 +1037,15 @@ export default function OnboardingLayout({
                 styles.chatIconButton,
                 chatIconActive && styles.chatIconButtonActive,
               ]}
-              onPress={onChatPress || (() => router.push('/home/tether-history'))}
+              onPress={onChatPress || (() => debouncedPush('/home/tether-history'))}
+              disabled={isNavigating}
             >
               <Image
                 source={require('../../../assets/images/Chat.png')}
                 style={[
                   styles.chatImage,
                   chatIconActive && styles.chatImageActive,
+                  isNavigating && { opacity: 0.5 }
                 ]}
                 resizeMode="contain"
               />
@@ -1059,11 +1063,15 @@ export default function OnboardingLayout({
           {showSettingsIcon && user && (
             <TouchableOpacity
               style={styles.settingsIconButton}
-              onPress={() => router.push('/onboarding/settings/settings')}
+              onPress={() => debouncedPush('/onboarding/settings/settings')}
+              disabled={isNavigating}
             >
               <Image
                 source={require('../../../assets/images/settings-icon.png')}
-                style={styles.settingsImage}
+                style={[
+                  styles.settingsImage,
+                  isNavigating && { opacity: 0.5 }
+                ]}
                 resizeMode="contain"
               />
             </TouchableOpacity>

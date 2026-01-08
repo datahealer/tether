@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  
   ScrollView,
   Alert,
 } from 'react-native';
@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type LivingSituation = 'Together' | 'Apart but nearby' | 'Long distance';
 
@@ -68,7 +69,7 @@ export default function LivingSituationScreen() {
             const isSelected = selectedSituation === situation;
             
             return (
-              <TouchableOpacity
+              <DebouncedButton
                 key={situation}
                 style={[
                   styles.optionButton,
@@ -88,7 +89,7 @@ export default function LivingSituationScreen() {
                 {isSelected && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
                 )}
-              </TouchableOpacity>
+              </DebouncedButton>
             );
           })}
         </View>
@@ -97,7 +98,7 @@ export default function LivingSituationScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xxl * 2 }} />
 
         {/* Continue Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.continueButton,
             !selectedSituation && styles.continueButtonDisabled,
@@ -107,7 +108,7 @@ export default function LivingSituationScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );

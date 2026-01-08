@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,6 +19,7 @@ import GenderPickerModal from '../../components/ui/onboarding/GenderPickerModal'
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { formatDateToYMD } from '@/utils/dateUtils';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function AboutYouScreen() {
   const router = useRouter();
@@ -129,7 +130,7 @@ const handleContinue = async () => {
           </View>
 
           {/* Date of Birth Selector */}
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.selectorContainer}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -143,10 +144,10 @@ const handleContinue = async () => {
               {dateOfBirth ? formatDate(dateOfBirth) : 'Date of Birth'}
             </Text>
             <Ionicons name="calendar-outline" size={20} color={Colors.inputText} />
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Gender Selector (Optional) */}
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.selectorContainer}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -160,19 +161,19 @@ const handleContinue = async () => {
               {gender || 'Gender (optional)'}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.inputText} />
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Spacer */}
           <View style={{ flex: 1, minHeight: Spacing.xxl }} />
 
           {/* Continue Button */}
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.continueButton}
             onPress={handleContinue}
             activeOpacity={0.8}
           >
             <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         </ScrollView>
       </KeyboardAvoidingView>
 

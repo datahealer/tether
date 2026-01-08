@@ -1,6 +1,6 @@
 
 
-// import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+// import { View, Text, StyleSheet, DebouncedButton, ScrollView } from 'react-native';
 // import { LinearGradient } from 'expo-linear-gradient';
 // import { useRouter } from 'expo-router';
 // import { useState, useEffect } from 'react';
@@ -48,13 +48,13 @@
 //       style={styles.container}
 //     >
 //       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => router.back()}>
+//         <DebouncedButton onPress={() => router.back()}>
 //           <Text style={styles.backText}>←</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //         <Text style={styles.progress}>3/8</Text>
-//         <TouchableOpacity onPress={() => router.push('/onboarding/tone')}>
+//         <DebouncedButton onPress={() => router.push('/onboarding/tone')}>
 //           <Text style={styles.closeText}>✕</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //       </View>
 
 //       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
@@ -63,7 +63,7 @@
 
 //         <View style={styles.optionsContainer}>
 //           {goalOptions.map((option) => (
-//             <TouchableOpacity
+//             <DebouncedButton
 //               key={option.id}
 //               style={[
 //                 styles.optionChip,
@@ -73,19 +73,19 @@
 //             >
 //               <Text style={styles.optionEmoji}>{option.emoji}</Text>
 //               <Text style={styles.optionLabel}>{option.label}</Text>
-//             </TouchableOpacity>
+//             </DebouncedButton>
 //           ))}
 //         </View>
 //       </ScrollView>
 
 //       <View style={styles.bottomContainer}>
-//         <TouchableOpacity
+//         <DebouncedButton
 //           style={[styles.primaryButton, selected.length === 0 && styles.buttonDisabled]}
 //           disabled={selected.length === 0}
 //           onPress={handleContinue}
 //         >
 //           <Text style={styles.primaryButtonText}>Continue</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //       </View>
 //     </LinearGradient>
 //   );
@@ -185,7 +185,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+ 
   ScrollView,
   Alert,
 } from 'react-native';
@@ -195,6 +195,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 const goalOptions = [
   { id: 'communication', label: 'Better Communication' },
@@ -265,7 +266,7 @@ export default function GoalsScreen() {
             const isSelected = selected.includes(option.id);
             
             return (
-              <TouchableOpacity
+              <DebouncedButton
                 key={option.id}
                 style={[
                   styles.optionCard,
@@ -289,7 +290,7 @@ export default function GoalsScreen() {
                     </View>
                   )}
                 </View>
-              </TouchableOpacity>
+              </DebouncedButton>
             );
           })}
         </View>
@@ -298,7 +299,7 @@ export default function GoalsScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xxl * 2 }} />
 
         {/* Continue Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.continueButton,
             selected.length === 0 && styles.continueButtonDisabled,
@@ -308,7 +309,7 @@ export default function GoalsScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Set My Goals</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );

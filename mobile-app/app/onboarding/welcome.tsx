@@ -1,6 +1,6 @@
 
 // import React, { useEffect } from 'react';
-// import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
+// import { View, Text, StyleSheet, DebouncedButton, Image, Alert, Dimensions } from 'react-native';
 // import { useRouter } from 'expo-router';
 // import { Ionicons } from '@expo/vector-icons';
 // import * as AppleAuthentication from 'expo-apple-authentication';
@@ -174,21 +174,21 @@
 //         </Text>
 
 //         <View style={styles.buttonContainer}>
-//           <TouchableOpacity 
+//           <DebouncedButton 
 //             style={styles.emailButton}
 //             onPress={() => router.push('/onboarding/account-creation')}
 //           >
 //             <Ionicons name="mail-outline" size={20} color="#FFF" style={styles.buttonIcon} />
 //             <Text style={styles.emailButtonText}>Sign up with E-Mail</Text>
-//           </TouchableOpacity>
+//           </DebouncedButton>
 
-//           <TouchableOpacity 
+//           <DebouncedButton 
 //             style={styles.appleButton}
 //             onPress={handleAppleSignIn}
 //           >
 //             <Ionicons name="logo-apple" size={20} color="#FFF" style={styles.buttonIcon} />
 //             <Text style={styles.appleButtonText}>Sign Up with Apple</Text>
-//           </TouchableOpacity>
+//           </DebouncedButton>
 //         </View>
 
 //         <Text style={styles.terms}>
@@ -291,8 +291,8 @@
 //     textDecorationLine: 'underline',
 //   },
 // });
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, Alert, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -304,10 +304,12 @@ import { Canvas, Path, Skia, Blur } from '@shopify/react-native-skia';
 import { useSharedValue, withRepeat, withTiming, Easing, useDerivedValue } from 'react-native-reanimated';
 import { Colors, Spacing, FontSizes, FontWeights, ComponentSizes } from '../../theme/constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   // const { request, response, promptAsync } = useGoogleAuth();
 
   // useEffect(() => {
@@ -321,6 +323,7 @@ export default function WelcomeScreen() {
 
   const handleGoogleSignIn = async () => {
   try {
+    setIsLoading(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const user = await signInWithGoogle();
     await signIn(user);  // Your auth context
@@ -329,11 +332,14 @@ export default function WelcomeScreen() {
   } catch (error: any) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     Alert.alert('Error', error.message || 'Failed to sign in with Google');
+  } finally {
+    setIsLoading(false);
   }
 };
 
   const handleAppleSignIn = async () => {
     try {
+      setIsLoading(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
       const credential = await AppleAuthentication.signInAsync({
@@ -373,10 +379,13 @@ export default function WelcomeScreen() {
       router.push('/onboarding/privacy');
     } catch (e: any) {
       if (e.code === 'ERR_CANCELED') {
+        setIsLoading(false);
         return;
       }
       Alert.alert('Error', 'Failed to sign in with Apple');
       console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -448,6 +457,18 @@ export default function WelcomeScreen() {
     );
   };
 
+  // Show loading overlay
+  if (isLoading) {
+    return (
+      <OnboardingLayout showBackButton={false} showLogo={false} showTetherLine={false}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.darkOrange} />
+          <Text style={styles.loadingText}>Signing in...</Text>
+        </View>
+      </OnboardingLayout>
+    );
+  }
+
   return (
     
     <OnboardingLayout showBackButton={false} showLogo={false} showTetherLine={false}>
@@ -485,34 +506,34 @@ export default function WelcomeScreen() {
         {/* Buttons */}
         <View style={styles.buttonContainer}>
           {/* Email Button - 358x65, Dark Orange */}
-          <TouchableOpacity 
+          <DebouncedButton 
             style={styles.emailButton}
             onPress={handleEmailSignUp}
             activeOpacity={0.8}
           >
             <Ionicons name="mail-outline" size={20} color={Colors.white} style={styles.buttonIcon} />
             <Text style={styles.emailButtonText}>Sign up with E-Mail</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Apple Button - 358x60, Black */}
          {Platform.OS === 'ios' ? (
-  <TouchableOpacity 
+  <DebouncedButton 
     style={styles.appleButton}
     onPress={handleAppleSignIn}
     activeOpacity={0.8}
   >
     <Ionicons name="logo-apple" size={20} color={Colors.white} style={styles.buttonIcon} />
     <Text style={styles.appleButtonText}>Sign Up with Apple</Text>
-  </TouchableOpacity>
+  </DebouncedButton>
 ) : (
-  <TouchableOpacity 
+  <DebouncedButton 
     style={styles.appleButton}
     onPress={handleGoogleSignIn}
     activeOpacity={0.8}
   >
     <Ionicons name="logo-google" size={20} color={Colors.white} style={styles.buttonIcon} />
     <Text style={styles.appleButtonText}>Sign Up with Google</Text>
-  </TouchableOpacity>
+  </DebouncedButton>
 )}
         </View>
 
@@ -647,5 +668,16 @@ const styles = StyleSheet.create({
   link: {
     color: Colors.darkOrange,
     textDecorationLine: 'underline',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontFamily: 'InterTight-Regular',
+    fontSize: FontSizes.description,
+    color: Colors.inputText,
+    marginTop: Spacing.md,
   },
 });

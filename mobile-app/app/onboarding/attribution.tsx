@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+ 
   TextInput,
   ScrollView,
   Alert,
@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type AttributionSource = 
   | 'TikTok'
@@ -105,7 +106,7 @@ export default function AttributionScreen() {
             const isSelected = selectedSource === source;
             
             return (
-              <TouchableOpacity
+              <DebouncedButton
                 key={source}
                 style={[
                   styles.optionButton,
@@ -125,7 +126,7 @@ export default function AttributionScreen() {
                 {isSelected && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
                 )}
-              </TouchableOpacity>
+              </DebouncedButton>
             );
           })}
         </View>
@@ -155,7 +156,7 @@ export default function AttributionScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
         {/* Finish Setup Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.finishButton,
             !selectedSource && styles.finishButtonDisabled,
@@ -165,7 +166,7 @@ export default function AttributionScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Finish Setup</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );

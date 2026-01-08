@@ -3,7 +3,7 @@
 //   View,
 //   Text,
 //   StyleSheet,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   ScrollView,
 //   Alert,
 // } from 'react-native';
@@ -76,7 +76,7 @@
 //             const isSelected = selectedRhythm === rhythm;
             
 //             return (
-//               <TouchableOpacity
+//               <DebouncedButton
 //                 key={rhythm}
 //                 style={[
 //                   styles.optionButton,
@@ -96,7 +96,7 @@
 //                 {isSelected && (
 //                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
 //                 )}
-//               </TouchableOpacity>
+//               </DebouncedButton>
 //             );
 //           })}
 //         </View>
@@ -105,7 +105,7 @@
 //         <View style={{ flex: 1, minHeight: Spacing.xxl }} />
 
 //         {/* Continue Button */}
-//         <TouchableOpacity
+//         <DebouncedButton
 //           style={[
 //             styles.continueButton,
 //             !selectedRhythm && styles.continueButtonDisabled,
@@ -115,7 +115,7 @@
 //           activeOpacity={0.8}
 //         >
 //           <Text style={styles.buttonText}>Set Our Rhythm</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //       </ScrollView>
 //     </OnboardingLayout>
 //   );
@@ -208,7 +208,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  
   ScrollView,
   Alert,
 } from 'react-native';
@@ -219,6 +219,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import NotificationPermissionModal from '../../components/ui/onboarding/NotificationModal';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type RhythmOption = 'Every day' | 'A few times a week' | 'Once a week' | "We'll decide as we go";
 
@@ -290,7 +291,7 @@ export default function RhythmScreen() {
             const isSelected = selectedRhythm === rhythm;
             
             return (
-              <TouchableOpacity
+              <DebouncedButton
                 key={rhythm}
                 style={[
                   styles.optionButton,
@@ -310,7 +311,7 @@ export default function RhythmScreen() {
                 {isSelected && (
                   <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
                 )}
-              </TouchableOpacity>
+              </DebouncedButton>
             );
           })}
         </View>
@@ -319,7 +320,7 @@ export default function RhythmScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xxl }} />
 
         {/* Continue Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.continueButton,
             !selectedRhythm && styles.continueButtonDisabled,
@@ -329,7 +330,7 @@ export default function RhythmScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Set Our Rhythm</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
 
       {/* Notification Permission Modal */}

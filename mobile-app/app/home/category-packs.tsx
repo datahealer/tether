@@ -243,10 +243,12 @@ import { Colors, Spacing, FontSizes, FontWeights } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { getCategoryProgress } from '@/services/tether_service';
 import { useTetherStats } from '@/hooks/useTetherStats';
+import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 export default function CategoryPacksScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { push: debouncedPush } = useNavigationDebounce();
   const [categories, setCategories] = useState<CarouselCard[]>([]);
   const [loading, setLoading] = useState(true);
   const tetherStats = useTetherStats();
@@ -357,7 +359,7 @@ export default function CategoryPacksScreen() {
       chatIconActive={tetherStats.isActive}
       onChatPress={() => {
         tetherStats.markAsViewed();
-        router.push('/home/tether-history');
+        debouncedPush('/home/tether-history');
       }}
     >
       <View style={styles.container}>
