@@ -14,11 +14,21 @@ export const CategoryDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 const [showViewModal, setShowViewModal] = useState(false);
 const [viewCategory, setViewCategory] = useState<Category | null>(null);
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 10;
 
   const { data: categories = [], isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: categoriesService.getAll,
   });
+const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+const paginatedCategories = categories.slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
 
   const createMutation = useMutation({
     mutationFn: categoriesService.create,
@@ -44,10 +54,24 @@ const [viewCategory, setViewCategory] = useState<Category | null>(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this category? Questions will remain but lose association.')) return;
-    await deleteMutation.mutateAsync(id);
-  };
+const handleDelete = (id: string) => {
+  const category = categories.find((c) => c._id === id);
+  if (!category) return;
+
+  setDeleteCategory(category);
+  setShowDeleteModal(true);
+};
+const confirmDeleteCategory = async () => {
+  if (!deleteCategory) return;
+
+  try {
+    await deleteMutation.mutateAsync(deleteCategory._id);
+  } finally {
+    setShowDeleteModal(false);
+    setDeleteCategory(null);
+  }
+};
+
 
   const stats = {
     total: categories.length,
@@ -111,7 +135,7 @@ const [viewCategory, setViewCategory] = useState<Category | null>(null);
       <StatsCards stats={stats} />
 
       <CategoryTable
-        categories={categories}
+        categories={paginatedCategories}
         onEdit={(cat) => {
           setSelectedCategory(cat);
           setShowModal(true);
@@ -122,6 +146,45 @@ onView={(cat) => {
   setShowViewModal(true);
 }}
       />
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white border border-white/10 rounded-2xl px-4 sm:px-6 py-4'>
+  <p className="text-sm text-[#626262]">
+    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+    {Math.min(currentPage * itemsPerPage, categories.length)} of{" "}
+    {categories.length} categories
+  </p>
+
+  <div className="flex gap-2">
+    <button
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage((p) => p - 1)}
+      className="px-4 py-2 rounded-lg border border-[#FF7E3D] disabled:opacity-50"
+    >
+      Prev
+    </button>
+
+    {Array.from({ length: totalPages }).map((_, i) => (
+      <button
+        key={i}
+        onClick={() => setCurrentPage(i + 1)}
+        className={`px-4 py-2 rounded-lg border ${
+          currentPage === i + 1
+            ? 'bg-[#FF7E3D] text-white'
+            : 'bg-white border-[#626262] '
+        }`}
+      >
+        {i + 1}
+      </button>
+    ))}
+
+    <button
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage((p) => p + 1)}
+      className="px-4 py-2 rounded-lg border border-[#FF7E3D] disabled:opacity-50"
+    >
+      Next
+    </button>
+  </div>
+</div>
 
       <CategoryModal
         isOpen={showModal}
@@ -134,6 +197,7 @@ onView={(cat) => {
       />
       {/* View Category Modal */}
 {showViewModal && viewCategory && (
+  
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
     <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
 
@@ -186,6 +250,44 @@ onView={(cat) => {
           className="px-6 py-2 rounded-xl bg-[#FF7E3D] text-white font-medium"
         >
           Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{showDeleteModal && deleteCategory && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
+    <div className="bg-white rounded-2xl w-full max-w-md p-6">
+
+      <h2 className="text-xl font-semibold text-[#1F2935] mb-4">
+        Delete Category
+      </h2>
+
+      <p className="text-[#626262] mb-2">
+        Are you sure you want to delete
+        <span className="font-semibold"> {deleteCategory.name}</span>?
+      </p>
+
+      <p className="text-sm text-red-500 mb-6">
+        Questions will remain but lose category association.
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => {
+            setShowDeleteModal(false);
+            setDeleteCategory(null);
+          }}
+          className="px-5 py-2 rounded-xl border border-gray-300 text-[#1F2935]"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={confirmDeleteCategory}
+          className="px-5 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600"
+        >
+          Delete
         </button>
       </div>
     </div>

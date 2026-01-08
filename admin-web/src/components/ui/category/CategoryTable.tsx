@@ -16,7 +16,7 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
   onView,
 }) => {
   return (
-    <div className="bg-white border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-white border border-white/10 rounded-2xl overflow-hidden mb-6">
       <div className="overflow-x-auto">
       <table className="w-full">
         <thead>

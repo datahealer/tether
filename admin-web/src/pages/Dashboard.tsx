@@ -29,6 +29,8 @@ const [showImportModal, setShowImportModal] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
 
   // Fetch questions
   const fetchQuestions = async () => {
@@ -139,16 +141,24 @@ const handleViewQuestion = (question: Question) => {
   setShowViewModal(true);
 };
 
-  const handleDeleteQuestion = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+ const handleDeleteQuestion = (id: string) => {
+  setDeleteQuestionId(id);
+  setShowDeleteModal(true);
+};
+const confirmDeleteQuestion = async () => {
+  if (!deleteQuestionId) return;
 
-    try {
-      await questionsService.delete(id);
-      await fetchQuestions();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete question');
-    }
-  };
+  try {
+    await questionsService.delete(deleteQuestionId);
+    await fetchQuestions();
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Failed to delete question');
+  } finally {
+    setShowDeleteModal(false);
+    setDeleteQuestionId(null);
+  }
+};
+
 
   // const handleViewQuestion = (question: Question) => {
   //   alert(`Question: ${question.question}\n\nCategory: ${question.categoryId}\nGender Focus: ${question.genderFocus}\nDifficulty: ${question.difficulty}\nStatus: ${question.status}`);
@@ -288,7 +298,7 @@ const handleViewQuestion = (question: Question) => {
       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
       disabled={currentPage === 1}
       className="px-3 sm:px-4 py-2 text-sm sm:text-base
-        bg-white/10 border border-white/20 rounded-lg text-[#1F2935]
+        bg-white/10 border border-[#FF7E3D] cursor-pointer rounded-lg text-[#1F2935]
         disabled:opacity-50 disabled:cursor-not-allowed
         hover:bg-white/20 transition-all"
     >
@@ -301,10 +311,10 @@ const handleViewQuestion = (question: Question) => {
         <button
           key={page}
           onClick={() => setCurrentPage(page)}
-          className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg transition-all ${
+          className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border-[#626262]  transition-all ${
             currentPage === page
               ? "bg-[#FF7E3D] text-white border border-[#FF7E3D]"
-              : "bg-white/10 border border-white/20 text-[#1F2935] hover:bg-white/20"
+              : "bg-white/10 border border-[#626262]  text-[#1F2935] hover:bg-white/20"
           }`}
         >
           {page}
@@ -316,8 +326,8 @@ const handleViewQuestion = (question: Question) => {
       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
       disabled={currentPage === totalPages}
       className="px-3 sm:px-4 py-2 text-sm sm:text-base
-        bg-white/10 border border-white/20 rounded-lg text-[#1F2935]
-        disabled:opacity-50 disabled:cursor-not-allowed
+        bg-white/10 border border-[#FF7E3D] rounded-lg text-[#1F2935]
+        disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed
         hover:bg-white/20 transition-all"
     >
       Next
@@ -396,9 +406,43 @@ const handleViewQuestion = (question: Question) => {
       <div className="flex justify-end mt-8">
         <button
           onClick={() => setShowViewModal(false)}
-          className="px-6 py-2 rounded-xl bg-[#FF7E3D] text-white font-medium"
+          className="px-6 py-2 cursor-pointer rounded-xl bg-[#FF7E3D] text-white font-medium"
         >
           Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{showDeleteModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
+    <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
+
+      <h2 className="text-xl font-semibold text-[#1F2935] mb-4">
+        Delete Question
+      </h2>
+
+      <p className="text-[#626262] mb-6">
+        Are you sure you want to delete this question?  
+        This action cannot be undone.
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => {
+            setShowDeleteModal(false);
+            setDeleteQuestionId(null);
+          }}
+          className="px-5 py-2 rounded-xl border border-gray-300 text-[#1F2935]"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={confirmDeleteQuestion}
+          className="px-5 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600"
+        >
+          Delete
         </button>
       </div>
     </div>

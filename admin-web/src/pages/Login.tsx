@@ -68,15 +68,11 @@ export const Login: React.FC = () => {
               required
             />
             <div className="text-right">
-                      <Link 
-  to="/forgot-password" 
-  className="text-[#FF7E3D] mt-6  text-right font-semibold hover:text-[#828282] transition-colors"
->
- Forgot password?
-</Link>
-</div>
+                <Link to="/forgot-password" className="text-[#FF7E3D] mt-6 cursor-pointer text-right font-semibold hover:text-[#828282] transition-colors">
+                   Forgot password?
+                </Link>
+            </div>
           </div>
-
           <button
             type="submit"
             disabled={loading}
