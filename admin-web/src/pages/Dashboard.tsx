@@ -7,6 +7,8 @@ import { QuestionsTable } from '../components/ui/question/Quesion_table';
 import { QuestionModal } from '../components/ui/question/QuestionModal';
 import { ImportModal } from '../components/ui/ImportModal';
 import { questionsService, Question } from '../services/question';
+import { BarChart3, TrendingUp, Edit, Eye } from 'lucide-react';
+
 import { Link } from '@tanstack/react-router';
 export const Dashboard: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -256,7 +258,42 @@ const confirmDeleteQuestion = async () => {
         </div>
       )}
 
-      <StatsCards stats={stats} />
+<StatsCards
+  cards={[
+    {
+      label: 'Total Questions',
+      value: stats.total,
+      icon: <BarChart3 className="text-white" size={24} />,
+      gradient: 'from-purple-500/20 to-purple-600/20',
+      border: 'border-purple-500/30',
+      bg: 'bg-purple-500/20',
+    },
+    {
+      label: 'Published Questions',
+      value: stats.published,
+      icon: <TrendingUp className="text-white" size={24} />,
+      gradient: 'from-green-500/20 to-green-600/20',
+      border: 'border-green-500/30',
+      bg: 'bg-green-500/20',
+    },
+    {
+      label: 'Draft Questions',
+      value: stats.draft,
+      icon: <Edit className="text-white" size={24} />,
+      gradient: 'from-orange-500/20 to-orange-600/20',
+      border: 'border-orange-500/30',
+      bg: 'bg-orange-500/20',
+    },
+    {
+      label: 'Total Views',
+      value: stats.totalViews,
+      icon: <Eye className="text-white" size={24} />,
+      gradient: 'from-blue-500/20 to-blue-600/20',
+      border: 'border-blue-500/30',
+      bg: 'bg-blue-500/20',
+    },
+  ]}
+/>
 
       <Filters
         searchTerm={searchTerm}
