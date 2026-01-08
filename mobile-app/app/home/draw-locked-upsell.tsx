@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 interface PricingOption {
   id: string;
@@ -42,6 +43,7 @@ const pricingOptions: PricingOption[] = [
 export default function DrawLockedUpsellScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string>('6');
+  const tetherStats = useTetherStats();
 
   const handleSelectOption = async (optionId: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -62,8 +64,12 @@ export default function DrawLockedUpsellScreen() {
       showLogo={false} 
       showHeartLogo={false}
       showChatIcon={true}
-      chatCount={5}
-      onChatPress={() => router.push('/')}
+      chatCount={tetherStats.count}
+      chatIconActive={tetherStats.isActive}
+      onChatPress={() => {
+        tetherStats.markAsViewed();
+        router.push('/home/tether-history');
+      }}
       showSettingsIcon={true}
     >
       <ScrollView 

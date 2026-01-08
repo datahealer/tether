@@ -242,13 +242,14 @@ import Card3DCarousel, { CarouselCard } from '../../components/ui/cards/CardCaro
 import { Colors, Spacing, FontSizes, FontWeights } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { getCategoryProgress } from '@/services/tether_service';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 export default function CategoryPacksScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [categories, setCategories] = useState<CarouselCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chatCount, setChatCount] = useState(6);
+  const tetherStats = useTetherStats();
 
   // Dummy values — replace with real logic later
   const [hasWaitingTether] = useState(false);
@@ -352,7 +353,12 @@ export default function CategoryPacksScreen() {
       showLogo={false}
       showSettingsIcon={true}
       showChatIcon={true}
-      chatCount={chatCount}
+      chatCount={tetherStats.count}
+      chatIconActive={tetherStats.isActive}
+      onChatPress={() => {
+        tetherStats.markAsViewed();
+        router.push('/home/tether-history');
+      }}
     >
       <View style={styles.container}>
         {/* Header */}

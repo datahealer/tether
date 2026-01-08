@@ -9,6 +9,7 @@ import {
   triggerTetherDrop,
   getCoupleStats,
   initializeCoupleCategories,
+  getTetherHistory,
 } from '../controllers/tether';
 
 const router = Router();
@@ -60,6 +61,13 @@ router.post('/drop', triggerTetherDrop);
  * Get couple stats (streak, milestones, total completed)
  */
 router.get('/stats', getCoupleStats);
+
+/**
+ * GET /api/tethers/history
+ * Get tether history (completed tethers)
+ * Query params: limit (default 50), skip (default 0)
+ */
+router.get('/history', getTetherHistory);
 
 /**
  * POST /api/tethers/initialize

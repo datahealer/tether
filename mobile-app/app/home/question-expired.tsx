@@ -14,11 +14,13 @@ import { BlurView } from 'expo-blur';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 export default function QuestionExpiredScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuth();
+  const tetherStats = useTetherStats();
   
   const [isRevealed, setIsRevealed] = useState(false);
   
@@ -45,7 +47,12 @@ export default function QuestionExpiredScreen() {
       showLogo={true} 
       showHeartLogo={false}
       showChatIcon={true}
-      chatCount={5}
+      chatCount={tetherStats.count}
+      chatIconActive={tetherStats.isActive}
+      onChatPress={() => {
+        tetherStats.markAsViewed();
+        router.push('/home/tether-history');
+      }}
       showSettingsIcon={true}
     >
       <ScrollView 

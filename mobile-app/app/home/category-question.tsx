@@ -448,12 +448,14 @@ import {
   type TetherQuestion,
   type TetherStats,
 } from '@/services/tether_service';
+import { useTetherStats } from '@/hooks/useTetherStats';
 
 export default function CategoryQuestionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuth();
   const { onboardingData } = useOnboarding();
+  const tetherStats = useTetherStats();
 
   const categoryId = params.categoryId as string;
   const categoryTitle = params.categoryTitle as string;
@@ -667,8 +669,12 @@ export default function CategoryQuestionScreen() {
       showLogo={false}
       showHeartLogo={false}
       showChatIcon={true}
-      chatCount={5}
-      onChatPress={() => router.push('/')}
+      chatCount={tetherStats.count}
+      chatIconActive={tetherStats.isActive}
+      onChatPress={() => {
+        tetherStats.markAsViewed();
+        router.push('/home/tether-history');
+      }}
       showSettingsIcon={true}
     >
       <KeyboardAvoidingView

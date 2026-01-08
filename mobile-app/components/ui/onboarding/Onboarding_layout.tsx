@@ -918,6 +918,7 @@ interface OnboardingLayoutProps {
   showHeartLogo?: boolean;
   showChatIcon?: boolean;
   chatCount?: number;
+  chatIconActive?: boolean; // New: indicates unseen activity (orange state)
   onChatPress?: () => void;
   showTetherLine?: boolean;
   showProgress?: boolean;
@@ -941,6 +942,7 @@ export default function OnboardingLayout({
   showHeartLogo = false,
   showChatIcon = false,
   chatCount = 0,
+  chatIconActive = false,
   onChatPress,
   showTetherLine = true,
 }: OnboardingLayoutProps) {
@@ -1029,17 +1031,26 @@ export default function OnboardingLayout({
         <View style={styles.rightButtonGroup}>
           {showChatIcon && (
             <TouchableOpacity
-              style={styles.chatIconButton}
-              onPress={onChatPress || (() => router.push('/home/both-expired'))}
+              style={[
+                styles.chatIconButton,
+                chatIconActive && styles.chatIconButtonActive,
+              ]}
+              onPress={onChatPress || (() => router.push('/home/tether-history'))}
             >
               <Image
                 source={require('../../../assets/images/Chat.png')}
-                style={styles.chatImage}
+                style={[
+                  styles.chatImage,
+                  chatIconActive && styles.chatImageActive,
+                ]}
                 resizeMode="contain"
               />
               {chatCount > 0 && (
                 <View style={styles.chatCountBadge}>
-                  <Text style={styles.chatCountText}>{chatCount}</Text>
+                  <Text style={[
+                    styles.chatCountText,
+                    chatIconActive && styles.chatCountTextActive,
+                  ]}>{chatCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -1259,10 +1270,18 @@ const styles = StyleSheet.create({
     borderWidth: 0.87,
     borderColor: Colors.darkOrange,
   },
+  chatIconButtonActive: {
+    backgroundColor: Colors.darkOrange, // Solid dark orange when active
+    borderColor: Colors.darkOrange,
+  },
   chatImage: {
     width: 19.5,
     height: 19.5,
-    marginLeft: -10
+    marginLeft: -10,
+    tintColor: Colors.darkOrange, // Dark orange icon in normal state
+  },
+  chatImageActive: {
+    tintColor: Colors.white, // White icon when active
   },
   chatCountBadge: {
     position: 'absolute',
@@ -1278,7 +1297,10 @@ const styles = StyleSheet.create({
     fontFamily: 'InterTight-Semibold',
     fontSize: 13.5,
     fontWeight: FontWeights.bold,
-    color: Colors.black,
+    color: Colors.black, // Black in normal state
+  },
+  chatCountTextActive: {
+    color: Colors.white, // White when active
   },
   settingsIconButton: {
     width: 40,
