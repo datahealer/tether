@@ -7,6 +7,7 @@ import { CategoryModal } from '../components/ui/category/categoryModal';
 import { categoriesService, Category } from '../services/category';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { BarChart3, TrendingUp, Edit, Eye } from 'lucide-react';
 
 export const CategoryDashboard: React.FC = () => {
   const queryClient = useQueryClient();
@@ -132,7 +133,42 @@ const confirmDeleteCategory = async () => {
         </div>
       )}
 
-      <StatsCards stats={stats} />
+<StatsCards
+  cards={[
+    {
+      label: 'Total Categories',
+      value: stats.total,
+      icon: <BarChart3 className="text-white" size={24} />,
+      gradient: 'from-purple-500/20 to-purple-600/20',
+      border: 'border-purple-500/30',
+      bg: 'bg-purple-500/20',
+    },
+    {
+      label: 'Published Categories',
+      value: stats.published,
+      icon: <TrendingUp className="text-white" size={24} />,
+      gradient: 'from-green-500/20 to-green-600/20',
+      border: 'border-green-500/30',
+      bg: 'bg-green-500/20',
+    },
+    {
+      label: 'Draft Categories',
+      value: stats.draft,
+      icon: <Edit className="text-white" size={24} />,
+      gradient: 'from-orange-500/20 to-orange-600/20',
+      border: 'border-orange-500/30',
+      bg: 'bg-orange-500/20',
+    },
+    {
+      label: 'Total Views',
+      value: stats.totalViews,
+      icon: <Eye className="text-white" size={24} />,
+      gradient: 'from-blue-500/20 to-blue-600/20',
+      border: 'border-blue-500/30',
+      bg: 'bg-blue-500/20',
+    },
+  ]}
+/>
 
       <CategoryTable
         categories={paginatedCategories}
