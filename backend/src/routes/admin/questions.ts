@@ -8,6 +8,7 @@ import {
   deleteQuestion,
   getQuestionStats,
   importQuestionsFromExcel,
+  downloadTemplate,
 } from '../../controllers/admin/question';
 import { adminAuth } from '../../middleware/auth';
 
@@ -78,6 +79,7 @@ router.post('/', createQuestion);
  *         description: Question statistics
  */
 router.get('/stats', getQuestionStats);
+router.get('/template', downloadTemplate);
 
 /**
  * @swagger

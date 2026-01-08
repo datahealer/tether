@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Question from '../../models/Question';
 import * as crypto from 'crypto';
+import path from 'path';
 import {
   CategoryId,
   GenderFocus,
@@ -15,6 +16,41 @@ import multer from 'multer'; // For file upload; install multer
 import { IQuestion } from '../../types/interfaces';
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// @route   GET /api/admin/questions/template
+// @desc    Download Excel import template
+// @access  Private (Admin)
+export const downloadTemplate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Create template data
+    const templateData = [
+      ['Category', 'Question', 'Difficulty', 'Tone', 'Gender Focus', 'Relationship Stage', 'Living Type', 'Goal Tag', 'Emotional Need', 'Status'],
+      ['communication', "What's one thing I do that makes you feel heard?", 2, 'reflective', 'Neutral', 'Early,Established', 'Together,Apart, Long Distance', 'Communication', 'Recognition,Belonging', 'Published'],
+      ['intimacy', 'When do you feel most connected to me?', 2, 'romantic', 'Neutral', 'Early,Established', '', 'Intimacy,Spark', 'Love & Security,Belonging', 'Published'],
+      ['playfulness', 'If we could teleport anywhere right now for a date, where would you choose?', 1, 'playful', 'Neutral', 'Early,Established', '', 'Playfulness,Spark', 'Play', 'Published'],
+      ['vulnerability', "What's something you're afraid to share with me?", 4, 'deep', 'Neutral', 'Established,Long-term', '', 'Vulnerability,Trust', 'Love & Security,Belonging', 'Published'],
+      ['trust', 'What makes you feel most secure in our relationship?', 2, 'reflective', 'Neutral', 'Early,Established', '', 'Trust', 'Love & Security', 'Published'],
+    ];
+
+    // Create workbook and worksheet
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.aoa_to_sheet(templateData);
+
+    // Add worksheet to workbook
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Template');
+
+    // Generate buffer
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set headers for Excel download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=questions-import-template.xlsx');
+    res.send(buffer);
+  } catch (error: any) {
+    console.error('❌ Template download error:', error);
+    res.status(500).json({ message: 'Failed to download template', error: error.message });
+  }
+};
 
 /**
  * Generate sequential questionId based on category

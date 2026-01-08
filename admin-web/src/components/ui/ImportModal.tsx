@@ -21,12 +21,32 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [error, setError] = useState('');
   const [templateDownloaded, setTemplateDownloaded] = useState(false);
 
-  const handleDownloadTemplate = () => {
-    window.open(
-      `${uri}/templates/questions-import-template.xlsx`,
-      '_blank'
-    );
-    setTemplateDownloaded(true);
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axios.get(
+        `${uri}/api/admin/questions/template`,
+        {
+          headers: {
+            Authorization: `Bearer ${authService.getToken()}`,
+          },
+          responseType: 'blob', // Important for file download
+        }
+      );
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'questions-import-template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setTemplateDownloaded(true);
+    } catch (err) {
+      setError('Failed to download template');
+    }
   };
 
   const handleImport = async () => {
