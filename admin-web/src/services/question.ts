@@ -31,8 +31,8 @@ const getAuthHeader = () => ({
 });
 
 class QuestionsService {
-  async getAll(): Promise<Question[]> {
-    const response = await axios.get(`${API_URL}/api/admin/questions`, getAuthHeader());
+  async getAll(limit: number = 1000): Promise<Question[]> {
+    const response = await axios.get(`${API_URL}/api/admin/questions?limit=${limit}`, getAuthHeader());
     return response.data.questions || response.data;
   }
 

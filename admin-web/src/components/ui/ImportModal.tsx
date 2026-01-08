@@ -33,7 +33,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
           },
         }
       );
-      onSuccess(response.data.imported?.length || 0);
+      // Backend returns imported as a number, not an array
+      onSuccess(response.data.imported || 0);
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Import failed');
@@ -73,7 +74,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             <p className="text-[#626262] mb-2">Drop Excel file here or click to browse</p>
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])}
               className="hidden"
               id="excel-upload"

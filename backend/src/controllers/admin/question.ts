@@ -16,6 +16,34 @@ import { IQuestion } from '../../types/interfaces';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+/**
+ * Generate sequential questionId based on category
+ * Format: {CATEGORY_PREFIX}{NUMBER} e.g., COM001, INT045
+ */
+const generateQuestionId = async (categoryId: CategoryId): Promise<string> => {
+  const categoryPrefixes: { [key in CategoryId]: string } = {
+    [CategoryId.COMMUNICATION]: 'COM',
+    [CategoryId.INTIMACY]: 'INT',
+    [CategoryId.PLAYFULNESS]: 'PLY',
+    [CategoryId.TRUST]: 'TRU',
+    [CategoryId.LOVE_LANGUAGES]: 'LOV',
+    [CategoryId.FUTURE]: 'FUT',
+    [CategoryId.VULNERABILITY]: 'VUL',
+    [CategoryId.CONFLICT]: 'CON',
+    [CategoryId.EROTIC]: 'ERO',
+    [CategoryId.GRATITUDE]: 'GRA',
+  };
+
+  const prefix = categoryPrefixes[categoryId];
+  
+  // Count existing questions in this category
+  const count = await Question.countDocuments({ categoryId });
+  const nextNumber = count + 1;
+  
+  // Format: PREFIX + zero-padded number (3 digits)
+  return `${prefix}${String(nextNumber).padStart(3, '0')}`;
+};
+
 // @route   GET /api/admin/questions
 // @desc    Get all questions with filters
 // @access  Private (Admin)
@@ -31,7 +59,7 @@ export const getAllQuestions = async (req: Request, res: Response): Promise<void
       relationshipStage,
       search,
       page = 1,
-      limit = 50,
+      limit = 1000, // High default for admin panel
     } = req.query;
 
     // Build filter object
@@ -160,27 +188,31 @@ export const createQuestion = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Generate unique questionId using crypto.randomUUID()
-    const uuid = crypto.randomUUID();
-    const questionId = `Q-${Date.now()}-${uuid.slice(0, 8)}`;
+    // Generate sequential questionId based on category
+    const questionId = await generateQuestionId(categoryId);
 
-    // Create question
-    const newQuestion = new Question({
+    // Create question data object - only include fields with values
+    const questionData: any = {
       questionId,
       question,
       categoryId,
       genderFocus,
-      tone, // Single value, not array
+      tone,
       difficulty,
       relationshipStage: relationshipStage || [],
       livingType: livingType || [],
       goalTag: goalTag || [],
       emotionalNeed: emotionalNeed || [],
-      formatType: formatType || '',
-      contextTag: contextTag || '',
       status: status || 'Published',
-      writerNotes: writerNotes || '',
-    });
+    };
+
+    // Only add optional fields if they have values
+    if (formatType) questionData.formatType = formatType;
+    if (contextTag) questionData.contextTag = contextTag;
+    if (writerNotes) questionData.writerNotes = writerNotes;
+
+    // Create question
+    const newQuestion = new Question(questionData);
 
     await newQuestion.save();
 
@@ -333,6 +365,21 @@ export const importQuestionsFromExcel = async (req: Request, res: Response): Pro
 
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const imported: any[] = [];
+    const errors: any[] = [];
+
+    // Map sheet names to valid CategoryId values
+    const categoryMap: { [key: string]: CategoryId } = {
+      'communication': CategoryId.COMMUNICATION,
+      'intimacy': CategoryId.INTIMACY,
+      'playfulness': CategoryId.PLAYFULNESS,
+      'trust': CategoryId.TRUST,
+      'love_languages': CategoryId.LOVE_LANGUAGES,
+      'future': CategoryId.FUTURE,
+      'vulnerability': CategoryId.VULNERABILITY,
+      'conflict': CategoryId.CONFLICT,
+      'erotic': CategoryId.EROTIC,
+      'gratitude': CategoryId.GRATITUDE,
+    };
 
     // Process each sheet (one per category)
     for (const sheetName of workbook.SheetNames) {
@@ -343,78 +390,163 @@ export const importQuestionsFromExcel = async (req: Request, res: Response): Pro
       const headers = rows[0] as string[];
       const dataRows = rows.slice(1);
 
+      // Map sheet name to valid categoryId (for Excel with named sheets)
+      const normalizedSheetName = sheetName.toLowerCase().trim().replace(/\s+/g, '_');
+      let sheetCategoryId = categoryMap[normalizedSheetName];
+      
+      // Check if there's a Category column in the CSV (for single-sheet imports)
+      const categoryColumnIndex = headers.findIndex(h => h.toLowerCase() === 'category');
+      const hasCategoryColumn = categoryColumnIndex !== -1;
+
       for (const row of dataRows) {
-        if (!row[0]) continue; // Skip empty
+        if (!row[0]) continue; // Skip empty rows
 
-        const questionData: Partial<IQuestion> = {};
-        headers.forEach((header, idx) => {
-          const value = row[idx]?.toString().trim();
-          if (!value) return;
-
-          switch (header.toLowerCase()) {
-            case 'id':
-              questionData.questionId = value;
-              break;
-            case 'question':
-              questionData.question = value;
-              break;
-            case 'difficulty':
-              const diff = parseInt(value);
-              if ([1, 2, 3, 4, 5].includes(diff)) {
-                questionData.difficulty = diff as 1 | 2 | 3 | 4 | 5;
-              }
-              break;
-            case 'tone':
-              questionData.tone = value;
-              break;
-            case 'gender focus':
-              questionData.genderFocus = value;
-              break;
-            case 'relationship stage':
-              questionData.relationshipStage = value.split(',').map((s: string) => s.trim());
-              break;
-            case 'living type':
-              questionData.livingType = value.split(',').map((s: string) => s.trim());
-              break;
-            case 'goal tag':
-              questionData.goalTag = value.split(',').map((s: string) => s.trim());
-              break;
-            case 'emotional need':
-              questionData.emotionalNeed = value.split(',').map((s: string) => s.trim());
-              break;
-            case 'format type':
-              questionData.formatType = value;
-              break;
-            case 'context tag':
-              questionData.contextTag = value;
-              break;
-            case 'status':
-              questionData.status = value === 'Published' ? 'Published' : 'Draft';
-              break;
-            case 'writer notes':
-              questionData.writerNotes = value;
-              break;
+        try {
+          // Determine category: from column (CSV) or sheet name (Excel)
+          let categoryId = sheetCategoryId;
+          
+          if (hasCategoryColumn && row[categoryColumnIndex]) {
+            const categoryValue = row[categoryColumnIndex].toString().toLowerCase().trim().replace(/\s+/g, '_');
+            categoryId = categoryMap[categoryValue];
           }
-        });
+          
+          if (!categoryId) {
+            errors.push({ row, error: `Invalid or missing category` });
+            continue;
+          }
 
-        questionData.categoryId = sheetName.toLowerCase() as CategoryId; // Sheet name as category
+          const questionData: Partial<IQuestion> = {
+            categoryId,
+            genderFocus: GenderFocus.NEUTRAL, // Default values
+            tone: Tone.PLAYFUL,
+            difficulty: 3,
+            status: 'Published',
+            relationshipStage: [],
+            livingType: [],
+            goalTag: [],
+            emotionalNeed: [],
+          };
 
-        // Skip drafts
-        if (questionData.status !== 'Published') continue;
+          headers.forEach((header, idx) => {
+            const value = row[idx]?.toString().trim();
+            if (!value) return;
 
-        // Generate ID if missing
-        if (!questionData.questionId) {
-          questionData.questionId = `${sheetName.toUpperCase().slice(0,3)}${Date.now().toString().slice(-6)}`;
+            switch (header.toLowerCase()) {
+              case 'id':
+              case 'questionid':
+                questionData.questionId = value;
+                break;
+              case 'question':
+              case 'question text':
+                questionData.question = value;
+                break;
+              case 'category':
+                // Already handled above
+                break;
+              case 'difficulty':
+                const diff = parseInt(value);
+                if ([1, 2, 3, 4, 5].includes(diff)) {
+                  questionData.difficulty = diff as 1 | 2 | 3 | 4 | 5;
+                }
+                break;
+              case 'tone':
+                const toneValue = value.toLowerCase();
+                if (Object.values(Tone).includes(toneValue as Tone)) {
+                  questionData.tone = toneValue as Tone;
+                }
+                break;
+              case 'gender focus':
+              case 'genderfocus':
+                if (Object.values(GenderFocus).includes(value as GenderFocus)) {
+                  questionData.genderFocus = value as GenderFocus;
+                }
+                break;
+              case 'relationship stage':
+              case 'relationshipstage':
+                questionData.relationshipStage = value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                break;
+              case 'living type':
+              case 'livingtype':
+                questionData.livingType = value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                break;
+              case 'goal tag':
+              case 'goaltag':
+                questionData.goalTag = value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                break;
+              case 'emotional need':
+              case 'emotionalneed':
+                questionData.emotionalNeed = value.split(',').map((s: string) => s.trim()).filter(Boolean);
+                break;
+              case 'format type':
+              case 'formattype':
+                questionData.formatType = value;
+                break;
+              case 'context tag':
+              case 'contexttag':
+                questionData.contextTag = value;
+                break;
+              case 'status':
+                questionData.status = value === 'Published' ? 'Published' : 'Draft';
+                break;
+              case 'writer notes':
+              case 'writernotes':
+                questionData.writerNotes = value;
+                break;
+            }
+          });
+
+          // Validate required fields
+          if (!questionData.question) {
+            errors.push({ row, error: 'Missing question text' });
+            continue;
+          }
+
+          // Generate sequential ID based on category
+          if (!questionData.questionId) {
+            questionData.questionId = await generateQuestionId(categoryId);
+          }
+
+          // Clean up data - remove empty optional fields to match seed structure
+          const cleanData: any = {
+            questionId: questionData.questionId,
+            question: questionData.question,
+            categoryId: questionData.categoryId,
+            genderFocus: questionData.genderFocus,
+            tone: questionData.tone,
+            difficulty: questionData.difficulty,
+            relationshipStage: questionData.relationshipStage || [],
+            livingType: questionData.livingType || [],
+            goalTag: questionData.goalTag || [],
+            emotionalNeed: questionData.emotionalNeed || [],
+            status: questionData.status || 'Published',
+          };
+
+          // Only add optional fields if they have values
+          if (questionData.formatType) cleanData.formatType = questionData.formatType;
+          if (questionData.contextTag) cleanData.contextTag = questionData.contextTag;
+          if (questionData.writerNotes) cleanData.writerNotes = questionData.writerNotes;
+
+          const newQuestion = new Question(cleanData);
+          await newQuestion.save();
+          imported.push(newQuestion);
+        } catch (rowError: any) {
+          errors.push({ row, error: rowError.message });
         }
-
-        const newQuestion = new Question(questionData);
-        await newQuestion.save();
-        imported.push(newQuestion);
       }
     }
 
-    res.status(201).json({ message: `Imported ${imported.length} questions`, imported });
+    console.log(`✅ Imported ${imported.length} questions`);
+    if (errors.length > 0) {
+      console.log(`⚠️ ${errors.length} errors during import`);
+    }
+
+    res.status(201).json({ 
+      message: `Imported ${imported.length} questions`, 
+      imported: imported.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
   } catch (error: any) {
+    console.error('❌ Import error:', error);
     res.status(500).json({ message: 'Failed to import', error: error.message });
   }
 };

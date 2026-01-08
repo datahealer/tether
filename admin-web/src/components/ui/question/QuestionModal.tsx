@@ -98,7 +98,28 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
     setError('');
 
     try {
-      await onSave(formData);
+      // Clean data - only send fields with values (matching seed structure)
+      const cleanData: any = {
+        question: formData.question,
+        categoryId: formData.categoryId,
+        genderFocus: formData.genderFocus,
+        tone: formData.tone,
+        difficulty: formData.difficulty,
+        status: formData.status || 'Published',
+      };
+
+      // Add array fields (always send as arrays, even if empty)
+      cleanData.relationshipStage = formData.relationshipStage || [];
+      cleanData.livingType = formData.livingType || [];
+      cleanData.goalTag = formData.goalTag || [];
+      cleanData.emotionalNeed = formData.emotionalNeed || [];
+
+      // Only add optional string fields if they have values
+      if (formData.formatType) cleanData.formatType = formData.formatType;
+      if (formData.contextTag) cleanData.contextTag = formData.contextTag;
+      if (formData.writerNotes) cleanData.writerNotes = formData.writerNotes;
+
+      await onSave(cleanData);
       console.log('✅ Question saved successfully');
       onClose();
     } catch (err: any) {
