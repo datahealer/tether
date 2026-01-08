@@ -90,7 +90,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border cursor-pointer border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20"
+              className="px-6 py-2 bg-white/10 border cursor-pointer border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20"
               disabled={uploading}
             >
               Cancel

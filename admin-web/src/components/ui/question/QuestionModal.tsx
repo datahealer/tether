@@ -425,7 +425,7 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
+              className="px-6 py-2 bg-white/10 border border-[#626262] rounded-xl text-[#1F2935] hover:bg-white/20 transition-all disabled:opacity-50"
               disabled={isSubmitting}
             >
               Cancel
