@@ -12,6 +12,8 @@ export const CategoryDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+const [showViewModal, setShowViewModal] = useState(false);
+const [viewCategory, setViewCategory] = useState<Category | null>(null);
 
   const { data: categories = [], isLoading, error } = useQuery({
     queryKey: ['categories'],
@@ -115,7 +117,10 @@ export const CategoryDashboard: React.FC = () => {
           setShowModal(true);
         }}
         onDelete={handleDelete}
-        onView={(cat) => alert(`ID: ${cat.categoryId}\nColor: ${cat.colorCode}\n${cat.description || 'No description'}`)}
+onView={(cat) => {
+  setViewCategory(cat);
+  setShowViewModal(true);
+}}
       />
 
       <CategoryModal
@@ -127,6 +132,66 @@ export const CategoryDashboard: React.FC = () => {
         onSave={handleSave}
         category={selectedCategory}
       />
+      {/* View Category Modal */}
+{showViewModal && viewCategory && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
+    <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
+
+      {/* Close */}
+      <button
+        onClick={() => {
+          setShowViewModal(false);
+          setViewCategory(null);
+        }}
+        className="absolute top-4 right-4 text-gray-500 hover:text-black"
+      >
+        ✕
+      </button>
+
+      <h2 className="text-2xl font-semibold text-[#1F2935] mb-6">
+        View Category
+      </h2>
+
+      <div className="space-y-4 text-[#1F2935]">
+        <div>
+          <p className="text-sm text-gray-500">Category </p>
+          <p className="font-medium">{viewCategory.name}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-500">Color Code</p>
+          <div className="flex items-center gap-3">
+            <span
+              className="w-6 h-6 rounded-full border"
+              style={{ backgroundColor: viewCategory.colorCode }}
+            />
+            <span className="font-medium">{viewCategory.colorCode}</span>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-500">Description</p>
+          <p className="font-medium">
+            {viewCategory.description || 'No description'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-8">
+        <button
+          onClick={() => {
+            setShowViewModal(false);
+            setViewCategory(null);
+          }}
+          className="px-6 py-2 rounded-xl bg-[#FF7E3D] text-white font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </DashboardLayout>
   );
 };

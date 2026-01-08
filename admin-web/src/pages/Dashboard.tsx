@@ -14,6 +14,9 @@ export const Dashboard: React.FC = () => {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+const [viewQuestion, setViewQuestion] = useState<Question | null>(null);
+
   // New modal for upload
 const [showImportModal, setShowImportModal] = useState(false);
 
@@ -131,6 +134,10 @@ const [showImportModal, setShowImportModal] = useState(false);
       throw err; // Re-throw so the modal can handle it
     }
   };
+const handleViewQuestion = (question: Question) => {
+  setViewQuestion(question);
+  setShowViewModal(true);
+};
 
   const handleDeleteQuestion = async (id: string) => {
     if (!confirm('Are you sure you want to delete this question?')) return;
@@ -143,9 +150,9 @@ const [showImportModal, setShowImportModal] = useState(false);
     }
   };
 
-  const handleViewQuestion = (question: Question) => {
-    alert(`Question: ${question.question}\n\nCategory: ${question.categoryId}\nGender Focus: ${question.genderFocus}\nDifficulty: ${question.difficulty}\nStatus: ${question.status}`);
-  };
+  // const handleViewQuestion = (question: Question) => {
+  //   alert(`Question: ${question.question}\n\nCategory: ${question.categoryId}\nGender Focus: ${question.genderFocus}\nDifficulty: ${question.difficulty}\nStatus: ${question.status}`);
+  // };
   const handleImportSuccess = (count: number) => {
   alert(`Successfully imported ${count} questions!`);
   fetchQuestions(); // Refresh list
@@ -258,10 +265,10 @@ const [showImportModal, setShowImportModal] = useState(false);
       />
 
       <QuestionsTable
-        questions={paginatedQuestions}
-        onEdit={handleEditQuestion}
-        onDelete={handleDeleteQuestion}
-        onView={handleViewQuestion}
+         questions={paginatedQuestions}
+  onEdit={handleEditQuestion}
+  onDelete={handleDeleteQuestion}
+  onView={handleViewQuestion}
       />
 
       {/* Pagination */}
@@ -333,6 +340,71 @@ const [showImportModal, setShowImportModal] = useState(false);
   onClose={() => setShowImportModal(false)}
   onSuccess={handleImportSuccess}
 />
+{/* View Question Modal */}
+{showViewModal && viewQuestion && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
+    <div className="bg-white rounded-2xl w-full max-w-xl p-6 relative">
+      
+      {/* Close */}
+      <button
+        onClick={() => setShowViewModal(false)}
+        className="absolute top-4 right-4 text-gray-500 hover:text-black"
+      >
+        ✕
+      </button>
+
+      <h2 className="text-2xl font-semibold text-[#1F2935] mb-6">
+        View Question
+      </h2>
+
+      <div className="space-y-4 text-[#1F2935]">
+        <div>
+          <p className="text-sm text-gray-500">Question</p>
+          <p className="font-medium">{viewQuestion.question}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-500">Category</p>
+            <p className="font-medium">{viewQuestion.categoryId}</p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-500">Gender Focus</p>
+            <p className="font-medium">{viewQuestion.genderFocus}</p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-500">Difficulty</p>
+            <p className="font-medium">{viewQuestion.difficulty}</p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-500">Status</p>
+            <p className="font-medium">{viewQuestion.status}</p>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-500">Created At</p>
+          <p className="font-medium">
+            {new Date(viewQuestion.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-8">
+        <button
+          onClick={() => setShowViewModal(false)}
+          className="px-6 py-2 rounded-xl bg-[#FF7E3D] text-white font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </DashboardLayout>
   );
 };

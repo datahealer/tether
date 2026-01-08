@@ -47,7 +47,7 @@ export const Signup: React.FC = () => {
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl mb-6">
+          <div className="bg-red-500/20 border border-red-500/50 text-red-800 px-4 py-3 rounded-xl mb-6">
             {error}
           </div>
         )}

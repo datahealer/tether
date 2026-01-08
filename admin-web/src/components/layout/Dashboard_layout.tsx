@@ -3,6 +3,8 @@ import { useAuth } from "../../context/auth";
 import { useNavigate,Link } from "@tanstack/react-router";
 import { LogOut, ChevronDown,User } from "lucide-react";
 import LogoIcon from "../../assets/logo.png";
+import LogoIcon2 from "../../assets/logo-2.png";
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -25,7 +27,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center">
               {/* <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="lg:hidden text-[#1F2935]"
@@ -33,7 +35,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button> */}
 
-              <img src={LogoIcon} alt="Tether Logo" className="h-8 w-auto" />
+              <img src={LogoIcon} alt="Tether Logo" className="w-auto" />
+               <img src={LogoIcon2} alt="Tether Logo" className="object-contain  h-8 w-auto" />
             </div>
 
             {/* Profile Dropdown */}
