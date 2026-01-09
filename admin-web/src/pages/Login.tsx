@@ -10,7 +10,6 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -25,7 +24,6 @@ export const Login: React.FC = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF4E2] to-[#FF9E6D]
  flex items-center justify-center p-4">
@@ -56,7 +54,6 @@ export const Login: React.FC = () => {
               required
             />
           </div>
-
           <div>
             <label className="block text-[#626262] text-sm mb-2">Password</label>
             <input

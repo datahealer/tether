@@ -169,7 +169,6 @@ const confirmDeleteCategory = async () => {
     },
   ]}
 />
-
       <CategoryTable
         categories={paginatedCategories}
         onEdit={(cat) => {
