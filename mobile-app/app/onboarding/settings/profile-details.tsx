@@ -17,6 +17,8 @@ import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import EditableField from '@/components/ui/profile/EditableField';
 import PhotoPickerModal from '@/components/ui/profile/PhotoPickerModal';
 import DatePickerModal from '@/components/ui/onboarding/DatePickerModal';
+import TextInputModal from '@/components/ui/profile/TextInputModal';
+import GenderPickerModal from '@/components/ui/onboarding/GenderPickerModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { uploadProfilePhoto } from '@/services/upload_service';
 import { authenticatedFetch } from '@/services/auth_service';
@@ -30,6 +32,8 @@ export default function ProfileDetailsScreen() {
   // State
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [showGenderModal, setShowGenderModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.avatar || null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
   
@@ -143,8 +147,13 @@ export default function ProfileDetailsScreen() {
 
   // Edit name
   const handleEditName = () => {
-    // Navigate to name edit screen or show modal
-    Alert.alert('Coming Soon', 'Name editing will be implemented');
+    setShowNameModal(true);
+  };
+
+  // Save name
+  const handleSaveName = (newName: string) => {
+    setName(newName);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   // Edit date of birth
@@ -160,8 +169,13 @@ export default function ProfileDetailsScreen() {
 
   // Edit gender
   const handleEditGender = () => {
-    // Navigate to gender selection screen
-    Alert.alert('Coming Soon', 'Gender selection will be implemented');
+    setShowGenderModal(true);
+  };
+
+  // Save gender
+  const handleSaveGender = (newGender: string) => {
+    setGender(newGender);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   
@@ -358,6 +372,25 @@ export default function ProfileDetailsScreen() {
         onClose={() => setShowDatePicker(false)}
         onSave={handleSaveDateOfBirth}
         initialDate={dateOfBirth || new Date(1990, 0, 1)}
+      />
+
+      {/* Name Input Modal */}
+      <TextInputModal
+        visible={showNameModal}
+        onClose={() => setShowNameModal(false)}
+        onSave={handleSaveName}
+        title="Edit Display Name"
+        initialValue={name}
+        placeholder="Enter your name"
+        maxLength={50}
+      />
+
+      {/* Gender Picker Modal */}
+      <GenderPickerModal
+        visible={showGenderModal}
+        onClose={() => setShowGenderModal(false)}
+        onSave={handleSaveGender}
+        initialGender={gender}
       />
     </OnboardingLayout>
   );

@@ -202,7 +202,7 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
         )}
         {categoriesError && (
           <div className="bg-orange-500/20 border border-orange-500/50 text-orange-800 px-4 py-3 rounded-xl mb-6">
-            Failed to vd categories
+            Failed to add categories
           </div>
         )}
 
