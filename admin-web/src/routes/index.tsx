@@ -95,3 +95,4 @@ export const routeTree = rootRoute.addChildren([
   profileRoute,
   categoryDashboardRoute
 ]);
+

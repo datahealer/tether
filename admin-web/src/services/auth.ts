@@ -23,7 +23,53 @@ export interface AuthResponse {
   };
 }
 
+// Callback to notify about token expiration
+let onTokenExpiredCallback: (() => void) | null = null;
+
 class AuthService {
+  constructor() {
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors() {
+    // Response interceptor to catch 401 errors (token expired)
+    axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          const errorMessage = error.response?.data?.error || error.response?.data?.message || '';
+          
+          // Check if it's a token expiration error
+          if (
+            errorMessage.includes('Token expired') ||
+            errorMessage.includes('expired token') ||
+            error.response?.data?.code === 'TOKEN_EXPIRED' ||
+            errorMessage.includes('Invalid token') ||
+            errorMessage.includes('Unauthorized')
+          ) {
+            console.log('🔐 Token expired, logging out...');
+            this.handleTokenExpiration();
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  private handleTokenExpiration() {
+    // Clear local storage
+    this.logout();
+    
+    // Notify the auth context to update state and redirect
+    if (onTokenExpiredCallback) {
+      onTokenExpiredCallback();
+    }
+  }
+
+  setOnTokenExpired(callback: () => void) {
+    onTokenExpiredCallback = callback;
+  }
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await axios.post(`${API_URL}/api/admin/auth/login`, credentials);
     if (response.data.token) {

@@ -95,7 +95,12 @@ function InnerApp() {
         auth,
       },
     });
-  }, [auth, auth.isAuthenticated, auth.user]);
+
+    // When user is logged out (token expired), navigate to login
+    if (!auth.loading && !auth.isAuthenticated && router.state.location.pathname !== '/login' && router.state.location.pathname !== '/signup' && router.state.location.pathname !== '/forgot-password') {
+      router.navigate({ to: '/login', replace: true });
+    }
+  }, [auth, auth.isAuthenticated, auth.user, auth.loading]);
 
   return <App router={router} />;
 }

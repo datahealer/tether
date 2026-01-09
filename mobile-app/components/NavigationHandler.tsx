@@ -16,45 +16,47 @@ export function NavigationHandler() {
   const lastRoute = useRef(pathname);
 
   useEffect(() => {
-    if (loading) {
-      return;
+  // ✅ Wait for auth to finish loading before any navigation
+  if (loading) {
+    console.log('⏳ Auth still loading, skipping navigation');
+    return;
+  }
+
+  // ✅ Skip if already navigated to this route
+  if (pathname === lastRoute.current && hasNavigated.current) {
+    return;
+  }
+
+  lastRoute.current = pathname;
+
+  const inAuth = segments[0] === 'onboarding';
+  const inHome = segments[0] === 'home';
+  const currentRoute = pathname;
+
+  const isSettingsScreen = currentRoute.includes('/settings');
+  const isHomeScreen = currentRoute.includes('/home/');
+
+  console.log('🔍 Navigation Check:', {
+    user: user?.email,
+    onboarded: user?.onboarded,
+    subscribed: user?.subscribed,
+    currentRoute,
+  });
+
+  if (!user) {
+    // ✅ Only redirect if NOT already on welcome/login/account-creation
+    const allowedUnauthRoutes = [
+      '/onboarding/welcome',
+      '/onboarding/login',
+      '/onboarding/account-creation'
+    ];
+    
+    if (!allowedUnauthRoutes.some(route => currentRoute.startsWith(route))) {
+      console.log('➡️ Redirecting to welcome (unauthenticated)');
+      hasNavigated.current = true;
+      router.replace('/onboarding/welcome');
     }
-
-    if (pathname === lastRoute.current && hasNavigated.current) {
-      return;
-    }
-
-    lastRoute.current = pathname;
-
-    const inAuth = segments[0] === 'onboarding';
-    const inHome = segments[0] === 'home';
-    const currentRoute = pathname;
-
-    // ✅ Allow navigation to settings screens and home screens
-    const isSettingsScreen = currentRoute.includes('/settings');
-    const isHomeScreen = currentRoute.includes('/home/');
-
-    console.log('🔍 Navigation Check:', {
-      user: user?.email,
-      onboarded: user?.onboarded,
-      subscribed: user?.subscribed,
-      currentRoute,
-      inAuth,
-      inHome,
-      isSettingsScreen,
-      isHomeScreen
-    });
-
-    if (!user) {
-      // Not logged in - redirect to account creation
-      if (currentRoute !== '/onboarding/account-creation' && 
-          currentRoute !== '/onboarding/login' &&
-          currentRoute !== '/onboarding/welcome') {
-        console.log('➡️ Redirecting to account creation');
-        hasNavigated.current = true;
-        router.replace('/onboarding/account-creation');
-      }
-    } else {
+  } else {
       // Logged in - determine where to go based on status
       if (!user.onboarded) {
         // Not onboarded - should be in onboarding flow

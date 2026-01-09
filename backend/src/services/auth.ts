@@ -261,7 +261,7 @@ export const verifyAppleToken = async (identityToken: string): Promise<AppleToke
  */
 export const generateAccessToken = (userId: string, type: 'user' | 'admin' = 'user'): string => {
   const options: SignOptions = {
-    expiresIn: '60m',
+    expiresIn: '15m',
   };
   
   return jwt.sign({ userId, type, tokenType: 'access' }, JWT_SECRET, options);

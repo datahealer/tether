@@ -23,6 +23,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
     }
     setLoading(false);
+
+    // Set up token expiration handler
+    authService.setOnTokenExpired(() => {
+      console.log('🚪 Token expired, logging out user...');
+      setUser(null);
+      // The navigation will be handled by route guards
+    });
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
