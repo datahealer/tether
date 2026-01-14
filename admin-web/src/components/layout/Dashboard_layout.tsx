@@ -17,7 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const handleLogout = () => {
     logout();
-    navigate({ to: "/login" as any });
+    navigate({ to: "/admin/login" as any });
   };
 
   return (
@@ -73,7 +73,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <ul className="py-2 text-sm text-[#1F2935] ">
                     <li>
     <Link
-      to="/profile"
+      to="/admin/profile"
       className="px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100"
     >
       <User size={16} />
