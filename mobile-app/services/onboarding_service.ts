@@ -106,7 +106,7 @@ export const generateCoupleInvite = async (): Promise<CoupleInvite> => {
 /**
  * Accept couple invite
  */
-export const acceptCoupleInvite = async (inviteCode: string): Promise<void> => {
+export const acceptCoupleInvite = async (inviteCode: string): Promise<any> => {
   try {
     const response = await authenticatedFetch(`${API_URL}/api/onboarding/invite/accept`, {
       method: 'POST',
@@ -118,7 +118,11 @@ export const acceptCoupleInvite = async (inviteCode: string): Promise<void> => {
       throw new Error(error.error || 'Failed to accept invite');
     }
 
+    const result = await response.json();
     console.log('✅ Invite accepted successfully');
+    
+    // Return the response which includes coupleId
+    return result;
   } catch (error: any) {
     console.error('❌ Accept invite error:', error);
     throw error;

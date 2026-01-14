@@ -45,6 +45,12 @@ export interface TetherStats {
   lastAnsweredDate?: string;
 }
 
+export interface RefreshInfo {
+  cycleRefreshesRemaining: number; // FREE: 1, PREMIUM: 3 (resets daily)
+  permanentRefreshBalance: number; // Never expires, purchased bundles
+  maxCycleRefreshes: number; // User's tier max (1 or 3)
+}
+
 export interface MilestoneData {
   type: string;
   milestone: number;
@@ -67,11 +73,12 @@ export interface TetherHistory {
 
 /**
  * Get active tethers for the couple
- * Returns questions in SERVED or WAITING_FOR_PARTNER state
+ * Returns questions in SERVED or WAITING_FOR_PARTNER state + refresh availability
  */
 export async function getActiveTethers(): Promise<{
   tethers: TetherQuestion[];
   stats: TetherStats;
+  refreshes: RefreshInfo;
 }> {
   try {
     const response = await authenticatedFetch(`${API_URL}/api/tethers/active`, {
@@ -146,14 +153,17 @@ export async function submitAnswer(
 }
 
 /**
- * Skip a tether (FREE tier: 1 refresh/day, PREMIUM: 3 refreshes/day)
+ * Skip/refresh a tether ("Draw Another" in UI)
+ * Uses cycle refreshes first (FREE: 1, PREMIUM: 3), then permanent refresh balance
  */
 export async function skipTether(
   questionId: string
 ): Promise<{
   newQuestion?: TetherQuestion;
   message: string;
-  refreshesRemaining: number;
+  cycleRefreshesRemaining: number;
+  permanentRefreshesRemaining: number;
+  usedPermanent: boolean;
 }> {
   try {
     const response = await authenticatedFetch(`${API_URL}/api/tethers/skip`, {

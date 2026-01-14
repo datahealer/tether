@@ -1,16 +1,13 @@
-
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  
   TextInput,
   ScrollView,
   Alert,
   Share,
- 
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +16,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import * as Clipboard from 'expo-clipboard';
-import { generateCoupleInvite,acceptCoupleInvite } from '@/services/onboarding_service';
+import { generateCoupleInvite, acceptCoupleInvite } from '@/services/onboarding_service';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function PartnerInviteScreen() {
@@ -29,6 +26,7 @@ export default function PartnerInviteScreen() {
   const [partnerCode, setPartnerCode] = useState('');
   const [partnerCodeFocused, setPartnerCodeFocused] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false); // New state for connection loading
 
   const partnerName = onboardingData.partnerFirstName || 'Partner';
 
@@ -59,7 +57,7 @@ export default function PartnerInviteScreen() {
     }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLoading(true);
+    setConnecting(true);
 
     try {
       await acceptCoupleInvite(partnerCode.trim());
@@ -70,10 +68,9 @@ export default function PartnerInviteScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to connect with partner');
     } finally {
-      setLoading(false);
+      setConnecting(false);
     }
   };
-
 
   const handleCopyCode = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -96,33 +93,22 @@ export default function PartnerInviteScreen() {
     }
   };
 
-  // const handleTetherTogether = async () => {
-  //   if (!partnerCode.trim()) {
-  //     Alert.alert('Required', 'Please enter your partner\'s code');
-  //     return;
-  //   }
-
-  //   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  //   setLoading(true);
-
-  //   try {
-  //     // TODO: Call backend API to validate and connect with partner code
-  //     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-  //     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  //     router.push('/onboarding/attribution');
-  //   } catch (error: any) {
-  //     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-  //     Alert.alert('Error', error.message || 'Failed to connect with partner');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleContinue = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/onboarding/attribution');
   };
+
+  // Show initial loading state
+  if (loading) {
+    return (
+      <OnboardingLayout progress={0.84} showBackButton={true} showLogoutAvatar={true}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.darkOrange} />
+          <Text style={styles.loadingText}>Generating your invite code...</Text>
+        </View>
+      </OnboardingLayout>
+    );
+  }
 
   return (
     <OnboardingLayout progress={0.84} showBackButton={true} showLogoutAvatar={true}>
@@ -185,6 +171,7 @@ export default function PartnerInviteScreen() {
               maxLength={6}
               onFocus={() => setPartnerCodeFocused(true)}
               onBlur={() => setPartnerCodeFocused(false)}
+              editable={!connecting}
             />
           </View>
 
@@ -192,15 +179,20 @@ export default function PartnerInviteScreen() {
           <DebouncedButton
             style={[
               styles.tetherButton,
-              !partnerCode.trim() && styles.tetherButtonDisabled,
+              (!partnerCode.trim() || connecting) && styles.tetherButtonDisabled,
             ]}
             onPress={handleTetherTogether}
-            disabled={!partnerCode.trim() || loading}
+            disabled={!partnerCode.trim() || connecting}
             activeOpacity={0.8}
           >
-            <Text style={styles.tetherButtonText}>
-              {loading ? 'Connecting...' : 'Tether Us Together'}
-            </Text>
+            {connecting ? (
+              <View style={styles.buttonLoadingContainer}>
+                <ActivityIndicator size="small" color={Colors.inputText} />
+                <Text style={styles.tetherButtonText}>Connecting...</Text>
+              </View>
+            ) : (
+              <Text style={styles.tetherButtonText}>Tether Us Together</Text>
+            )}
           </DebouncedButton>
         </View>
 
@@ -209,9 +201,10 @@ export default function PartnerInviteScreen() {
 
         {/* Continue Button */}
         <DebouncedButton
-          style={styles.continueButton}
+          style={[styles.continueButton, connecting && styles.continueButtonDisabled]}
           onPress={handleContinue}
           activeOpacity={0.8}
+          disabled={connecting}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
         </DebouncedButton>
@@ -227,6 +220,19 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingBottom: Spacing.xl,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  loadingText: {
+    fontFamily: 'InterTight-Medium',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.inputText,
+    marginTop: Spacing.sm,
   },
   heading: {
     fontFamily: 'InterTight-SemiBold',
@@ -312,7 +318,6 @@ const styles = StyleSheet.create({
   input: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    // lineHeight: 24,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     letterSpacing: 1,
@@ -325,6 +330,11 @@ const styles = StyleSheet.create({
   },
   tetherButtonDisabled: {
     opacity: 0.5,
+  },
+  buttonLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   tetherButtonText: {
     fontFamily: 'InterTight-SemiBold',
@@ -344,6 +354,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  continueButtonDisabled: {
+    opacity: 0.5,
   },
   continueButtonText: {
     fontFamily: 'InterTight-SemiBold',

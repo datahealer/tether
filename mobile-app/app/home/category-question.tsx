@@ -492,6 +492,19 @@ export default function CategoryQuestionScreen() {
         if (categoryTether.userAnswer) {
           setResponse(categoryTether.userAnswer);
         }
+        
+        // Auto-detect if tether was completed (both answered)
+        // This handles Partner B seeing completed state after Partner A finished
+        if (categoryTether.state === 'COMPLETED' && categoryTether.partnerAnswer && !isPullToRefresh) {
+          console.log('⚡ Detected completed tether - auto-refreshing to get new question');
+          setTimeout(() => {
+            Alert.alert(
+              'Tether Completed! 🎉',
+              `You both answered this tether!\n\nYour partner said: "${categoryTether.partnerAnswer}"\n\nLoading new questions...`,
+              [{ text: 'Continue', onPress: () => loadActiveTethers(true) }]
+            );
+          }, 500);
+        }
       } else {
         Alert.alert('No Tethers Available', 'Check back later for new questions!');
       }
@@ -527,11 +540,11 @@ export default function CategoryQuestionScreen() {
       if (result.newQuestion) {
         setCurrentQuestion(result.newQuestion);
         setResponse('');
-        setRefreshesRemaining(result.refreshesRemaining);
+        setRefreshesRemaining(result.cycleRefreshesRemaining + result.permanentRefreshesRemaining);
         Alert.alert('New Question!', result.message || 'Here\'s a fresh question!');
       } else {
         Alert.alert('No More Refreshes', result.message);
-        if (result.refreshesRemaining === 0) {
+        if (result.cycleRefreshesRemaining === 0 && result.permanentRefreshesRemaining === 0) {
           setTimeout(() => router.push('/home/draw-locked-upsell'), 1000);
         }
       }
@@ -606,9 +619,14 @@ export default function CategoryQuestionScreen() {
       const result = await submitAnswer(currentQuestion.questionId, response);
 
       if (result.state === 'COMPLETED' && result.partnerAnswer) {
+        // BOTH COMPLETED: Backend automatically dropped new tethers
+        // Refresh to show the new question
+        console.log('🎉 Both answered! Fetching new tethers automatically...');
+        await loadActiveTethers(false); // Auto-refresh to get new question
+        
         Alert.alert(
           'Tether Completed! 🎉',
-          `You both answered!\n\nYour partner said: "${result.partnerAnswer}"`,
+          `You both answered!\n\nYour partner said: "${result.partnerAnswer}"\n\nNew questions are ready!`,
           [
             { text: 'View History', onPress: () => router.push('/home/tether-history') },
             { text: 'Continue', onPress: () => router.back(), style: 'cancel' },

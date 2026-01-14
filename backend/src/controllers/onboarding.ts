@@ -323,7 +323,10 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
       success: true,
       message: 'Successfully linked with partner',
       couple: {
+        _id: couple._id,
         id: couple._id,
+        partner1Id: inviter._id,
+        partner2Id: accepter._id,
         user1: {
           id: inviter._id,
           name: inviter.name,
@@ -334,6 +337,14 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
           name: accepter.name,
           avatar: accepter.avatar,
         },
+      },
+      user: {
+        id: accepter._id,
+        email: accepter.email,
+        name: accepter.name,
+        coupleId: couple._id,
+        onboarded: accepter.onboarded,
+        subscribed: accepter.subscribed,
       },
     });
   } catch (error: any) {
@@ -390,6 +401,7 @@ export const getCoupleInfo = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({
       success: true,
       coupled: true,
+      coupleId: couple._id,
       couple: {
         id: couple._id,
         status: couple.status,

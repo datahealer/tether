@@ -32,13 +32,13 @@ export const getActiveTethers = async (req: Request, res: Response) => {
       await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
     }
 
-    let tethers = await QuestionServiceEngine.getActiveTethers(user.coupleId);
+    let result = await QuestionServiceEngine.getActiveTethers(user.coupleId, userId);
 
     // Drop new tethers if none active
-    if (tethers.length === 0) {
+    if (result.tethers.length === 0) {
       console.log('🎯 No active tethers, dropping new ones');
       await QuestionServiceEngine.dropTethersForCouple(user.coupleId, true);
-      tethers = await QuestionServiceEngine.getActiveTethers(user.coupleId);
+      result = await QuestionServiceEngine.getActiveTethers(user.coupleId, userId);
     }
 
     const couple = await Couple.findById(user.coupleId);
@@ -48,7 +48,12 @@ export const getActiveTethers = async (req: Request, res: Response) => {
       lastAnsweredDate: couple?.sharedData?.lastTetherDate?.toISOString(),
     };
 
-    res.json({ success: true, tethers, stats });
+    res.json({ 
+      success: true, 
+      tethers: result.tethers, 
+      stats,
+      refreshes: result.refreshes, // NEW: Include refresh data
+    });
   } catch (error: any) {
     console.error('Error getting active tethers:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to get active tethers' });
@@ -65,10 +70,23 @@ export const submitAnswer = async (req: Request, res: Response) => {
   const userId = req.user?._id;
   const { questionId, answer } = req.body;
   
+  console.log('📥 Submit Answer Request:', {
+    userId: userId?.toString(),
+    questionId,
+    answer: answer?.substring(0, 50) + '...',
+    body: req.body,
+  });
+  
   try {
-    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!userId) {
+      console.log('❌ No userId in request');
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
-    if (!questionId || !answer) return res.status(400).json({ message: 'questionId and answer required' });
+    if (!questionId || !answer) {
+      console.log('❌ Missing questionId or answer:', { questionId, answer: !!answer });
+      return res.status(400).json({ message: 'questionId and answer required' });
+    }
 
     const user = await User.findById(userId);
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
@@ -204,13 +222,18 @@ export const skipTether = async (req: Request, res: Response) => {
       res.json({
         success: true,
         newQuestion: result.newQuestion,
-        refreshesRemaining: result.refreshesRemaining,
-        message: 'New question drawn!',
+        cycleRefreshesRemaining: result.cycleRefreshesRemaining,
+        permanentRefreshesRemaining: result.permanentRefreshesRemaining,
+        usedPermanent: result.usedPermanent,
+        message: result.usedPermanent 
+          ? 'Used 1 permanent refresh. New question drawn!' 
+          : 'New question drawn!',
       });
     } else {
       res.json({
         success: true,
-        refreshesRemaining: result.refreshesRemaining,
+        cycleRefreshesRemaining: result.cycleRefreshesRemaining,
+        permanentRefreshesRemaining: result.permanentRefreshesRemaining,
         message: 'No more questions available',
       });
     }
@@ -431,6 +454,7 @@ export const getCoupleStats = async (req: Request, res: Response) => {
         currentStreak: 0,
         totalTethersCompleted: 0,
         milestoneRecords: [],
+        permanentRefreshBalance: 0,
       };
       await couple.save();
       console.log('⚠️ Initialized missing sharedData for couple:', couple._id);
