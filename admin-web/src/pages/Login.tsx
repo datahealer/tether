@@ -18,7 +18,7 @@ export const Login: React.FC = () => {
 
     try {
       await login({ email, password });
-      navigate({ to: '/dashboard' as any });
+      navigate({ to: '/admin/dashboard' as any });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to login');
     } finally {
@@ -68,7 +68,7 @@ export const Login: React.FC = () => {
               required
             />
             <div className="text-right">
-                <Link to="/forgot-password" className="text-[#FF7E3D] mt-6 cursor-pointer text-right font-semibold hover:text-[#828282] transition-colors">
+                <Link to="/admin/forgot-password" className="text-[#FF7E3D] mt-6 cursor-pointer text-right font-semibold hover:text-[#828282] transition-colors">
                    Forgot password?
                 </Link>
             </div>
@@ -85,7 +85,7 @@ export const Login: React.FC = () => {
         <p className="text-center text-[#626262] mt-6">
           Don't have an account?{' '}
           <Link 
-  to="/signup" 
+  to="/admin/signup" 
   className="text-[#FF7E3D] font-semibold hover:text-[#828282] transition-colors"
 >
   Sign up

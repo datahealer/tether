@@ -96,9 +96,12 @@ function InnerApp() {
       },
     });
 
-    // When user is logged out (token expired), navigate to login
-    if (!auth.loading && !auth.isAuthenticated && router.state.location.pathname !== '/login' && router.state.location.pathname !== '/signup' && router.state.location.pathname !== '/forgot-password') {
-      router.navigate({ to: '/login', replace: true });
+    // Only redirect to admin login if user is on an admin route and not authenticated
+    const isAdminRoute = router.state.location.pathname.startsWith('/admin');
+    const isPublicAdminRoute = ['/admin/login', '/admin/signup', '/admin/forgot-password'].includes(router.state.location.pathname);
+    
+    if (!auth.loading && !auth.isAuthenticated && isAdminRoute && !isPublicAdminRoute) {
+      router.navigate({ to: '/admin/login', replace: true });
     }
   }, [auth, auth.isAuthenticated, auth.user, auth.loading]);
 

@@ -26,7 +26,7 @@ export const Signup: React.FC = () => {
 
     try {
       await signup({ name, email, password });
-      navigate({ to: '/' });
+      navigate({ to: '/admin/dashboard' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create account');
     } finally {
@@ -113,7 +113,7 @@ export const Signup: React.FC = () => {
 
         <p className="text-center text-[#626262] mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#FF7E3D] font-semibold ">
+          <Link to="/admin/login" className="text-[#FF7E3D] font-semibold ">
             Sign in
           </Link>
         </p>
