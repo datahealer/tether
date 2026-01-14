@@ -1,13 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSegments, usePathname } from 'expo-router';
 import { useAuth } from '@/context/auth_context';
 import { useOnboardingSync } from '@/hooks/useOnboardingSync';
+import { getActiveTethers } from '@/services/tether_service';
 
 export function NavigationHandler() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
+  const [checkingTethers, setCheckingTethers] = useState(false);
   
   // Sync onboarding data when user changes
   useOnboardingSync();
@@ -16,45 +18,48 @@ export function NavigationHandler() {
   const lastRoute = useRef(pathname);
 
   useEffect(() => {
-    if (loading) {
-      return;
+  // ✅ Wait for auth to finish loading before any navigation
+  if (loading) {
+    console.log('⏳ Auth still loading, skipping navigation');
+    return;
+  }
+
+  // ✅ Skip if already navigated to this route
+  if (pathname === lastRoute.current && hasNavigated.current) {
+    return;
+  }
+
+  lastRoute.current = pathname;
+
+  const inAuth = segments[0] === 'onboarding';
+  const inHome = segments[0] === 'home';
+  const currentRoute = pathname;
+
+  const isSettingsScreen = currentRoute.includes('/settings');
+  const isHomeScreen = currentRoute.includes('/home/');
+
+  console.log('🔍 Navigation Check:', {
+    user: user?.email,
+    onboarded: user?.onboarded,
+    subscribed: user?.subscribed,
+    coupleId: user?.coupleId,
+    currentRoute,
+  });
+
+  if (!user) {
+    // ✅ Only redirect if NOT already on welcome/login/account-creation
+    const allowedUnauthRoutes = [
+      '/onboarding/welcome',
+      '/onboarding/login',
+      '/onboarding/account-creation'
+    ];
+    
+    if (!allowedUnauthRoutes.some(route => currentRoute.startsWith(route))) {
+      console.log('➡️ Redirecting to welcome (unauthenticated)');
+      hasNavigated.current = true;
+      router.replace('/onboarding/welcome');
     }
-
-    if (pathname === lastRoute.current && hasNavigated.current) {
-      return;
-    }
-
-    lastRoute.current = pathname;
-
-    const inAuth = segments[0] === 'onboarding';
-    const inHome = segments[0] === 'home';
-    const currentRoute = pathname;
-
-    // ✅ Allow navigation to settings screens and home screens
-    const isSettingsScreen = currentRoute.includes('/settings');
-    const isHomeScreen = currentRoute.includes('/home/');
-
-    console.log('🔍 Navigation Check:', {
-      user: user?.email,
-      onboarded: user?.onboarded,
-      subscribed: user?.subscribed,
-      currentRoute,
-      inAuth,
-      inHome,
-      isSettingsScreen,
-      isHomeScreen
-    });
-
-    if (!user) {
-      // Not logged in - redirect to account creation
-      if (currentRoute !== '/onboarding/account-creation' && 
-          currentRoute !== '/onboarding/login' &&
-          currentRoute !== '/onboarding/welcome') {
-        console.log('➡️ Redirecting to account creation');
-        hasNavigated.current = true;
-        router.replace('/onboarding/account-creation');
-      }
-    } else {
+  } else {
       // Logged in - determine where to go based on status
       if (!user.onboarded) {
         // Not onboarded - should be in onboarding flow
@@ -63,19 +68,72 @@ export function NavigationHandler() {
           hasNavigated.current = true;
           router.replace('/onboarding/privacy');
         }
-      } else if (!user.subscribed) {
-        // Onboarded but not subscribed - go to subscription
-        if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
-          console.log('➡️ Redirecting to subscription');
+      } else if (!user.coupleId) {
+        // Onboarded but no couple - go to waiting screen
+        if (currentRoute !== '/home/waiting-for-partner' && !isSettingsScreen) {
+          console.log('➡️ Redirecting to waiting-for-partner (no couple yet)');
           hasNavigated.current = true;
-          router.replace('/onboarding/subscription');
+          router.replace('/home/waiting-for-partner');
         }
+      } else if (!user.subscribed) {
+        // Onboarded + coupled but not subscribed
+        // Allow access to subscription screen, first-tether, and settings
+        const allowedFreeRoutes = [
+          '/onboarding/first-tether',
+          '/onboarding/subscription',
+          '/settings',
+        ];
+        
+        if (allowedFreeRoutes.some(route => currentRoute.startsWith(route)) || isSettingsScreen || isHomeScreen) {
+          // User is on an allowed route, don't redirect
+          return;
+        }
+        
+        // Check if they have active tethers (free tier: 2 categories × 40 questions)
+        const checkActiveTethers = async () => {
+          if (checkingTethers) return;
+          
+          try {
+            setCheckingTethers(true);
+            console.log('🔍 Checking for active tethers...');
+            const { tethers } = await getActiveTethers();
+            
+            if (tethers && tethers.length > 0) {
+              // User has active tethers - send to first-tether screen
+              if (currentRoute !== '/onboarding/first-tether' && !isSettingsScreen && !isHomeScreen) {
+                console.log('➡️ Redirecting to first-tether (active tethers available)');
+                hasNavigated.current = true;
+                router.replace('/onboarding/first-tether');
+              }
+            } else {
+              // No active tethers - send to subscription
+              if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
+                console.log('➡️ Redirecting to subscription (no active tethers)');
+                hasNavigated.current = true;
+                router.replace('/onboarding/subscription');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error checking active tethers:', error);
+            // On error, default to subscription screen
+            if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
+              console.log('➡️ Redirecting to subscription (error checking tethers)');
+              hasNavigated.current = true;
+              router.replace('/onboarding/subscription');
+            }
+          } finally {
+            setCheckingTethers(false);
+          }
+        };
+
+        checkActiveTethers();
       } else {
         // Fully onboarded + subscribed → home
         // But allow invite screen access (e.g., reshare link)
         const allowedPostSubscription = [
           '/home/category-packs',
           '/onboarding/partner-invite', // ← Explicitly allow invite even after subscription
+          '/onboarding/subscription', // ← Allow users to view/manage subscription anytime
         ];
 
         if (
@@ -89,7 +147,7 @@ export function NavigationHandler() {
         }
       }
     }
-  }, [user?.id, user?.onboarded, user?.subscribed, loading, pathname, router]);
+  }, [user?.id, user?.onboarded, user?.subscribed, user?.coupleId, loading, pathname, router, checkingTethers]);
 
   return null;
 }

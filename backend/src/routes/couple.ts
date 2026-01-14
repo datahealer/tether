@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createInvite, joinCouple } from '../controllers/couple';
+import { createInvite, joinCouple, getCoupleStats } from '../controllers/couple';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
@@ -48,5 +48,47 @@ router.post('/invite', authMiddleware, createInvite);
  *         description: Unauthorized
  */
 router.post('/join', authMiddleware, joinCouple);
+
+/**
+ * @swagger
+ * /api/couple/stats:
+ *   get:
+ *     summary: Get couple statistics (streak, milestones, total completed)
+ *     tags: [Couple]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Couple statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 currentStreak:
+ *                   type: number
+ *                 totalTethersCompleted:
+ *                   type: number
+ *                 lastTetherDate:
+ *                   type: string
+ *                   format: date-time
+ *                 milestoneRecords:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       count:
+ *                         type: number
+ *                       achievedAt:
+ *                         type: string
+ *                         format: date-time
+ *                       message:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not in a couple
+ */
+router.get('/stats', authMiddleware, getCoupleStats);
 
 export default router;

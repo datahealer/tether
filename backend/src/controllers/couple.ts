@@ -343,3 +343,37 @@ export const joinCouple = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to join couple' });
   }
 };
+
+/**
+ * Get couple statistics (streak, milestones, total completed)
+ */
+export const getCoupleStats = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user?.coupleId) {
+      return res.status(404).json({ message: 'Not in a couple' });
+    }
+
+    const couple = await Couple.findById(user.coupleId);
+    if (!couple) {
+      return res.status(404).json({ message: 'Couple not found' });
+    }
+
+    // Return streak and milestone data
+    res.json({
+      currentStreak: couple.sharedData?.currentStreak || 0,
+      totalTethersCompleted: couple.sharedData?.totalTethersCompleted || 0,
+      lastTetherDate: couple.sharedData?.lastTetherDate,
+      milestoneRecords: couple.sharedData?.milestoneRecords || [],
+      permanentRefreshBalance: couple.sharedData?.permanentRefreshBalance || 0,
+    });
+  } catch (error) {
+    console.error('Get couple stats error:', error);
+    res.status(500).json({ error: 'Failed to get couple stats' });
+  }
+};

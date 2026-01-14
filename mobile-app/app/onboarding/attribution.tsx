@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
+import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
@@ -27,10 +28,12 @@ type AttributionSource =
 
 export default function AttributionScreen() {
   const router = useRouter();
-  const { updateField } = useOnboarding();
+  const { updateField, submitOnboarding } = useOnboarding();
+  const { refreshSession } = useAuth();
   const [selectedSource, setSelectedSource] = useState<AttributionSource | null>(null);
   const [otherText, setOtherText] = useState('');
   const [otherTextFocused, setOtherTextFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const sources: AttributionSource[] = [
     'TikTok',
@@ -59,20 +62,36 @@ export default function AttributionScreen() {
     }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLoading(true);
 
     try {
-      // Save attribution data
+      // Save attribution data to context (will be included in submission)
       const attributionValue = selectedSource === 'Other' ? otherText : selectedSource;
       updateField('emotionalNeeds', [
         ...([] as string[]),
         JSON.stringify({ attribution: attributionValue })
       ]);
 
+      console.log('✅ Attribution saved, submitting all onboarding data...');
+      
+      // Submit all onboarding data + complete onboarding
+      // This calls updateOnboardingData() AND completeOnboarding()
+      await submitOnboarding();
+      
+      // Refresh user session to get updated onboarded flag
+      await refreshSession();
+      
+      console.log('✅ Onboarding completed! User is now onboarded with all data saved.');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/onboarding/first-tether');
+      
+      // Navigate to waiting screen
+      router.push('/home/waiting-for-partner');
     } catch (error) {
-      console.error('Error saving attribution:', error);
-      Alert.alert('Error', 'Failed to save information');
+      console.error('❌ Error completing onboarding:', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to complete setup. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,13 +178,15 @@ export default function AttributionScreen() {
         <DebouncedButton
           style={[
             styles.finishButton,
-            !selectedSource && styles.finishButtonDisabled,
+            (!selectedSource || loading) && styles.finishButtonDisabled,
           ]}
           onPress={handleFinishSetup}
-          disabled={!selectedSource}
+          disabled={!selectedSource || loading}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Finish Setup</Text>
+          <Text style={styles.buttonText}>
+            {loading ? 'Completing Setup...' : 'Finish Setup'}
+          </Text>
         </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>

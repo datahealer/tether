@@ -641,9 +641,30 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
     });
 
     let milestones: any[] = [];
+    const isFirstAnswer = questionState.answers.length === 1;
+    const isBothAnswered = questionState.answers.length === 2;
+
+    // FIRST ANSWER: Clear all other live tethers for this cycle
+    if (isFirstAnswer) {
+      console.log(`🔒 First answer submitted - clearing other live tethers for couple ${coupleId}`);
+      await CoupleQuestionState.updateMany(
+        {
+          coupleId,
+          state: QuestionState.SERVED,
+          questionId: { $ne: questionId }, // Don't touch the current question
+        },
+        {
+          $set: {
+            state: QuestionState.UNANSWERED_EXPIRED,
+            cooldownEnd: new Date(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000),
+          },
+        }
+      );
+      console.log('✅ Cleared other live tethers - locked into current question');
+    }
 
     // Update state
-    if (questionState.answers.length === 2) {
+    if (isBothAnswered) {
       // Both answered
       questionState.state = QuestionState.COMPLETED;
       questionState.cooldownEnd = new Date(
@@ -661,6 +682,16 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
       // Update couple stats and check for streak/milestone
       milestones = await this.updateCoupleStats(coupleId, questionState.expiryTimestamp!);
+
+      // BOTH ANSWERED: Immediately drop new tethers (UX optimization)
+      console.log('🎉 Both partners answered - immediately dropping new tethers');
+      try {
+        await this.dropTethersForCouple(coupleId, true); // force = true bypasses rhythm check
+        console.log('✅ New tethers dropped successfully');
+      } catch (dropError) {
+        console.error('⚠️ Failed to drop new tethers after completion:', dropError);
+        // Don't fail the whole request if tether drop fails
+      }
     } else {
       questionState.state = QuestionState.WAITING_FOR_PARTNER;
     }
@@ -699,6 +730,7 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
         currentStreak: 0,
         totalTethersCompleted: 0,
         milestoneRecords: [],
+        permanentRefreshBalance: 0,
       };
       console.log('⚠️ Initialized missing sharedData for couple:', coupleId);
     }
@@ -709,17 +741,22 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
     // Update total completed
     couple.sharedData.totalTethersCompleted += 1;
     
-    console.log('✅ Updated couple stats:', {
-      coupleId,
-      totalCompleted: couple.sharedData.totalTethersCompleted,
-      currentStreak: couple.sharedData.currentStreak,
-    });
-
-    // Update streak
+    // Update streak (per documentation: streak only increments if answered before expiry)
+    // "If either partner does not answer before expiry, the tether is marked as missed 
+    // and the streak remains unchanged. The streak is not reset to zero by missed tethers."
     if (bothAnsweredBeforeExpiry) {
       couple.sharedData.currentStreak += 1;
+      console.log('✅ Streak incremented:', {
+        coupleId,
+        currentStreak: couple.sharedData.currentStreak,
+        totalCompleted: couple.sharedData.totalTethersCompleted,
+      });
     } else {
-      couple.sharedData.currentStreak = 1; // Reset but count this one
+      console.log('⏰ Completed after expiry - streak unchanged:', {
+        coupleId,
+        currentStreak: couple.sharedData.currentStreak,
+        totalCompleted: couple.sharedData.totalTethersCompleted,
+      });
     }
 
     couple.sharedData.lastTetherDate = now;
@@ -782,12 +819,18 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
   /**
    * Skip/refresh a question
+   * Uses cycle refreshes first (FREE: 1, PREMIUM: 3), then permanent refresh balance
    */
 static async skipQuestion(
   coupleId: mongoose.Types.ObjectId,
   userId: mongoose.Types.ObjectId,
   questionId: string
-): Promise<{ newQuestion?: any; refreshesRemaining: number }> {
+): Promise<{ 
+  newQuestion?: any; 
+  cycleRefreshesRemaining: number;
+  permanentRefreshesRemaining: number;
+  usedPermanent: boolean;
+}> {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -807,35 +850,52 @@ static async skipQuestion(
       throw new Error('Cannot skip this question');
     }
 
-    // Get user's entitlement
+    // Get couple and entitlement
+    const couple = await Couple.findById(coupleId).session(session);
+    if (!couple) {
+      throw new Error('Couple not found');
+    }
+
     const entitlement = await UserEntitlement.findOne({ userId }).session(session);
     if (!entitlement) {
       throw new Error('No entitlement found');
     }
 
-    // Calculate max refreshes
-    const maxRefreshes = entitlement.getRefreshesForCycle();
+    // Calculate max cycle refreshes (FREE: 1, PREMIUM/TRIAL: 3)
+    const maxCycleRefreshes = entitlement.getRefreshesForCycle();
 
-    // Count user's skips today
+    // Count couple's skips today (shared refreshes)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const skipsToday = await CoupleQuestionState.countDocuments({
       coupleId,
-      skippedBy: userId,
+      state: QuestionState.SKIPPED_REFRESH,
       updatedAt: { $gte: today },
     }).session(session);
 
-    if (skipsToday >= maxRefreshes) {
-      throw new Error('No refreshes remaining today');
+    const cycleRefreshesRemaining = Math.max(0, maxCycleRefreshes - skipsToday);
+    const permanentRefreshBalance = couple.sharedData?.permanentRefreshBalance || 0;
+    let usedPermanent = false;
+
+    // Check if we have any refreshes available
+    if (cycleRefreshesRemaining === 0 && permanentRefreshBalance === 0) {
+      throw new Error('No refreshes remaining');
     }
 
-    // Mark as skipped by this user
+    // Use cycle refresh first, then permanent if needed
+    if (cycleRefreshesRemaining === 0 && permanentRefreshBalance > 0) {
+      // Decrement permanent refresh balance
+      couple.sharedData.permanentRefreshBalance -= 1;
+      await couple.save({ session });
+      usedPermanent = true;
+    }
+
+    // Mark as skipped
     if (!questionState.skippedBy) questionState.skippedBy = [];
     if (!questionState.skippedBy.includes(userId)) {
       questionState.skippedBy.push(userId);
     }
 
-    // Set to skipped_refresh (even on single skip)
     questionState.state = QuestionState.SKIPPED_REFRESH;
     questionState.cooldownEnd = new Date(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
     await questionState.save({ session });
@@ -852,8 +912,7 @@ static async skipQuestion(
     
     let newQuestionData: any | undefined;
     if (newQuestion) {
-      const couple = await Couple.findById(coupleId).session(session);
-      const rhythmHours = RHYTHM_HOURS[couple?.rhythm || Rhythm.EVERY_DAY];
+      const rhythmHours = RHYTHM_HOURS[couple.rhythm || Rhythm.EVERY_DAY];
       const expiry = new Date(Date.now() + rhythmHours * 60 * 60 * 1000);
 
       const newState = await CoupleQuestionState.findOneAndUpdate(
@@ -883,9 +942,19 @@ static async skipQuestion(
 
     await session.commitTransaction();
 
+    // Calculate remaining refreshes after this skip
+    const finalCycleRemaining = usedPermanent 
+      ? 0 
+      : Math.max(0, maxCycleRefreshes - (skipsToday + 1));
+    const finalPermanentRemaining = usedPermanent 
+      ? permanentRefreshBalance - 1 
+      : permanentRefreshBalance;
+
     return {
       newQuestion: newQuestionData,
-      refreshesRemaining: maxRefreshes - (skipsToday + 1),
+      cycleRefreshesRemaining: finalCycleRemaining,
+      permanentRefreshesRemaining: finalPermanentRemaining,
+      usedPermanent,
     };
   } catch (error) {
     await session.abortTransaction();
@@ -949,11 +1018,19 @@ static async skipQuestion(
 
   /**
    * Get current active tethers for a couple
+   * Returns tethers + refresh availability (cycle + permanent)
    */
-  /**
- * Get current active tethers for a couple
- */
-static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
+static async getActiveTethers(
+  coupleId: mongoose.Types.ObjectId, 
+  userId?: mongoose.Types.ObjectId
+): Promise<{
+  tethers: any[];
+  refreshes: {
+    cycleRefreshesRemaining: number;
+    permanentRefreshBalance: number;
+    maxCycleRefreshes: number;
+  };
+}> {
   const activeStates = await CoupleQuestionState.find({
     coupleId,
     state: { $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] },
@@ -978,8 +1055,27 @@ static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
     const categoryDoc = state.categoryId as any;
     const categoryName = categoryDoc?.name || state.categoryId;
 
-    const firstAnswer = state.answers[0];
-    const secondAnswer = state.answers[1];
+    // Determine which answer belongs to the current user vs partner
+    let userAnswer = null;
+    let partnerAnswer = null;
+    let answeredAt = null;
+
+    if (userId) {
+      const userIdStr = userId.toString();
+      const userAnswerObj = state.answers.find((a: any) => a.userId.toString() === userIdStr);
+      const partnerAnswerObj = state.answers.find((a: any) => a.userId.toString() !== userIdStr);
+      
+      userAnswer = userAnswerObj?.text || null;
+      partnerAnswer = partnerAnswerObj?.text || null;
+      answeredAt = userAnswerObj?.timestamp?.toISOString() || partnerAnswerObj?.timestamp?.toISOString();
+    } else {
+      // Fallback to old behavior if userId not provided
+      const firstAnswer = state.answers[0];
+      const secondAnswer = state.answers[1];
+      userAnswer = firstAnswer?.text;
+      partnerAnswer = secondAnswer?.text;
+      answeredAt = firstAnswer?.timestamp?.toISOString() || secondAnswer?.timestamp?.toISOString();
+    }
 
     tethers.push({
       questionId: question.questionId,
@@ -991,13 +1087,45 @@ static async getActiveTethers(coupleId: mongoose.Types.ObjectId) {
       state: state.state,
       servedAt: state.servedDate?.toISOString(),
       expiresAt: state.expiryTimestamp?.toISOString(),
-      userAnswer: firstAnswer?.text,
-      partnerAnswer: secondAnswer?.text,
-      answeredAt: firstAnswer?.timestamp?.toISOString() || secondAnswer?.timestamp?.toISOString(),
+      userAnswer,
+      partnerAnswer,
+      answeredAt,
     });
   }
 
-  return tethers;
+  // Calculate refresh availability
+  const couple = await Couple.findById(coupleId);
+  const permanentRefreshBalance = couple?.sharedData?.permanentRefreshBalance || 0;
+
+  let maxCycleRefreshes = 1; // Default for free users
+  let cycleRefreshesRemaining = 0;
+
+  if (userId) {
+    const entitlement = await UserEntitlement.findOne({ userId });
+    if (entitlement) {
+      maxCycleRefreshes = entitlement.getRefreshesForCycle(); // FREE: 1, PREMIUM: 3
+    }
+
+    // Count couple's skips today (shared between both partners)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const skipsToday = await CoupleQuestionState.countDocuments({
+      coupleId,
+      state: QuestionState.SKIPPED_REFRESH,
+      updatedAt: { $gte: today },
+    });
+
+    cycleRefreshesRemaining = Math.max(0, maxCycleRefreshes - skipsToday);
+  }
+
+  return {
+    tethers,
+    refreshes: {
+      cycleRefreshesRemaining,
+      permanentRefreshBalance,
+      maxCycleRefreshes,
+    },
+  };
 }
   /**
    * Get category progress for a couple

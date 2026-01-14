@@ -361,6 +361,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         avatar: user.avatar,
         onboarded: user.onboarded,
         subscribed: user.subscribed,
+        coupleId: user.coupleId,
         onboardingData: user.onboardingData,
       },
     });
@@ -415,10 +416,11 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
         id: user._id,
         email: user.email,
         name: user.name,
-        provider: user.provider,
+        provider: user.provider || 'email',
         avatar: user.avatar,
         onboarded: user.onboarded,
         subscribed: user.subscribed,
+        coupleId: user.coupleId,
         onboardingData: user.onboardingData,
       },
     });
@@ -563,6 +565,7 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
         avatar: user.avatar,
         onboarded: user.onboarded,
         subscribed: user.subscribed,
+        coupleId: user.coupleId,
         onboardingData: user.onboardingData,
       },
     });
@@ -618,6 +621,15 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       success: true,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        onboarded: user.onboarded,
+        subscribed: user.subscribed,
+        coupleId: user.coupleId,
+        onboardingData: user.onboardingData,
+      },
     });
   } catch (error: any) {
     console.error('❌ Token refresh error:', error);

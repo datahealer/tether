@@ -1,4 +1,4 @@
-import { createRoute, Navigate, redirect } from '@tanstack/react-router';
+import { createRoute, redirect, Outlet } from '@tanstack/react-router';
 import { rootRoute } from './__root';
 import { Login } from '../pages/Login';
 import { Signup } from '../pages/Signup';
@@ -6,92 +6,107 @@ import { Dashboard } from '../pages/Dashboard';
 import { CategoryDashboard } from '../pages/CategoryDashboard';
 import { ForgotPassword } from '../pages/ForgotPasword';
 import { Profile } from '../pages/Profile';
+import Home from '../pages/Home'
 
+// Root index - Home page
 export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: () => {
-    // Use navigate dynamically instead of checking in component
-    return <Navigate to="/dashboard" />;
-  },
+  component: Home
+});
+
+// Home route
+export const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/home',
+  component: Home
+});
+
+// Admin layout route
+export const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  component: () => <Outlet />,
 });
 
 export const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/login',
   component: Login,
   beforeLoad: ({ context }) => {
     // Redirect to dashboard if already authenticated
     if (context.auth?.isAuthenticated) {
-      throw redirect({ to: '/dashboard' });
+      throw redirect({ to: '/admin/dashboard' });
     }
   },
 });
 
 export const signupRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/signup',
   component: Signup,
   beforeLoad: ({ context }) => {
     // Redirect to dashboard if already authenticated
     if (context.auth?.isAuthenticated) {
-      throw redirect({ to: '/dashboard' });
+      throw redirect({ to: '/admin/dashboard' });
     }
   },
 });
 
 export const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/dashboard',
   component: Dashboard,
   beforeLoad: ({ context }) => {
     // Redirect to login if not authenticated
     if (!context.auth?.isAuthenticated) {
-      throw redirect({ to: '/login' });
+      throw redirect({ to: '/admin/login' });
     }
   },
 });
 export const forgotPasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/forgot-password',
   component: ForgotPassword,
   beforeLoad: ({ context }) => {
     // Redirect to dashboard if already authenticated
     if (context.auth?.isAuthenticated) {
-      throw redirect({ to: '/dashboard' });
+      throw redirect({ to: '/admin/dashboard' });
     }
   },
 });
 export const profileRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/profile',
   component: Profile,
   beforeLoad: ({ context }) => {
     if (!context.auth?.isAuthenticated) {
-      throw redirect({ to: '/login' });
+      throw redirect({ to: '/admin/login' });
     }
   },
 });
 export const categoryDashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminRoute,
   path: '/categories',
   component: CategoryDashboard,
   beforeLoad: ({ context }) => {
     if (!context.auth?.isAuthenticated) {
-      throw redirect({ to: '/login' });
+      throw redirect({ to: '/admin/login' });
     }
   },
-}
+});
 
-
-);
-
+// Build the route tree
 export const routeTree = rootRoute.addChildren([
   indexRoute,
-  loginRoute,
-  signupRoute,
-  dashboardRoute,
-  forgotPasswordRoute,
-  profileRoute,
-  categoryDashboardRoute
+  homeRoute,
+  adminRoute.addChildren([
+    loginRoute,
+    signupRoute,
+    dashboardRoute,
+    forgotPasswordRoute,
+    profileRoute,
+    categoryDashboardRoute,
+  ]),
 ]);
+

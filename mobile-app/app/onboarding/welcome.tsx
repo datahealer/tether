@@ -373,6 +373,7 @@ export default function WelcomeScreen() {
         token: data.token,
         onboarded:data.user.onboarded,
         subscribed:data.user.subscribed,
+        coupleId:data.user.coupleId
       });
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

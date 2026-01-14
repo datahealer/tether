@@ -209,7 +209,7 @@ const confirmDeleteQuestion = async () => {
       <div className="flex items-start md:items-center flex-col md:flex-row gap-4 justify-between mb-12 border-b border-white/10 pb-6">
   <div className="flex gap-8">
     <Link
-      to="/dashboard"
+      to="/admin/dashboard"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
@@ -217,7 +217,7 @@ const confirmDeleteQuestion = async () => {
       Questions
     </Link>
     <Link
-      to="/categories"
+      to="/admin/categories"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
       className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"

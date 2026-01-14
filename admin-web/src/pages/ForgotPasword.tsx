@@ -79,7 +79,7 @@ export const ForgotPassword: React.FC = () => {
         <p className="text-center text-[#626262] mt-6">
           Remember your password?{' '}
           <Link
-            to="/login"
+            to="/admin/login"
             className="text-[#FF7E3D] font-semibold hover:text-[#828282] transition-colors"
           >
             Back to Login

@@ -336,7 +336,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         return false;
       }
 
-      setUser(prev => prev ? { ...prev, token: newToken } : null);
+      // Reload user data from storage (now includes updated coupleId)
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        setUser({ ...userData, token: newToken });
+        console.log('✅ Session refreshed with coupleId:', userData.coupleId);
+      } else {
+        setUser(prev => prev ? { ...prev, token: newToken } : null);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -399,6 +408,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
         onboardingData: data.user.onboardingData,
+        coupleId: undefined
       };
       
       await signIn(userData);
@@ -436,6 +446,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
         onboardingData: data.user.onboardingData,
+        coupleId: undefined
       };
       
       await signIn(userData);

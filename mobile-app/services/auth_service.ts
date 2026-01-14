@@ -189,6 +189,7 @@ console.log("API",API_URL);
 
 
 export interface AuthUser {
+  coupleId: any;
   subscribed?: boolean;
   onboarded?: boolean;
   id: string;
@@ -283,6 +284,23 @@ export const refreshAccessToken = async (retryCount = 0): Promise<string | null>
       }
       
       await storeTokens(data.accessToken, data.refreshToken);
+      
+      // Update stored user data with refreshed user object (including coupleId)
+      if (data.user) {
+        const storedUser = await AsyncStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          const updatedUser = {
+            ...parsedUser,
+            ...data.user,
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+          };
+          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log('✅ User data updated with coupleId:', data.user.coupleId);
+        }
+      }
+      
       console.log('✅ Access token refreshed successfully');
       
       return data.accessToken;
@@ -503,6 +521,7 @@ export const signInWithApple = async (): Promise<AuthUser> => {
       refreshToken: data.refreshToken,
       onboarded: data.user.onboarded,
       subscribed: data.user.subscribed,
+      coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {
@@ -574,7 +593,6 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
 
     // Store tokens
     await storeTokens(data.accessToken, data.refreshToken);
-
     return {
       id: data.user.id,
       email: data.user.email,
@@ -585,9 +603,11 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
       refreshToken: data.refreshToken,
       onboarded: data.user.onboarded,
       subscribed: data.user.subscribed,
+      coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {
+    console.error('❌ Native Google sign-in error:', error);
     console.error('❌ Native Google sign-in error:', error);
     throw new Error(error.message || 'Google sign-in failed');
   }
@@ -644,8 +664,6 @@ export const processGoogleSignIn = async (response: any): Promise<AuthUser> => {
     const data = await apiResponse.json();
     
     // Store tokens
-    await storeTokens(data.accessToken, data.refreshToken);
-
     return {
       id: data.user.id,
       email: data.user.email,
@@ -656,6 +674,7 @@ export const processGoogleSignIn = async (response: any): Promise<AuthUser> => {
       refreshToken: data.refreshToken,
       onboarded: data.user.onboarded,
       subscribed: data.user.subscribed,
+      coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {

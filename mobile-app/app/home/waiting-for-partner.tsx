@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,100 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
+import { useAuth } from '@/context/auth_context';
+import { getCoupleInfo } from '@/services/onboarding_service';
+import { NotificationData } from '@/services/notification_service';
 
 export default function WaitingForPartnerScreen() {
   const router = useRouter();
+  const { user, refreshSession } = useAuth();
+  const [isChecking, setIsChecking] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const notificationListenerRef = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    // Listen for push notifications (COUPLE_CREATED)
+    notificationListenerRef.current = Notifications.addNotificationReceivedListener(notification => {
+      const data = notification.request.content.data as NotificationData;
+      console.log('📬 Waiting screen received notification:', data?.type);
+      
+      if (data?.type === 'COUPLE_CREATED') {
+        handlePartnerJoined();
+      }
+    });
+
+    // Start polling every 10 seconds for couple status
+    pollIntervalRef.current = setInterval(checkCoupleStatus, 10000);
+    
+    // Check immediately on mount
+    checkCoupleStatus();
+
+    return () => {
+      if (notificationListenerRef.current) {
+        notificationListenerRef.current.remove();
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const checkCoupleStatus = async () => {
+    try {
+      setIsChecking(true);
+      const coupleInfo = await getCoupleInfo();
+      
+      if (coupleInfo.coupled || coupleInfo.coupleId) {
+        console.log('✅ Partner has joined! Couple ID:', coupleInfo.coupleId);
+        handlePartnerJoined(coupleInfo.coupleId);
+      }
+    } catch (err) {
+      console.error('❌ Poll error:', err);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handlePartnerJoined = async (coupleId?: string) => {
+    // Stop polling
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    
+    // If we have coupleId from polling, update user data immediately
+    if (coupleId && user) {
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        const updatedUser = { ...parsedUser, coupleId };
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('✅ Updated stored user with coupleId:', coupleId);
+      }
+    }
+    
+    // Refresh user session to get updated coupleId
+    await refreshSession();
+    
+    // Haptic feedback
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Navigate to first tether (now dynamic)
+    console.log('🚀 Navigating to first tether...');
+    router.replace('/onboarding/first-tether');
+  };
 
   const handleShareInvite = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/onboarding/partner-invite'); // Or your invite screen path
+    router.push('/onboarding/partner-invite');
   };
 
   return (
@@ -30,6 +111,7 @@ export default function WaitingForPartnerScreen() {
       showSettingsIcon={false}
       showTetherLine={true} // Animated tether line
       showProgress={false}
+      showLogoutAvatar={true}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -50,8 +132,16 @@ export default function WaitingForPartnerScreen() {
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            You've completed setup! Now just waiting for your partner to join so you can start exploring together.
+            We're all set on your end! We can only move forward when your partner joins. You'll be notified as soon as they do.
           </Text>
+
+          {/* Status Indicator */}
+          {isChecking && (
+            <View style={styles.statusContainer}>
+              <ActivityIndicator size="small" color={Colors.darkOrange} />
+              <Text style={styles.statusText}>Checking for partner...</Text>
+            </View>
+          )}
 
           {/* Hint */}
           <Text style={styles.hint}>
@@ -162,5 +252,17 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: Spacing.xxl,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+  },
+  statusText: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.small,
+    fontWeight: FontWeights.regular,
+    color: Colors.inputText,
   },
 });

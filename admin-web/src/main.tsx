@@ -95,7 +95,15 @@ function InnerApp() {
         auth,
       },
     });
-  }, [auth, auth.isAuthenticated, auth.user]);
+
+    // Only redirect to admin login if user is on an admin route and not authenticated
+    const isAdminRoute = router.state.location.pathname.startsWith('/admin');
+    const isPublicAdminRoute = ['/admin/login', '/admin/signup', '/admin/forgot-password'].includes(router.state.location.pathname);
+    
+    if (!auth.loading && !auth.isAuthenticated && isAdminRoute && !isPublicAdminRoute) {
+      router.navigate({ to: '/admin/login', replace: true });
+    }
+  }, [auth, auth.isAuthenticated, auth.user, auth.loading]);
 
   return <App router={router} />;
 }

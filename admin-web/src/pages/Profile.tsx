@@ -157,7 +157,7 @@ export const Profile: React.FC = () => {
         </div>
          <p className="text-center text-[#626262] mt-6">
  <Link
-            to="/dashboard"
+            to="/admin/dashboard"
             className="text-[#FF7E3D] font-semibold hover:text-[#828282] transition-colors"
           >
             Go to Dashboard

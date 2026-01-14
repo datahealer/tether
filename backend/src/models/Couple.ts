@@ -20,6 +20,7 @@ export interface ICouple extends Document {
     totalTethersCompleted: number;
     lastTetherDate?: Date;
     milestoneRecords: IMilestoneRecord[];
+    permanentRefreshBalance: number; // Never-expiring refresh purchases
   };
 }
 
@@ -51,6 +52,7 @@ const CoupleSchema: Schema = new Schema(
           notified: { type: Boolean, default: false },
         },
       ],
+      permanentRefreshBalance: { type: Number, default: 0, min: 0 },
     },
   },
   {
