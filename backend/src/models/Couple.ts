@@ -58,9 +58,11 @@ const CoupleSchema: Schema = new Schema(
   }
 );
 
-// Ensure each user can only be in one active couple
+// Performance indexes for common queries
 CoupleSchema.index({ user1Id: 1, status: 1 });
 CoupleSchema.index({ user2Id: 1, status: 1 });
+CoupleSchema.index({ user1Id: 1, user2Id: 1 }); // Compound index for couple lookups
 CoupleSchema.index({ lastTetherDrop: 1 });
+CoupleSchema.index({ status: 1, lastTetherDrop: 1 }); // For active couples needing tether drops
 
 export default mongoose.model<ICouple>('Couple', CoupleSchema);

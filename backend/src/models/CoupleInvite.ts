@@ -68,8 +68,11 @@ const CoupleInviteSchema: Schema = new Schema(
   }
 );
 
+// Performance indexes
 CoupleInviteSchema.index({ inviteCode: 1 }, { unique: true });
 CoupleInviteSchema.index({ inviterId: 1, status: 1 });
 CoupleInviteSchema.index({ expiresAt: 1 });
+CoupleInviteSchema.index({ status: 1, expiresAt: 1 }); // For finding expired invites
+CoupleInviteSchema.index({ acceptedById: 1 }); // For user lookup
 
 export default mongoose.model<ICoupleInvite>('CoupleInvite', CoupleInviteSchema);

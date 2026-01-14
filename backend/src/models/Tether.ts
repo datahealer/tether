@@ -26,8 +26,11 @@ const tetherSchema = new Schema<ITether>({
  
 });
 
-// Create indexes separately
+// Performance indexes for common queries
 tetherSchema.index({ coupleId: 1, droppedAt: -1 });
+tetherSchema.index({ coupleId: 1, status: 1 }); // For filtering active tethers by couple
 tetherSchema.index({ expiresAt: 1 });
+tetherSchema.index({ status: 1, expiresAt: 1 }); // For finding expired tethers
+tetherSchema.index({ questionId: 1 }); // For question lookups
 
 export const Tether = model<ITether>('Tether', tetherSchema);

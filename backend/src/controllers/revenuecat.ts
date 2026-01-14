@@ -116,10 +116,9 @@ export const processPurchase = async (req: Request, res: Response): Promise<void
     });
 
     // Update user subscription in database
+    // Note: Detailed subscription info is stored in Purchase model
     await User.findByIdAndUpdate(userId, {
       subscribed: true,
-      subscriptionType: productId.includes('yearly') ? 'yearly' : 'monthly',
-      subscriptionStartDate: new Date(),
     });
 
     res.json({
@@ -193,6 +192,161 @@ export const getOffering = async (req: Request, res: Response): Promise<void> =>
     console.error('Get offering error:', error);
     res.status(500).json({
       error: error.message || 'Failed to get offering',
+    });
+  }
+};
+
+export const cancelSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.getUser(userId);
+
+    // Get active subscription
+    const subscriptions = revenueCatUser.subscriber?.subscriptions || {};
+    const activeSubscription = Object.values(subscriptions).find(
+      (sub: any) => sub.expires_date && new Date(sub.expires_date) > new Date()
+    );
+
+    if (!activeSubscription) {
+      res.status(400).json({ error: 'No active subscription found' });
+      return;
+    }
+
+    // Note: RevenueCat doesn't have a direct cancel API endpoint
+    // Cancellation is typically handled through the store (App Store/Play Store)
+    // This endpoint updates our local database to mark cancellation
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Import Purchase model
+    const Purchase = (await import('../models/Purchase')).default;
+    const purchase = await Purchase.findOne({
+      userId: user._id,
+      status: 'active',
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (purchase) {
+      purchase.autoRenew = false;
+      purchase.cancelledAt = new Date();
+      await purchase.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscription cancellation processed. Please cancel through your device settings.',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Cancel subscription error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to cancel subscription',
+    });
+  }
+};
+
+export const grantEntitlement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { entitlementId, duration, productId } = req.body;
+
+    if (!entitlementId || !duration) {
+      res.status(400).json({ error: 'Missing required fields: entitlementId, duration (in seconds)' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.grantEntitlement(
+      userId,
+      entitlementId,
+      duration,
+      productId
+    );
+
+    res.json({
+      success: true,
+      message: 'Entitlement granted successfully',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Grant entitlement error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to grant entitlement',
+    });
+  }
+};
+
+export const revokeEntitlement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { entitlementId } = req.body;
+
+    if (!entitlementId) {
+      res.status(400).json({ error: 'Missing required field: entitlementId' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.revokeEntitlement(userId, entitlementId);
+
+    res.json({
+      success: true,
+      message: 'Entitlement revoked successfully',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Revoke entitlement error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to revoke entitlement',
+    });
+  }
+};
+
+export const getSubscriptionHistory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const Purchase = (await import('../models/Purchase')).default;
+    const purchases = await Purchase.find({ userId })
+      .sort({ createdAt: -1 })
+      .select('planType amount currency status startDate expiresAt autoRenew cancelledAt revenueCatProductId revenueCatStore createdAt')
+      .lean();
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.getUser(userId);
+
+    res.json({
+      success: true,
+      purchases,
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Get subscription history error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to get subscription history',
     });
   }
 };

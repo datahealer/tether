@@ -280,7 +280,7 @@ import {
 } from '../services/auth';
 import { createOrUpdateUser } from '../services/user';
 import { Provider, Platform } from '../types/enums';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
 
 // ✅ Helper function to safely get userId from request
 const getUserId = (req: Request): string | undefined => {
@@ -448,7 +448,8 @@ export const emailSignup = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    // Optimized: Use lean() and select only _id for existence check
+    const existingUser = await User.findOne({ email: email.toLowerCase() }).select('_id').lean();
     if (existingUser) {
       res.status(400).json({ error: 'User with this email already exists' });
       return;
@@ -518,7 +519,8 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Optimized: Select password field explicitly for comparison
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;

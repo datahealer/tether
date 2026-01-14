@@ -30,6 +30,6 @@ const categorySchema = new Schema<ICategory>(
   { timestamps: true }
 );
 
-categorySchema.index({ categoryId: 1 });
+// categoryId index is automatically created by unique: true constraint
 
 export const Category = model<ICategory>('Category', categorySchema);
