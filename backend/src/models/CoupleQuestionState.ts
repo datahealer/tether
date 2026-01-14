@@ -8,18 +8,15 @@ const coupleQuestionStateSchema = new Schema<ICoupleQuestionState>(
       type: Schema.Types.ObjectId,
       ref: 'Couple',
       required: true,
-      index: true,
     },
     questionId: {
       type: String,
       required: true,
-      index: true,
     },
     categoryId: {
       type: String,
       enum: Object.values(CategoryId),
       required: true,
-      index: true,
     },
     state: {
       type: String,
@@ -70,6 +67,9 @@ const coupleQuestionStateSchema = new Schema<ICoupleQuestionState>(
 // Compound indexes for efficient queries
 coupleQuestionStateSchema.index({ coupleId: 1, questionId: 1 }, { unique: true });
 coupleQuestionStateSchema.index({ coupleId: 1, categoryId: 1, state: 1 });
+coupleQuestionStateSchema.index({ coupleId: 1, state: 1 }); // For getting active/completed tethers
+coupleQuestionStateSchema.index({ coupleId: 1, state: 1, 'answers.timestamp': -1 }); // For history queries
+coupleQuestionStateSchema.index({ expiresAt: 1, state: 1 }); // For finding expired questions
 coupleQuestionStateSchema.index({ coupleId: 1, state: 1, poolOrder: 1 });
 coupleQuestionStateSchema.index({ expiryTimestamp: 1 });
 coupleQuestionStateSchema.index({ cooldownEnd: 1 });

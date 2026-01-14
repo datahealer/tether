@@ -288,22 +288,37 @@ export const joinCouple = async (req: Request, res: Response) => {
     );
 
     // ✅ AUTO-CREATE USER ENTITLEMENTS FOR BOTH PARTNERS
-    for (const userId of [invite.inviterId, user._id]) {
-      let entitlement = await UserEntitlement.findOne({ userId });
+    // Optimized: Fetch users and entitlements in parallel
+    const [inviterUser, accepterUser, inviterEntitlement, accepterEntitlement] = await Promise.all([
+      User.findById(invite.inviterId).select('subscribed').lean(),
+      User.findById(user._id).select('subscribed').lean(),
+      UserEntitlement.findOne({ userId: invite.inviterId }),
+      UserEntitlement.findOne({ userId: user._id }),
+    ]);
 
-      if (!entitlement) {
-        const currentUser = await User.findById(userId);
-
-        await UserEntitlement.create({
-          userId,
-          tier: currentUser?.subscribed ? Tier.PREMIUM : Tier.FREE,
-          refreshesDefault: currentUser?.subscribed ? 3 : 1,
-          refreshesPermanent: 0,
-        });
-
-        console.log(`Created UserEntitlement for user ${userId} (tier: ${currentUser?.subscribed ? 'PREMIUM' : 'FREE'})`);
-      }
-    }
+    // Optimized: Create entitlements in parallel
+    await Promise.all([
+      inviterEntitlement
+        ? Promise.resolve() // Already exists
+        : UserEntitlement.create({
+            userId: invite.inviterId,
+            tier: inviterUser?.subscribed ? Tier.PREMIUM : Tier.FREE,
+            refreshesDefault: inviterUser?.subscribed ? 3 : 1,
+            refreshesPermanent: 0,
+          }).then(() => 
+            console.log(`Created UserEntitlement for user ${invite.inviterId} (tier: ${inviterUser?.subscribed ? 'PREMIUM' : 'FREE'})`)
+          ),
+      accepterEntitlement
+        ? Promise.resolve() // Already exists
+        : UserEntitlement.create({
+            userId: user._id,
+            tier: accepterUser?.subscribed ? Tier.PREMIUM : Tier.FREE,
+            refreshesDefault: accepterUser?.subscribed ? 3 : 1,
+            refreshesPermanent: 0,
+          }).then(() => 
+            console.log(`Created UserEntitlement for user ${user._id} (tier: ${accepterUser?.subscribed ? 'PREMIUM' : 'FREE'})`)
+          ),
+    ]);
 
     // Mark invite as accepted
     invite.status = 'accepted';

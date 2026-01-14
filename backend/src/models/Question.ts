@@ -28,8 +28,12 @@ const questionSchema = new Schema<IQuestion>({
   writerNotes: String,
 }, { timestamps: true });
 
+// Performance indexes for common queries
 questionSchema.index({ questionId: 1 }, { unique: true });
 questionSchema.index({ categoryId: 1 });
 questionSchema.index({ status: 1 });
+questionSchema.index({ categoryId: 1, status: 1 }); // Compound index for filtered queries
+questionSchema.index({ categoryId: 1, genderFocus: 1, status: 1 }); // For question selection queries
+questionSchema.index({ question: 'text' }); // Text search index for search functionality
 const Question = model<IQuestion>('Question', questionSchema);
 export default Question;

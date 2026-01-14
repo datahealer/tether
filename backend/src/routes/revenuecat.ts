@@ -6,6 +6,10 @@ import {
   restorePurchases,
   handleWebhook,
   getOffering,
+  cancelSubscription,
+  grantEntitlement,
+  revokeEntitlement,
+  getSubscriptionHistory,
 } from '../controllers/revenuecat';
 import { authMiddleware } from '../middleware/auth';
 
@@ -181,5 +185,140 @@ router.get('/offering', authMiddleware, getOffering);
  *         description: Webhook processed
  */
 router.post('/webhook', handleWebhook);
+
+/**
+ * @swagger
+ * /api/revenuecat/subscription/cancel:
+ *   post:
+ *     summary: Cancel subscription
+ *     tags: [RevenueCat]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription cancellation processed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 revenueCatUser:
+ *                   $ref: '#/components/schemas/RevenueCatUser'
+ *       400:
+ *         description: No active subscription found
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/subscription/cancel', authMiddleware, cancelSubscription);
+
+/**
+ * @swagger
+ * /api/revenuecat/entitlement/grant:
+ *   post:
+ *     summary: Grant entitlement to user
+ *     tags: [RevenueCat]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - entitlementId
+ *               - duration
+ *             properties:
+ *               entitlementId:
+ *                 type: string
+ *               duration:
+ *                 type: number
+ *                 description: Duration in seconds
+ *               productId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Entitlement granted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 revenueCatUser:
+ *                   $ref: '#/components/schemas/RevenueCatUser'
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/entitlement/grant', authMiddleware, grantEntitlement);
+
+/**
+ * @swagger
+ * /api/revenuecat/entitlement/revoke:
+ *   post:
+ *     summary: Revoke entitlement from user
+ *     tags: [RevenueCat]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - entitlementId
+ *             properties:
+ *               entitlementId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Entitlement revoked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 revenueCatUser:
+ *                   $ref: '#/components/schemas/RevenueCatUser'
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/entitlement/revoke', authMiddleware, revokeEntitlement);
+
+/**
+ * @swagger
+ * /api/revenuecat/subscription/history:
+ *   get:
+ *     summary: Get subscription history for current user
+ *     tags: [RevenueCat]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SubscriptionHistoryResponse'
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/subscription/history', authMiddleware, getSubscriptionHistory);
 
 export default router;

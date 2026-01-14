@@ -22,7 +22,8 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('coupleId _id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -80,30 +81,41 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
     const Couple = (await import('../models/Couple')).default;
 
     if (user.coupleId) {
-      const couple = await Couple.findById(user.coupleId);
+      // Optimized: Use lean() for read-only query
+      const couple = await Couple.findById(user.coupleId).select('user1Id user2Id').lean();
       if (couple) {
         const partnerIds = [couple.user1Id, couple.user2Id];
         
-        for (const partnerId of partnerIds) {
-          const entitlement = await UserEntitlement.findOne({ userId: partnerId });
-          if (entitlement) {
-            entitlement.tier = Tier.TRIAL;
-            entitlement.refreshesDefault = 3; // Premium/trial users get 3 refreshes
-            await entitlement.save();
-            console.log(`✅ Updated entitlement to TRIAL for user ${partnerId}`);
-          } else {
-            await UserEntitlement.create({
-              userId: partnerId,
-              tier: Tier.TRIAL,
-              refreshesDefault: 3,
-              refreshesPermanent: 0,
-            });
-            console.log(`✅ Created TRIAL entitlement for user ${partnerId}`);
-          }
-        }
+        // Optimized: Fetch all entitlements in parallel
+        const entitlements = await Promise.all(
+          partnerIds.map(partnerId => UserEntitlement.findOne({ userId: partnerId }))
+        );
+        
+        // Optimized: Update/create entitlements in parallel
+        await Promise.all(
+          entitlements.map((entitlement, index) => {
+            const partnerId = partnerIds[index];
+            if (entitlement) {
+              entitlement.tier = Tier.TRIAL;
+              entitlement.refreshesDefault = 3;
+              return entitlement.save().then(() => 
+                console.log(`✅ Updated entitlement to TRIAL for user ${partnerId}`)
+              );
+            } else {
+              return UserEntitlement.create({
+                userId: partnerId,
+                tier: Tier.TRIAL,
+                refreshesDefault: 3,
+                refreshesPermanent: 0,
+              }).then(() => 
+                console.log(`✅ Created TRIAL entitlement for user ${partnerId}`)
+              );
+            }
+          })
+        );
       }
     } else {
-      // No couple yet, just update this user's entitlement
+      // Optimized: Use findOneAndUpdate or create in one operation
       const entitlement = await UserEntitlement.findOne({ userId: user._id });
       if (entitlement) {
         entitlement.tier = Tier.TRIAL;
@@ -181,7 +193,8 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('coupleId _id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -294,19 +307,23 @@ export const getSubscriptionStatus = async (req: Request, res: Response): Promis
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('_id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    // Get active subscription
+    // Optimized: Use lean() for read-only query and select only needed fields
     const subscription = await Purchase.findOne({
       userId: user._id,
       status: 'active',
       expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    })
+      .select('planType expiresAt autoRenew')
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!subscription) {
       res.status(200).json({
@@ -348,14 +365,15 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('_id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    // Find active subscription
+    // Find active subscription (need full document for save)
     const subscription = await Purchase.findOne({
       userId: user._id,
       status: 'active',

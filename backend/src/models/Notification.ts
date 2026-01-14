@@ -28,7 +28,7 @@ export interface INotification extends Document {
   type: NotificationType;
   title: string;
   body: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   status: NotificationStatus;
   platform: 'ios' | 'android' | 'web';
   deviceToken?: string;
@@ -48,23 +48,19 @@ const NotificationSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     coupleId: {
       type: Schema.Types.ObjectId,
       ref: 'Couple',
-      index: true,
     },
     tetherId: {
       type: Schema.Types.ObjectId,
       ref: 'Tether',
-      index: true,
     },
     type: {
       type: String,
       enum: Object.values(NotificationType),
       required: true,
-      index: true,
     },
     title: {
       type: String,
@@ -82,7 +78,6 @@ const NotificationSchema: Schema = new Schema(
       type: String,
       enum: Object.values(NotificationStatus),
       default: NotificationStatus.PENDING,
-      index: true,
     },
     platform: {
       type: String,
@@ -94,7 +89,6 @@ const NotificationSchema: Schema = new Schema(
     },
     scheduledFor: {
       type: Date,
-      index: true,
     },
     sentAt: {
       type: Date,
@@ -121,5 +115,6 @@ const NotificationSchema: Schema = new Schema(
 NotificationSchema.index({ userId: 1, status: 1, createdAt: -1 });
 NotificationSchema.index({ scheduledFor: 1, status: 1 });
 NotificationSchema.index({ coupleId: 1, type: 1 });
+NotificationSchema.index({ tetherId: 1 }); // For tether-related notifications
 
 export default mongoose.model<INotification>('Notification', NotificationSchema);

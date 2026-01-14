@@ -9,7 +9,6 @@ const userEntitlementSchema = new Schema<IUserEntitlement>(
       ref: 'User',
       required: true,
       unique: true,
-      index: true,
     },
     tier: {
       type: String,
@@ -37,7 +36,7 @@ const userEntitlementSchema = new Schema<IUserEntitlement>(
   { timestamps: true }
 );
 
-userEntitlementSchema.index({ userId: 1 });
+// userId index is automatically created by unique: true constraint
 userEntitlementSchema.index({ tier: 1 });
 userEntitlementSchema.index({ trialEnd: 1 });
 userEntitlementSchema.index({ premiumEnd: 1 });

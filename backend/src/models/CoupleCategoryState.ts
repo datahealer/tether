@@ -1,6 +1,5 @@
 import { Schema, model } from 'mongoose';
 import { ICoupleCategoryState } from '../types/interfaces';
-import { CategoryId } from '../types/enums';
 
 const coupleCategoryStateSchema = new Schema<ICoupleCategoryState>(
   {
@@ -8,13 +7,11 @@ const coupleCategoryStateSchema = new Schema<ICoupleCategoryState>(
       type: Schema.Types.ObjectId,
       ref: 'Couple',
       required: true,
-      index: true,
     },
     categoryId: {
       type: String,
       // enum: Object.values(CategoryId),
       required: true,
-      index: true,
     },
     answeredCount: {
       type: Number,
