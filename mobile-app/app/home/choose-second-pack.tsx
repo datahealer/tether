@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+ 
   ScrollView,
   Alert,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface CategoryOption {
   id: string;
@@ -129,7 +130,7 @@ export default function ChoosePacksScreen() {
               const isDisabled = category.isUnlocked;
 
               return (
-                <TouchableOpacity
+                <DebouncedButton
                   key={category.id}
                   style={[
                     styles.categoryItem,
@@ -137,7 +138,11 @@ export default function ChoosePacksScreen() {
                     isDisabled && styles.categoryItemDisabled,
                     index === 0 && styles.categoryItemFirst,
                   ]}
-                  onPress={() => !isDisabled && handleSelectPack(category.id)}
+                  onPress={() => {
+                    if (!isDisabled) {
+                      handleSelectPack(category.id);
+                    }
+                  }}
                   activeOpacity={0.7}
                   disabled={isDisabled}
                 >
@@ -158,7 +163,7 @@ export default function ChoosePacksScreen() {
                   {isSelected && (
                     <Ionicons name="checkmark" size={24} color={Colors.darkOrange} />
                   )}
-                </TouchableOpacity>
+                </DebouncedButton>
               );
             })}
           </View>
@@ -169,7 +174,7 @@ export default function ChoosePacksScreen() {
 
         {/* Fixed Bottom Button */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity
+          <DebouncedButton
             style={[
               styles.confirmButton,
               selectedPackIds.length !== 2 && styles.confirmButtonDisabled,
@@ -184,7 +189,7 @@ export default function ChoosePacksScreen() {
             ]}>
               Unlock Both Packs
             </Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         </View>
       </View>
     </OnboardingLayout>

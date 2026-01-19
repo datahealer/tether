@@ -4,7 +4,8 @@ import { CategoryId } from '../../types/enums';
 
 export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    // Optimized: Use lean() for read-only query
+    const categories = await Category.find().sort({ createdAt: -1 }).lean();
     res.status(200).json({ categories });
   } catch (error: any) {
     res.status(500).json({ message: 'Failed to fetch categories', error: error.message });
@@ -13,7 +14,8 @@ export const getAllCategories = async (req: Request, res: Response): Promise<voi
 
 export const getCategoryById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const category = await Category.findById(req.params.id);
+    // Optimized: Use lean() for read-only query
+    const category = await Category.findById(req.params.id).lean();
     if (!category) {
       res.status(404).json({ message: 'Category not found' });
       return;

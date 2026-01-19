@@ -74,23 +74,29 @@ export const updatePreferences = async (req: Request, res: Response): Promise<vo
 
     const { gentleReminders, milestoneAlerts, newTetherAlerts } = req.body;
 
-    const user = await User.findById(userId);
+    // Optimized: Use findByIdAndUpdate instead of find + save
+    const updateData: any = {};
+    if (gentleReminders !== undefined) {
+      updateData['notificationPreferences.gentleReminders'] = gentleReminders;
+    }
+    if (milestoneAlerts !== undefined) {
+      updateData['notificationPreferences.milestoneAlerts'] = milestoneAlerts;
+    }
+    if (newTetherAlerts !== undefined) {
+      updateData['notificationPreferences.newTetherAlerts'] = newTetherAlerts;
+    }
+
+    // Optimized: Use lean() for read-only response
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, select: 'notificationPreferences' }
+    ).lean();
+
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-
-    if (gentleReminders !== undefined) {
-      user.notificationPreferences.gentleReminders = gentleReminders;
-    }
-    if (milestoneAlerts !== undefined) {
-      user.notificationPreferences.milestoneAlerts = milestoneAlerts;
-    }
-    if (newTetherAlerts !== undefined) {
-      user.notificationPreferences.newTetherAlerts = newTetherAlerts;
-    }
-
-    await user.save();
 
     res.json({
       success: true,
@@ -111,7 +117,8 @@ export const getPreferences = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const user = await User.findById(userId).select('notificationPreferences');
+    // Optimized: Use lean() for read-only query
+    const user = await User.findById(userId).select('notificationPreferences').lean();
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;

@@ -25,7 +25,6 @@ const PurchaseSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     planType: {
       type: String,
@@ -64,7 +63,6 @@ const PurchaseSchema: Schema = new Schema(
     },
     revenueCatTransactionId: {
       type: String,
-      index: true,
     },
     revenueCatOriginalTransactionId: {
       type: String,
@@ -85,7 +83,16 @@ const PurchaseSchema: Schema = new Schema(
   }
 );
 
-// Index for querying active subscriptions
+// Indexes for querying active subscriptions
 PurchaseSchema.index({ userId: 1, status: 1, expiresAt: 1 });
+PurchaseSchema.index({ revenueCatTransactionId: 1 }); // For transaction lookups
+
+// Indexes for analytics queries
+PurchaseSchema.index({ createdAt: -1 }); // For trends and revenue analytics
+PurchaseSchema.index({ status: 1, expiresAt: 1 }); // For active subscriptions
+PurchaseSchema.index({ planType: 1, status: 1 }); // For plan type analytics
+PurchaseSchema.index({ revenueCatStore: 1 }); // For store analytics
+PurchaseSchema.index({ cancelledAt: 1 }); // For churn analysis
+PurchaseSchema.index({ createdAt: 1, planType: 1 }); // For revenue by plan type
 
 export default mongoose.model<IPurchase>('Purchase', PurchaseSchema);

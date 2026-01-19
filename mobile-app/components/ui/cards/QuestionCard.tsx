@@ -4,10 +4,11 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../../theme/constants';
+import DebouncedButton from '../buttons/DebouncedButton';
 
 interface QuestionCardProps {
   categoryName: string;
@@ -57,7 +58,7 @@ export default function QuestionCard({
       />
 
       {/* Draw Another Button */}
-      <TouchableOpacity
+      <DebouncedButton
         style={[
           styles.drawButton,
           isDrawDisabled && styles.drawButtonDisabled,
@@ -75,7 +76,7 @@ export default function QuestionCard({
         <Text style={styles.drawButtonText}>
           {isSkipping ? 'Drawing...' : 'Draw Another'}
         </Text>
-      </TouchableOpacity>
+      </DebouncedButton>
 
       {/* Refreshes Remaining */}
       <Text style={styles.refreshesText}>

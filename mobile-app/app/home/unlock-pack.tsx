@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+
   ScrollView,
   Alert,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface PricingOption {
   id: string;
@@ -83,7 +84,7 @@ export default function UnlockPackScreen() {
         {/* Pricing Options */}
         <View style={styles.pricingContainer}>
           {pricingOptions.map((option) => (
-            <TouchableOpacity
+            <DebouncedButton
               key={option.id}
               style={[
                 styles.pricingCard,
@@ -127,7 +128,7 @@ export default function UnlockPackScreen() {
                   )}
                 </View>
               </View>
-            </TouchableOpacity>
+            </DebouncedButton>
           ))}
         </View>
 
@@ -137,13 +138,13 @@ export default function UnlockPackScreen() {
 
       {/* Fixed Bottom Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <DebouncedButton
           style={styles.unlockButton}
           onPress={handleUnlockPack}
           activeOpacity={0.9}
         >
           <Text style={styles.unlockButtonText}>Unlock Pack</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

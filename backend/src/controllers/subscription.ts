@@ -22,6 +22,7 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    // Get user document (not lean) so we can update subscription status
     const user = await User.findById(userId);
 
     if (!user) {
@@ -29,27 +30,33 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Check if user already has an active subscription
-    if (user.subscribed) {
+    // Import UserEntitlement early
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const { Tier } = await import('../questionServiceEngine');
+
+    // Check if user has already used trial by checking trialEnd field
+    const entitlement = await UserEntitlement.findOne({ userId: user._id });
+    
+    if (entitlement?.trialEnd) {
+      // User has already used their trial (trialEnd exists means trial was activated before)
       res.status(400).json({ 
-        error: 'You already have an active subscription',
-        subscription: {
-          isSubscribed: true,
-          planType: 'trial',
+        error: 'Trial already used. Please choose a paid plan.',
+        details: {
+          trialUsedAt: entitlement.trialEnd,
+          currentTier: entitlement.tier,
         }
       });
       return;
     }
 
-    // Check if user has already used trial
-    const existingTrial = await Purchase.findOne({
-      userId: user._id,
-      planType: 'trial',
-    });
-
-    if (existingTrial) {
+    // Check if user already has premium subscription
+    if (user.subscribed && entitlement?.tier === Tier.PREMIUM) {
       res.status(400).json({ 
-        error: 'Trial already used. Please choose a paid plan.' 
+        error: 'You already have an active premium subscription',
+        subscription: {
+          isSubscribed: true,
+          planType: 'premium',
+        }
       });
       return;
     }
@@ -75,39 +82,66 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
     await user.save();
 
     // Update UserEntitlement to TRIAL tier for both partners in the couple
-    const { UserEntitlement } = await import('../models/UserEntitlement');
-    const { Tier } = await import('../questionServiceEngine');
     const Couple = (await import('../models/Couple')).default;
+    const { QuestionServiceEngine } = await import('../questionServiceEngine');
 
     if (user.coupleId) {
-      const couple = await Couple.findById(user.coupleId);
+      // Optimized: Use lean() for read-only query
+      const couple = await Couple.findById(user.coupleId).select('user1Id user2Id').lean();
       if (couple) {
         const partnerIds = [couple.user1Id, couple.user2Id];
         
-        for (const partnerId of partnerIds) {
-          const entitlement = await UserEntitlement.findOne({ userId: partnerId });
-          if (entitlement) {
-            entitlement.tier = Tier.TRIAL;
-            entitlement.refreshesDefault = 3; // Premium/trial users get 3 refreshes
-            await entitlement.save();
-            console.log(`✅ Updated entitlement to TRIAL for user ${partnerId}`);
-          } else {
-            await UserEntitlement.create({
-              userId: partnerId,
-              tier: Tier.TRIAL,
-              refreshesDefault: 3,
-              refreshesPermanent: 0,
-            });
-            console.log(`✅ Created TRIAL entitlement for user ${partnerId}`);
-          }
-        }
+        // Optimized: Fetch all entitlements in parallel
+        const entitlements = await Promise.all(
+          partnerIds.map(partnerId => UserEntitlement.findOne({ userId: partnerId }))
+        );
+        
+        // Optimized: Update/create entitlements in parallel with trialEnd date
+        await Promise.all(
+          entitlements.map((entitlement, index) => {
+            const partnerId = partnerIds[index];
+            if (entitlement) {
+              entitlement.tier = Tier.TRIAL;
+              entitlement.refreshesDefault = 3;
+              entitlement.trialEnd = expiresAt; // Set trial expiration
+              return entitlement.save().then(() => 
+                console.log(`✅ Updated entitlement to TRIAL for user ${partnerId}, expires: ${expiresAt}`)
+              );
+            } else {
+              return UserEntitlement.create({
+                userId: partnerId,
+                tier: Tier.TRIAL,
+                refreshesDefault: 3,
+                refreshesPermanent: 0,
+                trialEnd: expiresAt, // Set trial expiration
+              }).then(() => 
+                console.log(`✅ Created TRIAL entitlement for user ${partnerId}, expires: ${expiresAt}`)
+              );
+            }
+          })
+        );
+        
+        // Update partner users' subscribed flag
+        await Promise.all(
+          partnerIds.map(partnerId => 
+            User.findByIdAndUpdate(partnerId, { subscribed: true })
+              .then(() => console.log(`✅ Set subscribed=true for user ${partnerId}`))
+          )
+        );
+        
+        // 🌟 UNLOCK ALL 10 CATEGORIES for trial
+        await QuestionServiceEngine.updateCategoryAccessForTierChange(
+          user.coupleId,
+          Tier.TRIAL
+        );
+        console.log('🔓 Unlocked all categories for trial couple');
       }
     } else {
-      // No couple yet, just update this user's entitlement
-      const entitlement = await UserEntitlement.findOne({ userId: user._id });
+      // Single user (no couple yet) - update their entitlement
       if (entitlement) {
         entitlement.tier = Tier.TRIAL;
         entitlement.refreshesDefault = 3;
+        entitlement.trialEnd = expiresAt; // Set trial expiration
         await entitlement.save();
       } else {
         await UserEntitlement.create({
@@ -115,9 +149,11 @@ export const startTrial = async (req: Request, res: Response): Promise<void> => 
           tier: Tier.TRIAL,
           refreshesDefault: 3,
           refreshesPermanent: 0,
+          trialEnd: expiresAt, // Set trial expiration
         });
       }
-      console.log(`✅ Updated/created TRIAL entitlement for user ${user._id}`);
+      console.log(`✅ Updated/created TRIAL entitlement for user ${user._id}, expires: ${expiresAt}`);
+      console.log('ℹ️  Single user - categories will unlock when couple is formed');
     }
 
     console.log('✅ Trial started for user:', user.email);
@@ -181,7 +217,8 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('coupleId _id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -294,19 +331,23 @@ export const getSubscriptionStatus = async (req: Request, res: Response): Promis
       return;
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only needed fields
+    const user = await User.findById(userId).select('_id').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    // Get active subscription
+    // Optimized: Use lean() for read-only query and select only needed fields
     const subscription = await Purchase.findOne({
       userId: user._id,
       status: 'active',
       expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    })
+      .select('planType expiresAt autoRenew')
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!subscription) {
       res.status(200).json({
@@ -338,6 +379,10 @@ export const getSubscriptionStatus = async (req: Request, res: Response): Promis
 /**
  * POST /api/subscription/cancel
  * Cancel active subscription
+ * 
+ * Behavior:
+ * - For TRIAL: Immediately revokes access, sets tier to FREE, locks categories
+ * - For PAID (monthly/yearly): Marks for cancellation at end of billing period (RevenueCat handles this)
  */
 export const cancelSubscription = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -348,14 +393,15 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const user = await User.findById(userId);
+    // Get user with coupleId (need it for partner updates)
+    const user = await User.findById(userId).select('_id email coupleId subscribed').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    // Find active subscription
+    // Find active subscription (need full document for save)
     const subscription = await Purchase.findOne({
       userId: user._id,
       status: 'active',
@@ -367,23 +413,96 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Disable auto-renewal
+    // Import required models
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const { Tier } = await import('../questionServiceEngine');
+    const Couple = (await import('../models/Couple')).default;
+    const { QuestionServiceEngine } = await import('../questionServiceEngine');
+
+    const isTrial = subscription.planType === 'trial';
+    
+    // Mark subscription as cancelled
     subscription.autoRenew = false;
     subscription.cancelledAt = new Date();
-    await subscription.save();
+    
+    if (isTrial) {
+      // TRIAL CANCELLATION: Immediate effect - downgrade to FREE tier
+      subscription.status = 'cancelled';
+      subscription.expiresAt = new Date(); // Expire immediately
+      console.log(`🚫 Trial cancelled immediately for user: ${user.email}`);
 
-    console.log('✅ Subscription cancelled for user:', user.email);
+      // Get partner IDs if user is in a couple
+      let partnerIds = [user._id];
+      if (user.coupleId) {
+        const couple = await Couple.findById(user.coupleId).select('user1Id user2Id').lean();
+        if (couple) {
+          partnerIds = [couple.user1Id, couple.user2Id];
+        }
+      }
 
-    res.status(200).json({
-      success: true,
-      message: 'Subscription will not auto-renew after expiration',
-      subscription: {
-        isSubscribed: true,
-        planType: subscription.planType,
-        expiresAt: subscription.expiresAt,
-        autoRenew: false,
-      },
-    });
+      // Downgrade both partners to FREE tier
+      await Promise.all(
+        partnerIds.map(async (partnerId) => {
+          const entitlement = await UserEntitlement.findOne({ userId: partnerId });
+          if (entitlement) {
+            entitlement.tier = Tier.FREE;
+            entitlement.refreshesDefault = 1; // Free tier: 1 refresh
+            entitlement.trialEnd = new Date(); // Mark trial as ended
+            await entitlement.save();
+            console.log(`⬇️  Downgraded user ${partnerId} to FREE tier`);
+          }
+        })
+      );
+
+      // Update User.subscribed flag for both partners
+      await Promise.all(
+        partnerIds.map(partnerId => 
+          User.findByIdAndUpdate(partnerId, { subscribed: false })
+            .then(() => console.log(`✅ Set subscribed=false for user ${partnerId}`))
+        )
+      );
+
+      // 🔒 LOCK CATEGORIES - return to free tier access
+      if (user.coupleId) {
+        await QuestionServiceEngine.updateCategoryAccessForTierChange(
+          user.coupleId,
+          Tier.FREE
+        );
+        console.log('🔒 Locked categories - returned to FREE tier access');
+      }
+
+      await subscription.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Trial cancelled. You have been returned to the Free experience.',
+        subscription: {
+          isSubscribed: false,
+          planType: 'free',
+          expiresAt: new Date(),
+          autoRenew: false,
+        },
+      });
+
+    } else {
+      // PAID PLAN CANCELLATION: Takes effect at end of billing period
+      await subscription.save();
+      
+      console.log(`📅 Paid subscription (${subscription.planType}) marked for cancellation at end of period for user: ${user.email}`);
+      console.log(`   Expires at: ${subscription.expiresAt}`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Subscription cancelled. You will keep Premium access until the end of your current billing period.',
+        subscription: {
+          isSubscribed: true,
+          planType: subscription.planType,
+          expiresAt: subscription.expiresAt,
+          autoRenew: false,
+        },
+      });
+    }
+
   } catch (error: any) {
     console.error('❌ Cancel subscription error:', error);
     res.status(500).json({

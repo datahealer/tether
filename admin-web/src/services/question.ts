@@ -24,11 +24,15 @@ export interface Question {
   updatedAt: string;
 }
 
-const getAuthHeader = () => ({
-  headers: {
-    Authorization: `Bearer ${authService.getToken()}`,
-  },
-});
+const getAuthHeader = () => {
+  const token = authService.getToken();
+  console.log('🔑 [Questions Service] Getting auth token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
 
 class QuestionsService {
   async getAll(limit: number = 1000): Promise<Question[]> {

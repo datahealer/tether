@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+
   Image,
   ScrollView,
   ActivityIndicator,
@@ -18,6 +18,7 @@ import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../the
 import { useAuth } from '@/context/auth_context';
 import { getCoupleInfo } from '@/services/onboarding_service';
 import { NotificationData } from '@/services/notification_service';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function WaitingForPartnerScreen() {
   const router = useRouter();
@@ -149,14 +150,14 @@ export default function WaitingForPartnerScreen() {
           </Text>
 
           {/* Share Invite Button */}
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.shareButton}
             onPress={handleShareInvite}
             activeOpacity={0.9}
           >
             <Text style={styles.shareButtonText}>Share Invite Link</Text>
             <Ionicons name="share-outline" size={20} color={Colors.white} style={styles.shareIcon} />
-          </TouchableOpacity>
+          </DebouncedButton>
 
           {/* Fun Illustration / Animation Space */}
           <View style={styles.illustrationContainer}>

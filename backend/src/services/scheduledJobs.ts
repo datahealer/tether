@@ -129,6 +129,84 @@ export const scheduleUnlockExpiryJob = () => {
 };
 
 /**
+ * Scheduled job to handle expired trials
+ * Runs every 6 hours to check and downgrade expired trials
+ */
+export const scheduleTrialExpiryJob = () => {
+  cron.schedule('0 */6 * * *', async () => {
+    console.log('Running trial expiry job...');
+    
+    try {
+      const { UserEntitlement } = await import('../models/UserEntitlement');
+      const { Tier } = await import('../types/enums');
+      const User = (await import('../models/User')).default;
+      const now = new Date();
+      
+      // Find all trial entitlements that have expired
+      const expiredTrials = await UserEntitlement.find({
+        tier: Tier.TRIAL,
+        trialEnd: { $lte: now },
+      });
+      
+      if (expiredTrials.length === 0) {
+        console.log('No expired trials found');
+        return;
+      }
+      
+      console.log(`Found ${expiredTrials.length} expired trials to downgrade`);
+      
+      // Downgrade each expired trial to FREE tier
+      for (const entitlement of expiredTrials) {
+        try {
+          // Get user to find their couple
+          const user = await User.findById(entitlement.userId);
+          
+          // Downgrade entitlement to FREE
+          entitlement.tier = Tier.FREE;
+          entitlement.refreshesDefault = 1;
+          // Keep trialEnd so user can't use trial again
+          await entitlement.save();
+          
+          // Update user's subscribed flag to false
+          await User.findByIdAndUpdate(entitlement.userId, { subscribed: false });
+          
+          // 🔒 LOCK DOWN CATEGORIES: Only keep top 2 unlocked
+          if (user?.coupleId) {
+            const { QuestionServiceEngine } = await import('../questionServiceEngine');
+            await QuestionServiceEngine.updateCategoryAccessForTierChange(
+              user.coupleId,
+              Tier.FREE
+            );
+            console.log(`🔒 Locked 8 categories for couple ${user.coupleId} (trial expired)`);
+            
+            // 📲 Send notification to both partners
+            try {
+              const notificationService = (await import('./notification/notification.service')).default;
+              await notificationService.sendTrialExpiredNotification(
+                user.coupleId.toString()
+              );
+              console.log(`📧 Sent trial expiry notification to couple ${user.coupleId}`);
+            } catch (notifError) {
+              console.error('Failed to send trial expiry notification:', notifError);
+            }
+          }
+          
+          console.log(`✅ Downgraded expired trial for user ${entitlement.userId}`);
+        } catch (error) {
+          console.error(`❌ Error downgrading trial for user ${entitlement.userId}:`, error);
+        }
+      }
+      
+      console.log(`Trial expiry job completed, downgraded ${expiredTrials.length} users`);
+    } catch (error) {
+      console.error('Error in trial expiry job:', error);
+    }
+  });
+  
+  console.log('Trial expiry job scheduled (runs every 6 hours)');
+};
+
+/**
  * Initialize all scheduled jobs
  */
 export const initializeScheduledJobs = () => {
@@ -138,6 +216,7 @@ export const initializeScheduledJobs = () => {
   scheduleExpiryHandlerJob();
   scheduleReminderJob();
   scheduleUnlockExpiryJob();
+  scheduleTrialExpiryJob();
   
   console.log('All scheduled jobs initialized');
 };

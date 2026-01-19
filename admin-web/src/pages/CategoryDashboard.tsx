@@ -8,7 +8,6 @@ import { categoriesService, Category } from '../services/category';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BarChart3, TrendingUp, Edit, Eye } from 'lucide-react';
-
 export const CategoryDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
@@ -19,13 +18,11 @@ const [showDeleteModal, setShowDeleteModal] = useState(false);
 const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 10;
-
   const { data: categories = [], isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: categoriesService.getAll,
   });
 const totalPages = Math.ceil(categories.length / itemsPerPage);
-
 const paginatedCategories = categories.slice(
   (currentPage - 1) * itemsPerPage,
   currentPage * itemsPerPage
@@ -72,15 +69,12 @@ const confirmDeleteCategory = async () => {
     setDeleteCategory(null);
   }
 };
-
-
   const stats = {
     total: categories.length,
     published: categories.length,
     draft: 0,
     totalViews: 0,
   };
-
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -132,7 +126,6 @@ const confirmDeleteCategory = async () => {
           Failed to load categories
         </div>
       )}
-
 <StatsCards
   cards={[
     {

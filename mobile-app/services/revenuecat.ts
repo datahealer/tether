@@ -5,16 +5,23 @@ import Constants from 'expo-constants';
 /**
  * RevenueCat SDK Configuration
  * 
- * IMPORTANT: Get your API keys from RevenueCat Dashboard
- * - iOS: Project Settings → API Keys → Public app-specific API keys
- * - Android: Project Settings → API Keys → Public app-specific API keys
+ * IMPORTANT: Get your PUBLIC API keys from RevenueCat Dashboard:
+ * 1. Go to RevenueCat Dashboard → Your Project
+ * 2. Click on "API Keys" in the left sidebar
+ * 3. Under "Public app-specific API keys":
+ *    - iOS: Copy the key starting with "appl_"
+ *    - Android: Copy the key starting with "goog_"
  * 
- * These are PUBLIC keys safe to include in the app
+ * Add them to your .env file as:
+ * EXPO_PUBLIC_REVENUECAT_APPLE_KEY=appl_xxxxx
+ * EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY=goog_xxxxx
+ * 
+ * DO NOT use Secret API keys (sk_xxx) - they are for backend only!
  */
 
-// TODO: Replace with your actual RevenueCat API keys from the dashboard
-const REVENUECAT_APPLE_API_KEY = 'appl_YOUR_KEY_HERE';  // iOS public key
-const REVENUECAT_GOOGLE_API_KEY = 'goog_YOUR_KEY_HERE'; // Android public key
+// Get PUBLIC API keys directly from environment variables
+const REVENUECAT_APPLE_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || '';
+const REVENUECAT_GOOGLE_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY || '';
 
 /**
  * Initialize RevenueCat SDK
@@ -25,6 +32,13 @@ export const initializeRevenueCat = async (userId: string): Promise<void> => {
     const apiKey = Platform.OS === 'ios' 
       ? REVENUECAT_APPLE_API_KEY 
       : REVENUECAT_GOOGLE_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        `RevenueCat ${Platform.OS === 'ios' ? 'Apple' : 'Google'} API key not configured. ` +
+        `Please add EXPO_PUBLIC_REVENUECAT_${Platform.OS === 'ios' ? 'APPLE' : 'GOOGLE'}_KEY to your .env file`
+      );
+    }
 
     await Purchases.configure({
       apiKey,
@@ -75,6 +89,7 @@ export const getOfferings = async (): Promise<PurchasesOffering | null> => {
 
 /**
  * Check if user has active premium subscription
+ * Checks both entitlements AND active subscriptions for maximum compatibility
  */
 export const checkSubscriptionStatus = async (): Promise<{
   isPremium: boolean;
@@ -84,11 +99,12 @@ export const checkSubscriptionStatus = async (): Promise<{
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     
-    // Check if user has active 'premium' entitlement
-    const isPremium = customerInfo.entitlements.active['premium'] !== undefined;
+    // Method 1: Check if user has active 'premium' entitlement (if configured in RevenueCat)
+    const hasPremiumEntitlement = customerInfo.entitlements.active['premium'] !== undefined;
     
-    if (isPremium) {
+    if (hasPremiumEntitlement) {
       const premiumEntitlement = customerInfo.entitlements.active['premium'];
+      console.log('✅ Premium entitlement found:', premiumEntitlement.productIdentifier);
       return {
         isPremium: true,
         expirationDate: premiumEntitlement.expirationDate || undefined,
@@ -96,6 +112,24 @@ export const checkSubscriptionStatus = async (): Promise<{
       };
     }
     
+    // Method 2: Check active subscriptions directly (fallback for test mode)
+    const activeSubscriptions = customerInfo.activeSubscriptions;
+    if (activeSubscriptions && activeSubscriptions.length > 0) {
+      console.log('✅ Active subscriptions found:', activeSubscriptions);
+      
+      // Get the first active subscription
+      const subscriptionKey = activeSubscriptions[0];
+      const subscription = customerInfo.allPurchasedProductIdentifiers.includes(subscriptionKey);
+      
+      if (subscription) {
+        return {
+          isPremium: true,
+          productId: subscriptionKey,
+        };
+      }
+    }
+    
+    console.log('ℹ️ No premium access found');
     return { isPremium: false };
   } catch (error) {
     console.error('❌ Failed to check subscription status:', error);
@@ -105,6 +139,7 @@ export const checkSubscriptionStatus = async (): Promise<{
 
 /**
  * Purchase a subscription package
+ * Checks both entitlements AND active subscriptions to determine premium status
  */
 export const purchasePackage = async (packageToPurchase: any) => {
   try {
@@ -112,8 +147,20 @@ export const purchasePackage = async (packageToPurchase: any) => {
     
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     
-    // Check if user now has premium
-    const isPremium = customerInfo.entitlements.active['premium'] !== undefined;
+    // Method 1: Check if user has premium entitlement
+    let isPremium = customerInfo.entitlements.active['premium'] !== undefined;
+    
+    // Method 2: If no entitlement, check active subscriptions (for test mode & non-configured entitlements)
+    if (!isPremium) {
+      const activeSubscriptions = customerInfo.activeSubscriptions;
+      isPremium = activeSubscriptions && activeSubscriptions.length > 0;
+      
+      if (isPremium) {
+        console.log('✅ Purchase successful - Active subscriptions:', activeSubscriptions);
+      }
+    } else {
+      console.log('✅ Purchase successful - Premium entitlement active');
+    }
     
     console.log('✅ Purchase successful, isPremium:', isPremium);
     

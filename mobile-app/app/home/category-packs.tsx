@@ -366,9 +366,15 @@ export default function CategoryPacksScreen() {
         {/* Header */}
         <View style={styles.headerSection}>
           <Text style={styles.mainTitle}>Category Packs</Text>
-          <Text style={styles.subtitle}>
-            Choose an unlocked category to answer a Tether...
-          </Text>
+
+          <View style={styles.subtitleWrapper}>
+  <Text style={styles.subtitle}
+  numberOfLines={2}
+  allowFontScaling={false}>
+    Choose an unlocked category to answer a Tether...
+  </Text>
+</View>
+
         </View>
 
         {/* Carousel */}
@@ -423,10 +429,16 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: Spacing.xxl,
+    
   },
   carouselWrapper: {
     flex: 1,
     justifyContent: 'center',
   },
+  subtitleWrapper: {
+  minHeight: 48,   // ✅ enough for 2 lines
+  justifyContent: 'center',
+},
+
 });

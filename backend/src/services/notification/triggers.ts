@@ -4,6 +4,7 @@ import {CoupleQuestionState} from '../../models/CoupleQuestionState';
 import Question from '../../models/Question';
 import Couple from '../../models/Couple';
 import User from '../../models/User';
+import mongoose from 'mongoose';
 
 export class NotificationTriggers {
   /**
@@ -75,7 +76,12 @@ export class NotificationTriggers {
         () => ({
           title: 'New Tether Available! 💬',
           body: question.question.substring(0, 100) + (question.question.length > 100 ? '...' : ''),
-          data: { categoryId: questionState.categoryId },
+          data: {
+            type: 'NEW_TETHER',
+            categoryId: questionState.categoryId,
+            questionId: questionState.questionId,
+            route: '/home/category-question',
+          },
         })
       );
     } catch (error) {
@@ -166,6 +172,50 @@ export class NotificationTriggers {
       console.log(`✅ Sent BOTH_ANSWERED notification for question ${questionState.questionId}`);
     } catch (error) {
       console.error('❌ Error in onBothAnswered trigger:', error);
+    }
+  }
+
+  /**
+   * Triggered when a user adds an emoji reaction to a tether
+   * @param coupleId - The couple's ID
+   * @param userId - The user who added the reaction
+   * @param emoji - The emoji that was added
+   */
+  static async onReactionAdded(
+    coupleId: mongoose.Types.ObjectId,
+    userId: mongoose.Types.ObjectId,
+    emoji: string
+  ): Promise<void> {
+    try {
+      const couple = await Couple.findById(coupleId);
+      if (!couple) return;
+
+      const user = await User.findById(userId);
+      const userName = user?.name || 'Your partner';
+
+      // Find the other partner
+      const otherUserId =
+        couple.user1Id.toString() === userId.toString()
+          ? couple.user2Id
+          : couple.user1Id;
+
+      if (!otherUserId) return;
+
+      await notificationService.sendNotification({
+        userId: otherUserId.toString(),
+        type: NotificationType.REACTION_ADDED,
+        title: `${userName} reacted ${emoji}`,
+        body: `${userName} added a reaction to your tether!`,
+        data: {
+          type: 'REACTION_ADDED',
+          emoji,
+          route: '/home/tether-history',
+        },
+      });
+
+      console.log(`✅ Sent REACTION_ADDED notification: ${emoji}`);
+    } catch (error) {
+      console.error('❌ Error in onReactionAdded trigger:', error);
     }
   }
 }

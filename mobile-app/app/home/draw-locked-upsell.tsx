@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+ 
   ScrollView,
   Image,
 } from 'react-native';
@@ -14,6 +14,7 @@ import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useTetherStats } from '@/hooks/useTetherStats';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface PricingOption {
   id: string;
@@ -99,7 +100,7 @@ export default function DrawLockedUpsellScreen() {
         {/* Pricing Options */}
         <View style={styles.pricingContainer}>
           {pricingOptions.map((option) => (
-            <TouchableOpacity
+            <DebouncedButton
               key={option.id}
               style={[
                 styles.pricingCard,
@@ -130,7 +131,7 @@ export default function DrawLockedUpsellScreen() {
                   <Text style={styles.priceText}>{option.price}</Text>
                 </View>
               </View>
-            </TouchableOpacity>
+            </DebouncedButton>
           ))}
         </View>
 
@@ -148,7 +149,7 @@ export default function DrawLockedUpsellScreen() {
 
       {/* Fixed Bottom Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <DebouncedButton
           style={styles.purchaseButton}
           onPress={handlePurchase}
           activeOpacity={0.9}
@@ -156,7 +157,7 @@ export default function DrawLockedUpsellScreen() {
           <Text style={styles.purchaseButtonText}>
             Unlock More Questions
           </Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </View>
     </OnboardingLayout>
   );

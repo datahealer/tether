@@ -118,18 +118,26 @@ export default function ManageSubscriptionScreen() {
             onPress: async () => {
               try {
                 setIsLoading(true);
-                await cancelSubscription();
                 
-                // Update user context
+                // Cancel subscription on backend
+                const result = await cancelSubscription();
+                console.log('Cancellation result:', result);
+                
+                // Reload subscription status to get updated state
+                await loadSubscriptionStatus();
+                
+                // Update user context based on new subscription state
                 if (user) {
+                  const updatedStatus = await getSubscriptionStatus();
                   await signIn({
                     ...user,
-                    subscribed: false,
+                    subscribed: updatedStatus.isSubscribed,
                   });
+                  console.log('Updated user subscribed status:', updatedStatus.isSubscribed);
                 }
                 
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('Success', 'Your subscription has been cancelled.');
+                Alert.alert('Success', result.message || 'Your subscription has been cancelled.');
                 router.back();
               } catch (error: any) {
                 console.error('Cancellation error:', error);

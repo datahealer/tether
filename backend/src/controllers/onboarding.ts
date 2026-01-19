@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
 import CoupleInvite from '../models/CoupleInvite';
 import Couple from '../models/Couple';
 import { UserEntitlement } from '../models/UserEntitlement';
@@ -44,32 +44,32 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
       packPreferences,
     } = req.body;
 
-    const user = await User.findById(userId);
+    // Optimized: Build update object and use findByIdAndUpdate for atomic update
+    const updateData: any = {};
+    if (firstName) updateData['onboardingData.firstName'] = firstName;
+    if (partnerFirstName) updateData['onboardingData.partnerFirstName'] = partnerFirstName;
+    if (dateOfBirth) updateData['onboardingData.dateOfBirth'] = dateOfBirth;
+    if (gender) updateData['onboardingData.gender'] = gender;
+    if (relationshipStatus) updateData['onboardingData.relationshipStatus'] = relationshipStatus;
+    if (relationshipDuration) updateData['onboardingData.relationshipDuration'] = relationshipDuration;
+    if (livingType) updateData['onboardingData.livingType'] = livingType;
+    if (hasChildren !== undefined) updateData['onboardingData.hasChildren'] = hasChildren;
+    if (goals) updateData['onboardingData.goals'] = goals;
+    if (emotionalNeeds) updateData['onboardingData.emotionalNeeds'] = emotionalNeeds;
+    if (rhythm) updateData['onboardingData.rhythm'] = rhythm;
+    if (tone) updateData['onboardingData.tone'] = tone;
+    if (packPreferences) updateData['onboardingData.packPreferences'] = packPreferences;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
 
     if (!user) {
-      res.status(404).json({ error: 'User not foundono user id' });
+      res.status(404).json({ error: 'User not found' });
       return;
     }
-
-    // Update onboarding data
-    user.onboardingData = {
-      ...user.onboardingData,
-      ...(firstName && { firstName }),
-      ...(partnerFirstName && { partnerFirstName }),
-      ...(dateOfBirth && { dateOfBirth }),
-      ...(gender && { gender }),
-      ...(relationshipStatus && { relationshipStatus }),
-      ...(relationshipDuration && { relationshipDuration }),
-      ...(livingType && { livingType }),
-      ...(hasChildren !== undefined && { hasChildren }),
-      ...(goals && { goals }),
-      ...(emotionalNeeds && { emotionalNeeds }),
-      ...(rhythm && { rhythm }),
-      ...(tone && { tone }),
-      ...(packPreferences && { packPreferences }),
-    };
-
-    await user.save();
 
     res.status(200).json({
       success: true,
@@ -236,9 +236,11 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Check if either user is already in a couple
-    const inviter = await User.findById(invite.inviterId);
-    const accepter = await User.findById(userId);
+    // Fetch both users - DO NOT use lean() because we need to call .save()
+    const [inviter, accepter] = await Promise.all([
+      User.findById(invite.inviterId).select('coupleId subscribed name avatar onboarded'),
+      User.findById(userId).select('coupleId subscribed name avatar onboarded'),
+    ]);
 
     if (!inviter || !accepter) {
       res.status(404).json({ error: 'User not found' });
@@ -264,35 +266,74 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     // Update both users with coupleId
     inviter.coupleId = couple._id;
     accepter.coupleId = couple._id;
-    await inviter.save();
-    await accepter.save();
+    await Promise.all([
+      inviter.save(),
+      accepter.save(),
+    ]);
 
     // ✅ CREATE USER ENTITLEMENTS FOR BOTH PARTNERS
     // Both partners should have the same tier (highest tier wins)
-    const hasAnyPremium = inviter.subscribed || accepter.subscribed;
-    const coupleTier = hasAnyPremium ? Tier.PREMIUM : Tier.FREE;
-    const coupleRefreshes = hasAnyPremium ? 3 : 1;
-
-    for (const currentUserId of [invite.inviterId, userId]) {
-      const existingEntitlement = await UserEntitlement.findOne({ userId: currentUserId });
-
-      if (!existingEntitlement) {
-        await UserEntitlement.create({
-          userId: currentUserId,
-          tier: coupleTier,
-          refreshesDefault: coupleRefreshes,
-          refreshesPermanent: 0,
-        });
-
-        console.log(`✅ Created UserEntitlement for user ${currentUserId} (tier: ${coupleTier})`);
-      } else {
-        // Update existing entitlement to match couple tier
-        existingEntitlement.tier = coupleTier;
-        existingEntitlement.refreshesDefault = coupleRefreshes;
-        await existingEntitlement.save();
-        console.log(`✅ Updated UserEntitlement for user ${currentUserId} to tier: ${coupleTier}`);
-      }
+    // Priority: PREMIUM > TRIAL > FREE
+    
+    // Fetch existing entitlements first to check actual tier
+    const [inviterEntitlement, accepterEntitlement] = await Promise.all([
+      UserEntitlement.findOne({ userId: invite.inviterId }),
+      UserEntitlement.findOne({ userId }),
+    ]);
+    
+    // Determine couple tier: PREMIUM > TRIAL > FREE
+    let coupleTier: Tier;
+    let coupleRefreshes: number;
+    let trialEnd: Date | undefined;
+    
+    if (inviterEntitlement?.tier === Tier.PREMIUM || accepterEntitlement?.tier === Tier.PREMIUM) {
+      coupleTier = Tier.PREMIUM;
+      coupleRefreshes = 3;
+    } else if (inviterEntitlement?.tier === Tier.TRIAL || accepterEntitlement?.tier === Tier.TRIAL) {
+      coupleTier = Tier.TRIAL;
+      coupleRefreshes = 3;
+      // Use the existing trial's trialEnd date
+      trialEnd = inviterEntitlement?.trialEnd || accepterEntitlement?.trialEnd;
+    } else {
+      coupleTier = Tier.FREE;
+      coupleRefreshes = 1;
     }
+    
+    console.log(`🎯 Couple tier determined: ${coupleTier} (inviter: ${inviterEntitlement?.tier || 'none'}, accepter: ${accepterEntitlement?.tier || 'none'})`);
+
+    // Optimized: Create/update entitlements in parallel
+    await Promise.all([
+      inviterEntitlement
+        ? (async () => {
+            inviterEntitlement.tier = coupleTier;
+            inviterEntitlement.refreshesDefault = coupleRefreshes;
+            if (trialEnd) inviterEntitlement.trialEnd = trialEnd; // Preserve trial expiry
+            await inviterEntitlement.save();
+            console.log(`✅ Updated UserEntitlement for user ${invite.inviterId} to tier: ${coupleTier}`);
+          })()
+        : UserEntitlement.create({
+            userId: invite.inviterId,
+            tier: coupleTier,
+            refreshesDefault: coupleRefreshes,
+            refreshesPermanent: 0,
+            trialEnd: trialEnd, // Set trial expiry if applicable
+          }).then(() => console.log(`✅ Created UserEntitlement for user ${invite.inviterId} (tier: ${coupleTier})`)),
+      accepterEntitlement
+        ? (async () => {
+            accepterEntitlement.tier = coupleTier;
+            accepterEntitlement.refreshesDefault = coupleRefreshes;
+            if (trialEnd) accepterEntitlement.trialEnd = trialEnd; // Preserve trial expiry
+            await accepterEntitlement.save();
+            console.log(`✅ Updated UserEntitlement for user ${userId} to tier: ${coupleTier}`);
+          })()
+        : UserEntitlement.create({
+            userId,
+            tier: coupleTier,
+            refreshesDefault: coupleRefreshes,
+            refreshesPermanent: 0,
+            trialEnd: trialEnd, // Set trial expiry if applicable
+          }).then(() => console.log(`✅ Created UserEntitlement for user ${userId} (tier: ${coupleTier})`)),
+    ]);
 
     // Mark invite as accepted
     invite.status = 'accepted';
@@ -368,7 +409,8 @@ export const getCoupleInfo = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const user = await User.findById(userId).populate('coupleId');
+    // Optimized: Use lean() and select only coupleId first
+    const user = await User.findById(userId).select('coupleId').lean();
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -383,20 +425,29 @@ export const getCoupleInfo = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Optimized: Fetch couple first to get user IDs, then fetch users in parallel
     const couple = await Couple.findById(user.coupleId)
-      .populate<{ user1Id: IUser; user2Id: IUser }>('user1Id', 'name email avatar')
-      .populate<{ user1Id: IUser; user2Id: IUser }>('user2Id', 'name email avatar');
+      .select('user1Id user2Id status createdAt sharedData')
+      .lean();
 
     if (!couple) {
       res.status(404).json({ error: 'Couple not found' });
       return;
     }
 
-    // Type assertion to help TypeScript understand the populated fields
-    const populatedCouple = couple as any;
-    const partner = populatedCouple.user1Id._id.toString() === userId 
-      ? populatedCouple.user2Id 
-      : populatedCouple.user1Id;
+    // Optimized: Fetch both users in parallel with lean()
+    const [user1, user2] = await Promise.all([
+      User.findById(couple.user1Id).select('name email avatar').lean(),
+      User.findById(couple.user2Id).select('name email avatar').lean(),
+    ]);
+
+    // Determine which user is the partner
+    const partner = couple.user1Id.toString() === userId ? user2 : user1;
+
+    if (!partner) {
+      res.status(404).json({ error: 'Partner not found' });
+      return;
+    }
 
     res.status(200).json({
       success: true,

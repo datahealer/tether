@@ -305,7 +305,7 @@ export class QuestionServiceEngine {
   }
 
 /**
- * Initialize categories for a new couple based on their onboarding data
+ * Initialize categories for a new couple based on their onboarding data and tier
  */
 static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): Promise<void> {
   console.log(`Initializing categories for couple: ${coupleId}`);
@@ -318,8 +318,26 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
   if (!user1 || !user2) throw new Error('One or both users not found');
 
-  // Determine which 2 categories to unlock for free tier
-  const unlockedCategoryIds = this.determineFreeCategoriesForCouple(couple);
+  // Check if either partner has premium access (TRIAL or PREMIUM tier)
+  const entitlement1 = await UserEntitlement.findOne({ userId: user1._id }) as any;
+  const entitlement2 = await UserEntitlement.findOne({ userId: user2._id }) as any;
+  
+  const hasPremiumAccess = 
+    entitlement1?.hasPremiumAccess() || 
+    entitlement2?.hasPremiumAccess();
+
+  let unlockedCategoryIds: string[];
+  
+  if (hasPremiumAccess) {
+    // TRIAL or PREMIUM: Unlock ALL 10 categories
+    const allCategories = await Category.find({});
+    unlockedCategoryIds = allCategories.map(cat => cat.categoryId);
+    console.log('🌟 Premium/Trial access detected - unlocking ALL categories');
+  } else {
+    // FREE: Determine which 2 categories to unlock based on onboarding
+    unlockedCategoryIds = this.determineFreeCategoriesForCouple(couple);
+    console.log('🆓 Free tier - unlocking top 2 categories based on onboarding');
+  }
 
   // Get all global categories
   const allCategories = await Category.find({});
@@ -337,8 +355,52 @@ static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): P
 
   await CoupleCategoryState.insertMany(categoryStates);
 
-  console.log(`Initialized ${allCategories.length} categories for couple ${coupleId}`);
-  console.log(`Free unlocked: ${unlockedCategoryIds.join(', ')}`);
+  console.log(`✅ Initialized ${allCategories.length} categories for couple ${coupleId}`);
+  console.log(`🔓 Unlocked categories (${unlockedCategoryIds.length}): ${unlockedCategoryIds.join(', ')}`);
+}
+
+/**
+ * Update category access when a couple's tier changes (e.g., trial starts, trial expires, subscription)
+ * - TRIAL/PREMIUM: Unlock all 10 categories
+ * - FREE: Lock down to top 2 categories based on onboarding data
+ */
+static async updateCategoryAccessForTierChange(
+  coupleId: mongoose.Types.ObjectId,
+  newTier: Tier
+): Promise<void> {
+  console.log(`🔄 Updating category access for couple ${coupleId}, new tier: ${newTier}`);
+
+  const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
+  if (!couple) throw new Error('Couple not found');
+
+  if (newTier === Tier.TRIAL || newTier === Tier.PREMIUM) {
+    // Unlock ALL categories for premium/trial
+    const result = await CoupleCategoryState.updateMany(
+      { coupleId },
+      { $set: { unlocked: true } }
+    );
+    console.log(`🌟 Unlocked ALL ${result.modifiedCount} categories for ${newTier} tier`);
+  } else if (newTier === Tier.FREE) {
+    // FREE tier: Keep only top 2 categories unlocked
+    const unlockedCategoryIds = this.determineFreeCategoriesForCouple(couple);
+    
+    // Lock all categories first
+    await CoupleCategoryState.updateMany(
+      { coupleId },
+      { $set: { unlocked: false } }
+    );
+    
+    // Unlock only the top 2
+    await CoupleCategoryState.updateMany(
+      { 
+        coupleId, 
+        categoryId: { $in: unlockedCategoryIds } 
+      },
+      { $set: { unlocked: true } }
+    );
+    
+    console.log(`🔒 Locked down to 2 categories for FREE tier: ${unlockedCategoryIds.join(', ')}`);
+  }
 }
 
 // Fixed getCategoryProgress method

@@ -3,7 +3,7 @@
 //   View,
 //   StyleSheet,
 //   Dimensions,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   Text,
 //   Animated,
 //   PanResponder,
@@ -302,7 +302,7 @@
 //               ]}
 //               pointerEvents="box-none" // ADD HERE instead
 //             >
-//               <TouchableOpacity
+//               <DebouncedButton
 //                 activeOpacity={0.95}
 //                 onPress={() => handleCardPress(card, index)}
 //                 disabled={isDisabled}
@@ -356,7 +356,7 @@
 //                     <View style={styles.decorativeCircle2} />
 //                   </LinearGradient>
 //                 </View>
-//               </TouchableOpacity>
+//               </DebouncedButton>
 //             </Animated.View>
 //           );
 //         })}
@@ -366,7 +366,7 @@
 //       {!hasWaitingTether && (
 //         <View style={styles.dotsContainer}>
 //           {cards.map((_, index) => (
-//             <TouchableOpacity
+//             <DebouncedButton
 //               key={index}
 //               onPress={() => goToIndex(index)}
 //               style={styles.dotWrapper}
@@ -377,7 +377,7 @@
 //                   index === activeIndex && styles.dotActive,
 //                 ]}
 //               />
-//             </TouchableOpacity>
+//             </DebouncedButton>
 //           ))}
 //         </View>
 //       )}
@@ -539,13 +539,14 @@ import {
   View,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
+  
   Text,
   Animated,
   PanResponder,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../../theme/constants';
+import DebouncedButton from '../buttons/DebouncedButton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.55; // Slightly narrower for better stacking
@@ -761,7 +762,7 @@ export default function Card3DCarousel({
                 },
               ]}
             >
-              <TouchableOpacity
+              <DebouncedButton
                 activeOpacity={0.95}
                 onPress={() => handleCardPress(card, index)}
                 disabled={isDisabled}
@@ -809,7 +810,7 @@ export default function Card3DCarousel({
                     </View>
                   )}
                 </View>
-              </TouchableOpacity>
+              </DebouncedButton>
             </Animated.View>
           );
         })}
@@ -819,7 +820,7 @@ export default function Card3DCarousel({
       {!hasWaitingTether && cards.length > 1 && (
         <View style={styles.dotsContainer}>
           {cards.map((_, index) => (
-            <TouchableOpacity
+            <DebouncedButton
               key={index}
               onPress={() => goToIndex(index)}
               style={styles.dotWrapper}
@@ -830,7 +831,7 @@ export default function Card3DCarousel({
                   index === activeIndex && styles.dotActive,
                 ]}
               />
-            </TouchableOpacity>
+            </DebouncedButton>
           ))}
         </View>
       )}
@@ -862,7 +863,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '110%',
-    height: '85%',
+    height: '82%',
     backgroundColor: '#ffffff', // Pure white for active card
     borderRadius: 20, // Large border radius like reference
     borderWidth: 0.5,
@@ -958,7 +959,7 @@ const styles = StyleSheet.create({
   },
   dotsContainer: {
     position: 'absolute',
-    bottom: Spacing.xl,
+    bottom: Spacing.sm,
     left: 0,
     right: 0,
     flexDirection: 'row',
