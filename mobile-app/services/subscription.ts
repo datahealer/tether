@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { authenticatedFetch } from './auth_service';
 import Constants from 'expo-constants';
 import {
@@ -67,22 +68,129 @@ export const getSubscriptionPackages = async (): Promise<PurchasesPackage[]> => 
 };
 
 /**
+ * Manually sync a purchase with the backend
+ * This is needed because RevenueCat webhooks don't fire in test/sandbox mode
+ */
+export const manuallyProcessPurchase = async (
+  customerInfo: any,
+  packageToPurchase: any
+): Promise<boolean> => {
+  try {
+    console.log('📤 Manually processing purchase with backend...');
+    
+    // Extract purchase details from customerInfo
+    const activeSubscriptions = customerInfo.activeSubscriptions || [];
+    const productId = packageToPurchase.product.identifier || packageToPurchase.identifier;
+    
+    // Get the latest transaction (non-subscription purchases)
+    const latestTransaction = customerInfo.nonSubscriptionTransactions?.[0] ||
+                             customerInfo.latestExpirationDate;
+    
+    const store = Platform.OS === 'ios' ? 'app_store' : 'play_store';
+    
+    console.log('📋 Purchase details:', {
+      productId,
+      store,
+      activeSubscriptions,
+    });
+    
+    // Call backend to process purchase
+    const response = await authenticatedFetch(`${API_URL}/api/revenuecat/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        productId,
+        store,
+        transactionId: `test_${Date.now()}_${productId}`,
+        price: packageToPurchase.product?.price || 0,
+        currency: packageToPurchase.product?.currencyCode || 'USD',
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Backend purchase processing failed:', error);
+      return false;
+    }
+    
+    const data = await response.json();
+    console.log('✅ Backend purchase processed successfully:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to manually process purchase:', error);
+    return false;
+  }
+};
+
+/**
+ * Sync subscription status with backend (poll until webhook completes)
+ * Waits for RevenueCat webhook to update backend database
+ */
+export const syncSubscriptionWithBackend = async (
+  maxAttempts: number = 10,
+  delayMs: number = 1500
+): Promise<boolean> => {
+  console.log('🔄 Syncing subscription with backend...');
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`🔍 Sync attempt ${attempt}/${maxAttempts}`);
+      
+      const status = await getSubscriptionStatus();
+      
+      if (status.isSubscribed) {
+        console.log('✅ Backend sync complete - user is now subscribed!');
+        return true;
+      }
+      
+      if (attempt < maxAttempts) {
+        console.log(`⏳ Waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    } catch (error) {
+      console.error(`❌ Sync attempt ${attempt} failed:`, error);
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  
+  console.log('⚠️ Backend sync timed out - webhook may still be processing');
+  return false;
+};
+
+/**
  * Purchase a subscription package through RevenueCat
  * This triggers the native App Store/Play Store payment flow
+ * IMPORTANT: Also syncs with backend to ensure database is updated
  */
 export const purchaseSubscription = async (
   packageToPurchase: PurchasesPackage
 ): Promise<{
   success: boolean;
   isPremium: boolean;
+  backendSynced: boolean;
 }> => {
   try {
     const result = await revenueCatPurchase(packageToPurchase);
     
-    // Wait a moment for backend webhook to process
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (!result.success || !result.isPremium) {
+      return { ...result, backendSynced: false };
+    }
     
-    return result;
+    // Manually process purchase with backend (webhooks don't fire in test mode)
+    console.log('⏳ Manually processing purchase with backend...');
+    await manuallyProcessPurchase(result.customerInfo, packageToPurchase);
+    
+    // Wait a moment for database to update, then verify
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify backend has updated
+    const backendSynced = await syncSubscriptionWithBackend(5, 1000);
+    
+    return { ...result, backendSynced };
   } catch (error: any) {
     console.error('❌ Purchase error:', error);
     throw error;

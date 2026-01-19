@@ -152,11 +152,24 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import axios from 'axios';
 
+// Extend global type to include our custom property
+declare global {
+  var jwtSecretLogged: boolean | undefined;
+}
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ✅ Use consistent JWT secrets
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'your-secret-key';
+// ✅ Use consistent JWT secrets - dynamically retrieve from process.env
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET || 'your-secret-key';
+  // Only log once to avoid spam
+  if (!global.jwtSecretLogged) {
+    console.log('🔑 [Auth Service] JWT_SECRET loaded:', secret.substring(0, 10) + '...');
+    global.jwtSecretLogged = true;
+  }
+  return secret;
+};
+const getJWTRefreshSecret = () => process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'your-secret-key';
 
 export interface GoogleTokenPayload {
   sub: string;
@@ -264,6 +277,7 @@ export const generateAccessToken = (userId: string, type: 'user' | 'admin' = 'us
     expiresIn: '15m',
   };
   
+  const JWT_SECRET = getJWTSecret();
   return jwt.sign({ userId, type, tokenType: 'access' }, JWT_SECRET, options);
 };
 
@@ -275,6 +289,7 @@ export const generateRefreshToken = (userId: string, type: 'user' | 'admin' = 'u
     expiresIn: '30d',
   };
   
+  const JWT_REFRESH_SECRET = getJWTRefreshSecret();
   return jwt.sign({ userId, type, tokenType: 'refresh' }, JWT_REFRESH_SECRET, options);
 };
 
@@ -300,6 +315,7 @@ export const generateAuthToken = (userId: string, type: 'user' | 'admin' = 'user
  */
 export const verifyAuthToken = (token: string): { userId: string; type: string; tokenType: string } => {
   try {
+    const JWT_SECRET = getJWTSecret();
     const decoded = jwt.verify(token, JWT_SECRET) as { 
       userId: string; 
       type: string; 
@@ -316,6 +332,7 @@ export const verifyAuthToken = (token: string): { userId: string; type: string; 
  */
 export const verifyRefreshToken = (token: string): { userId: string; type: string; tokenType: string } => {
   try {
+    const JWT_REFRESH_SECRET = getJWTRefreshSecret();
     const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { 
       userId: string; 
       type: string; 

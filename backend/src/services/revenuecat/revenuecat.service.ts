@@ -1,7 +1,9 @@
 import axios, { AxiosInstance } from 'axios';
 import User from '../../models/User';
 import Purchase from '../../models/Purchase';
-import { Platform } from '../../types/enums';
+import { UserEntitlement } from '../../models/UserEntitlement';
+import { Platform, Tier } from '../../types/enums';
+import { QuestionServiceEngine } from '../../questionServiceEngine';
 
 interface RevenueCatConfig {
   apiKey: string;
@@ -37,8 +39,10 @@ interface RevenueCatPurchase {
 }
 
 interface RevenueCatWebhookEvent {
+  type: string;
   event: {
     id: string;
+    type: string;
     app_id: string;
     app_user_id: string;
     aliases: string[];
@@ -49,6 +53,7 @@ interface RevenueCatWebhookEvent {
     expiration_at_ms?: number;
     environment: 'SANDBOX' | 'PRODUCTION';
     entitlement_ids?: string[];
+    entitlement_id?: string;
     presented_offering_id?: string;
     store: 'APP_STORE' | 'PLAY_STORE' | 'STRIPE' | 'PROMOTICAL';
     transaction_id: string;
@@ -178,25 +183,36 @@ class RevenueCatService {
 
   async handleWebhook(event: RevenueCatWebhookEvent): Promise<void> {
     try {
+      console.log('🔔 RevenueCat webhook received:', {
+        type: event.type,
+        eventType: event.event?.type,
+        userId: event.event?.app_user_id,
+        productId: event.event?.product_id,
+      });
+
       const { event: webhookEvent } = event;
       const userId = webhookEvent.app_user_id || webhookEvent.original_app_user_id;
 
       if (!userId) {
+        console.error('❌ User ID not found in webhook event');
         throw new Error('User ID not found in webhook event');
       }
 
       const user = await User.findById(userId);
       if (!user) {
-        console.warn(`User not found for RevenueCat webhook: ${userId}`);
+        console.warn(`⚠️ User not found for RevenueCat webhook: ${userId}`);
         return;
       }
 
-      const eventType = this.getEventType(event);
+      // RevenueCat webhook type is at the top level
+      const eventType = event.type || webhookEvent.type;
+      console.log('📋 Processing webhook event type:', eventType);
       
       switch (eventType) {
         case 'INITIAL_PURCHASE':
         case 'RENEWAL':
         case 'PRODUCT_CHANGE':
+        case 'NON_RENEWING_PURCHASE':
           await this.handleSubscriptionActivated(webhookEvent, user);
           break;
         
@@ -205,11 +221,8 @@ class RevenueCatService {
           break;
         
         case 'EXPIRATION':
-          await this.handleSubscriptionExpired(webhookEvent, user);
-          break;
-        
         case 'BILLING_ISSUE':
-          await this.handleBillingIssue(webhookEvent, user);
+          await this.handleSubscriptionExpired(webhookEvent, user);
           break;
         
         case 'UNCANCELLATION':
@@ -217,58 +230,98 @@ class RevenueCatService {
           break;
         
         default:
-          console.log(`Unhandled RevenueCat event type: ${eventType}`);
+          console.log(`ℹ️ Unhandled RevenueCat event type: ${eventType}`);
       }
     } catch (error: any) {
-      console.error('RevenueCat webhook handling error:', error);
+      console.error('❌ RevenueCat webhook handling error:', error);
       throw error;
     }
   }
 
   private getEventType(event: RevenueCatWebhookEvent): string {
-    const eventId = event.event.id;
-    
-    if (eventId.includes('INITIAL_PURCHASE')) return 'INITIAL_PURCHASE';
-    if (eventId.includes('RENEWAL')) return 'RENEWAL';
-    if (eventId.includes('CANCELLATION')) return 'CANCELLATION';
-    if (eventId.includes('EXPIRATION')) return 'EXPIRATION';
-    if (eventId.includes('BILLING_ISSUE')) return 'BILLING_ISSUE';
-    if (eventId.includes('UNCANCELLATION')) return 'UNCANCELLATION';
-    if (eventId.includes('PRODUCT_CHANGE')) return 'PRODUCT_CHANGE';
-    
-    return 'UNKNOWN';
+    // RevenueCat sends the type at the top level of the webhook
+    return event.type || event.event?.type || 'UNKNOWN';
   }
 
   private async handleSubscriptionActivated(event: any, user: any): Promise<void> {
-    const expiresAt = event.expiration_at_ms 
-      ? new Date(event.expiration_at_ms) 
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    try {
+      console.log('🎉 Activating subscription for user:', user.email);
+      
+      const expiresAt = event.expiration_at_ms 
+        ? new Date(event.expiration_at_ms) 
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    const planType = this.getPlanTypeFromProductId(event.product_id);
+      const planType = this.getPlanTypeFromProductId(event.product_id);
+      console.log('📦 Plan type:', planType, 'Product ID:', event.product_id);
 
-    await Purchase.findOneAndUpdate(
-      {
+      // Update or create Purchase record
+      await Purchase.findOneAndUpdate(
+        {
+          userId: user._id,
+          purchaseToken: event.transaction_id,
+        },
+        {
+          userId: user._id,
+          planType,
+          amount: event.price ? event.price / 100 : 0,
+          currency: event.currency || 'USD',
+          status: 'active',
+          startDate: new Date(event.purchased_at_ms || Date.now()),
+          expiresAt,
+          autoRenew: true,
+          purchaseToken: event.transaction_id,
+          revenueCatProductId: event.product_id,
+          revenueCatStore: event.store?.toLowerCase() || 'unknown',
+        },
+        { upsert: true, new: true }
+      );
+
+      // Update User subscription flag
+      user.subscribed = true;
+      await user.save();
+
+      // Determine tier based on plan type
+      const tier = planType === 'trial' ? Tier.TRIAL : Tier.PREMIUM;
+      console.log('🎯 Setting tier to:', tier);
+
+      // Update or create UserEntitlement
+      const entitlement = await UserEntitlement.findOneAndUpdate(
+        { userId: user._id },
+        {
+          userId: user._id,
+          tier,
+          ...(planType === 'trial' && { 
+            trialEnd: expiresAt,
+            refreshesDefault: 3, // Trial gets 3 refreshes
+          }),
+          ...(planType !== 'trial' && { 
+            premiumEnd: expiresAt,
+            refreshesDefault: 999, // Premium gets unlimited refreshes
+          }),
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log('✅ Subscription activated:', {
         userId: user._id,
-        purchaseToken: event.transaction_id,
-      },
-      {
-        userId: user._id,
+        email: user.email,
+        tier,
         planType,
-        amount: event.price / 100,
-        currency: event.currency,
-        status: 'active',
-        startDate: new Date(event.purchased_at_ms),
         expiresAt,
-        autoRenew: true,
-        purchaseToken: event.transaction_id,
-      },
-      { upsert: true, new: true }
-    );
+        entitlementId: entitlement._id,
+      });
 
-    user.subscribed = true;
-    await user.save();
-
-    console.log(`✅ Subscription activated for user: ${user.email}`);
+      // Update category access for the new tier
+      if (user.coupleId) {
+        await QuestionServiceEngine.updateCategoryAccessForTierChange(user.coupleId, tier);
+        console.log('✅ Category access updated for couple:', user.coupleId);
+      } else {
+        console.log('⚠️ User has no couple, skipping category access update');
+      }
+    } catch (error: any) {
+      console.error('❌ Error activating subscription:', error);
+      throw error;
+    }
   }
 
   private async handleSubscriptionCancelled(event: any, user: any): Promise<void> {
@@ -287,32 +340,65 @@ class RevenueCatService {
   }
 
   private async handleSubscriptionExpired(event: any, user: any): Promise<void> {
-    const purchase = await Purchase.findOne({
-      userId: user._id,
-      purchaseToken: event.transaction_id,
-    });
+    try {
+      console.log('⏰ Handling subscription expiration for user:', user.email);
+      
+      const purchase = await Purchase.findOne({
+        userId: user._id,
+        purchaseToken: event.transaction_id,
+      });
 
-    if (purchase) {
-      purchase.status = 'expired';
-      await purchase.save();
+      if (purchase) {
+        purchase.status = 'expired';
+        await purchase.save();
+        console.log('✅ Purchase marked as expired');
+      }
+
+      // Check if user has any other active subscriptions
+      const activeSubscription = await Purchase.findOne({
+        userId: user._id,
+        status: 'active',
+        expiresAt: { $gt: new Date() },
+      });
+
+      if (!activeSubscription) {
+        user.subscribed = false;
+        await user.save();
+        
+        // Downgrade to FREE tier
+        const entitlement = await UserEntitlement.findOneAndUpdate(
+          { userId: user._id },
+          {
+            tier: Tier.FREE,
+            trialEnd: undefined,
+            premiumEnd: undefined,
+            refreshesDefault: 1, // Free tier gets 1 refresh
+          },
+          { new: true }
+        );
+
+        console.log('✅ User downgraded to FREE tier');
+
+        // Update category access
+        if (user.coupleId) {
+          await QuestionServiceEngine.updateCategoryAccessForTierChange(user.coupleId, Tier.FREE);
+          console.log('✅ Category access locked for couple:', user.coupleId);
+        }
+      } else {
+        console.log('ℹ️ User still has active subscription, not downgrading');
+      }
+
+      console.log('✅ Subscription expired for user:', user.email);
+    } catch (error: any) {
+      console.error('❌ Error handling subscription expiration:', error);
+      throw error;
     }
-
-    const activeSubscription = await Purchase.findOne({
-      userId: user._id,
-      status: 'active',
-      expiresAt: { $gt: new Date() },
-    });
-
-    if (!activeSubscription) {
-      user.subscribed = false;
-      await user.save();
-    }
-
-    console.log(`✅ Subscription expired for user: ${user.email}`);
   }
 
   private async handleBillingIssue(event: any, user: any): Promise<void> {
     console.warn(`⚠️ Billing issue for user: ${user.email}`);
+    // Treat billing issues like expiration for now
+    await this.handleSubscriptionExpired(event, user);
   }
 
   private async handleSubscriptionUncancelled(event: any, user: any): Promise<void> {

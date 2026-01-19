@@ -414,7 +414,7 @@ export default function SubscriptionScreen() {
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      console.log('✅ Trial started, navigating to home');
+      console.log('✅ Trial started successfully');
       
       // Navigate to category packs
       router.replace('/home/category-packs');
@@ -470,26 +470,51 @@ export default function SubscriptionScreen() {
       if (result.success && result.isPremium) {
         console.log('✅ Purchase successful!');
         
-        // Update user context
-        if (user) {
-          await signIn({
-            ...user,
-            subscribed: true,
-          });
-        }
-
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
-        Alert.alert(
-          'Welcome to Premium! 🎉',
-          `You now have access to all premium features!`,
-          [
-            {
-              text: 'Get Started',
-              onPress: () => router.replace('/home/category-packs'),
-            },
-          ]
-        );
+        if (result.backendSynced) {
+          // Backend updated successfully - safe to navigate
+          console.log('✅ Backend synced - navigating to category packs');
+          
+          // Update user context with synced data
+          if (user) {
+            await signIn({
+              ...user,
+              subscribed: true,
+            });
+          }
+          
+          Alert.alert(
+            'Welcome to Premium! 🎉',
+            'You now have access to all premium features!',
+            [
+              {
+                text: 'Get Started',
+                onPress: () => router.replace('/home/category-packs'),
+              },
+            ]
+          );
+        } else {
+          // Purchase succeeded but backend sync timed out
+          console.log('⚠️ Backend sync pending - showing delayed confirmation');
+          
+          Alert.alert(
+            'Purchase Successful! ⏳',
+            'Your purchase is complete! It may take a few moments for all features to unlock. Please check back shortly.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Still navigate - categories will unlock when webhook completes
+                  if (user) {
+                    signIn({ ...user, subscribed: true });
+                  }
+                  router.replace('/home/category-packs');
+                },
+              },
+            ]
+          );
+        }
       }
 
     } catch (error: any) {

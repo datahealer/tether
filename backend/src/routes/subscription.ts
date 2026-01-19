@@ -40,7 +40,7 @@ router.post('/trial/start', startTrial);
  * /api/subscription/subscribe:
  *   post:
  *     deprecated: true
- *     summary: [DEPRECATED] Subscribe to a plan - Use RevenueCat SDK in mobile app
+ *     summary: Subscribe to a plan - Use RevenueCat SDK in mobile app (DEPRECATED)
  *     tags: [Subscription]
  *     security:
  *       - bearerAuth: []

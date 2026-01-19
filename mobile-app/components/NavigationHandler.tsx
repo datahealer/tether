@@ -134,6 +134,7 @@ export function NavigationHandler() {
           '/home/category-packs',
           '/onboarding/partner-invite', // ← Explicitly allow invite even after subscription
           '/onboarding/subscription', // ← Allow users to view/manage subscription anytime
+          '/home/first-tether', // ← Allow access to first tether if they have active tethers
         ];
 
         if (

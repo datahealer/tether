@@ -85,6 +85,8 @@ export const processPurchase = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    console.log('🛒 Processing manual purchase:', { userId, productId, store });
+
     // Map store parameter to RevenueCat format (lowercase required by API)
     let revenueCatStore: 'app_store' | 'play_store' | 'stripe' | 'promotional';
     const storeNormalized = store.toLowerCase();
@@ -105,30 +107,47 @@ export const processPurchase = async (req: Request, res: Response): Promise<void
     }
 
     const revenueCat = getRevenueCatService();
-    const revenueCatUser = await revenueCat.processPurchase({
-      app_user_id: userId,
-      product_id: productId,
-      price: price || 0,
-      currency: currency || 'USD',
-      store: revenueCatStore,
-      transaction_id: transactionId || `manual_${Date.now()}`,
-      period,
-    });
+    
+    // Process through RevenueCat API (optional - may not work in sandbox)
+    try {
+      await revenueCat.processPurchase({
+        app_user_id: userId,
+        product_id: productId,
+        price: price || 0,
+        currency: currency || 'USD',
+        store: revenueCatStore,
+        transaction_id: transactionId || `manual_${Date.now()}`,
+        period,
+      });
+    } catch (rcError: any) {
+      console.warn('⚠️ RevenueCat API call failed (expected in sandbox):', rcError.message);
+    }
 
-    // Update user subscription in database
-    await User.findByIdAndUpdate(userId, {
-      subscribed: true,
-      subscriptionType: productId.includes('yearly') ? 'yearly' : 'monthly',
-      subscriptionStartDate: new Date(),
-    });
+    // Manually trigger the same subscription activation logic used by webhooks
+    // This ensures Purchase, UserEntitlement, and category access are all updated
+    const mockWebhookEvent = {
+      product_id: productId,
+      transaction_id: transactionId || `manual_${Date.now()}`,
+      purchased_at_ms: Date.now(),
+      expiration_at_ms: Date.now() + (productId.includes('monthly') ? 30 : 365) * 24 * 60 * 60 * 1000,
+      price: (price || 0) * 100, // Convert to cents
+      currency: currency || 'USD',
+      store: revenueCatStore.toUpperCase(),
+    };
+
+    console.log('🔄 Activating subscription via manual webhook simulation...');
+    await (revenueCat as any).handleSubscriptionActivated(mockWebhookEvent, user);
 
     res.json({
       success: true,
       message: 'Purchase processed successfully',
-      revenueCatUser,
+      subscription: {
+        isSubscribed: true,
+        productId,
+      },
     });
   } catch (error: any) {
-    console.error('Process purchase error:', error);
+    console.error('❌ Process purchase error:', error);
     res.status(500).json({
       error: error.message || 'Failed to process purchase',
     });
@@ -161,12 +180,16 @@ export const restorePurchases = async (req: Request, res: Response): Promise<voi
 
 export const handleWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('🔔 RevenueCat webhook received - Raw payload:', JSON.stringify(req.body, null, 2));
+    
     const revenueCat = getRevenueCatService();
     await revenueCat.handleWebhook(req.body);
 
+    console.log('✅ Webhook processed successfully');
     res.status(200).json({ received: true });
   } catch (error: any) {
-    console.error('Webhook handling error:', error);
+    console.error('❌ Webhook handling error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       error: error.message || 'Failed to process webhook',
     });
@@ -193,6 +216,161 @@ export const getOffering = async (req: Request, res: Response): Promise<void> =>
     console.error('Get offering error:', error);
     res.status(500).json({
       error: error.message || 'Failed to get offering',
+    });
+  }
+};
+
+export const cancelSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.getUser(userId);
+
+    // Get active subscription
+    const subscriptions = revenueCatUser.subscriber?.subscriptions || {};
+    const activeSubscription = Object.values(subscriptions).find(
+      (sub: any) => sub.expires_date && new Date(sub.expires_date) > new Date()
+    );
+
+    if (!activeSubscription) {
+      res.status(400).json({ error: 'No active subscription found' });
+      return;
+    }
+
+    // Note: RevenueCat doesn't have a direct cancel API endpoint
+    // Cancellation is typically handled through the store (App Store/Play Store)
+    // This endpoint updates our local database to mark cancellation
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Import Purchase model
+    const Purchase = (await import('../models/Purchase')).default;
+    const purchase = await Purchase.findOne({
+      userId: user._id,
+      status: 'active',
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (purchase) {
+      purchase.autoRenew = false;
+      purchase.cancelledAt = new Date();
+      await purchase.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscription cancellation processed. Please cancel through your device settings.',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Cancel subscription error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to cancel subscription',
+    });
+  }
+};
+
+export const grantEntitlement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { entitlementId, duration, productId } = req.body;
+
+    if (!entitlementId || !duration) {
+      res.status(400).json({ error: 'Missing required fields: entitlementId, duration (in seconds)' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.grantEntitlement(
+      userId,
+      entitlementId,
+      duration,
+      productId
+    );
+
+    res.json({
+      success: true,
+      message: 'Entitlement granted successfully',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Grant entitlement error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to grant entitlement',
+    });
+  }
+};
+
+export const revokeEntitlement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { entitlementId } = req.body;
+
+    if (!entitlementId) {
+      res.status(400).json({ error: 'Missing required field: entitlementId' });
+      return;
+    }
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.revokeEntitlement(userId, entitlementId);
+
+    res.json({
+      success: true,
+      message: 'Entitlement revoked successfully',
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Revoke entitlement error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to revoke entitlement',
+    });
+  }
+};
+
+export const getSubscriptionHistory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const Purchase = (await import('../models/Purchase')).default;
+    const purchases = await Purchase.find({ userId })
+      .sort({ createdAt: -1 })
+      .select('planType amount currency status startDate expiresAt autoRenew cancelledAt revenueCatProductId revenueCatStore createdAt')
+      .lean();
+
+    const revenueCat = getRevenueCatService();
+    const revenueCatUser = await revenueCat.getUser(userId);
+
+    res.json({
+      success: true,
+      purchases,
+      revenueCatUser,
+    });
+  } catch (error: any) {
+    console.error('Get subscription history error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to get subscription history',
     });
   }
 };

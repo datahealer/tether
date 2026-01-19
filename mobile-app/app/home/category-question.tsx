@@ -4,7 +4,7 @@
 //   Text,
 //   StyleSheet,
 //   TextInput,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   ActivityIndicator,
 //   Alert,
 //   KeyboardAvoidingView,
@@ -292,7 +292,7 @@
 
 //         {/* Fixed Bottom Button */}
 //         <View style={styles.bottomContainer}>
-//           <TouchableOpacity
+//           <DebouncedButton
 //             style={[
 //               styles.shareButton,
 //               !response.trim() && styles.shareButtonDisabled,
@@ -307,7 +307,7 @@
 //             ]}>
 //               Share My Tether
 //             </Text>
-//           </TouchableOpacity>
+//           </DebouncedButton>
 //         </View>
 //       </KeyboardAvoidingView>
 //     </OnboardingLayout>
@@ -432,7 +432,7 @@ import {
   Platform,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
+
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -450,6 +450,7 @@ import {
 } from '@/services/tether_service';
 import { useTetherStats } from '@/hooks/useTetherStats';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function CategoryQuestionScreen() {
   const router = useRouter();
@@ -747,7 +748,7 @@ export default function CategoryQuestionScreen() {
         </ScrollView>
 
         <View style={styles.bottomContainer}>
-          <TouchableOpacity
+          <DebouncedButton
             style={[
               styles.shareButton,
               !response.trim() && styles.shareButtonDisabled,
@@ -764,7 +765,7 @@ export default function CategoryQuestionScreen() {
             >
               Share My Tether
             </Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         </View>
       </KeyboardAvoidingView>
     </OnboardingLayout>

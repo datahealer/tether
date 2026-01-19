@@ -130,24 +130,35 @@ class NotificationService {
     }
   }
 
-  async sendNewTetherNotification(coupleId: string, tetherId: string, questionText: string): Promise<void> {
+  async sendNewTetherNotification(
+    coupleId: string,
+    tetherId: string,
+    questionText: string,
+    categoryId?: string
+  ): Promise<void> {
     await this.sendToCouple(
       coupleId,
       NotificationType.NEW_TETHER,
       () => ({
         title: 'New Tether Available',
         body: questionText.substring(0, 100) + (questionText.length > 100 ? '...' : ''),
-        data: { tetherId, type: NotificationType.NEW_TETHER },
+        data: {
+          tetherId,
+          categoryId,
+          type: NotificationType.NEW_TETHER,
+          route: '/home/category-question',
+        },
       }),
       undefined,
-      { tetherId }
+      { tetherId, categoryId }
     );
   }
 
   async sendPartnerAnsweredNotification(
     coupleId: string,
     tetherId: string,
-    responderName: string
+    responderName: string,
+    categoryId?: string
   ): Promise<void> {
     await this.sendToCouple(
       coupleId,
@@ -155,17 +166,23 @@ class NotificationService {
       () => ({
         title: `${responderName} answered`,
         body: 'Your partner has responded to the tether!',
-        data: { tetherId, type: NotificationType.PARTNER_ANSWERED },
+        data: {
+          tetherId,
+          categoryId,
+          type: NotificationType.PARTNER_ANSWERED,
+          route: '/home/category-question',
+        },
       }),
       undefined,
-      { tetherId }
+      { tetherId, categoryId }
     );
   }
 
   async sendQuestionExpiringNotification(
     coupleId: string,
     tetherId: string,
-    hoursRemaining: number
+    hoursRemaining: number,
+    categoryId?: string
   ): Promise<void> {
     await this.sendToCouple(
       coupleId,
@@ -173,10 +190,16 @@ class NotificationService {
       () => ({
         title: 'Tether Expiring Soon',
         body: `You have ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''} left to answer`,
-        data: { tetherId, type: NotificationType.QUESTION_EXPIRING, hoursRemaining },
+        data: {
+          tetherId,
+          categoryId,
+          type: NotificationType.QUESTION_EXPIRING,
+          hoursRemaining,
+          route: '/home/category-question',
+        },
       }),
       undefined,
-      { tetherId }
+      { tetherId, categoryId }
     );
   }
 
@@ -212,6 +235,25 @@ class NotificationService {
       data: { ...data, type: NotificationType.MILESTONE },
       respectPreferences: true,
     });
+  }
+
+  /**
+   * Send trial expired notification to both partners
+   * Notifies users that their 7-day trial has ended and they need to subscribe for full access
+   */
+  async sendTrialExpiredNotification(coupleId: string): Promise<void> {
+    await this.sendToCouple(
+      coupleId,
+      NotificationType.TRIAL_EXPIRED,
+      () => ({
+        title: '🔒 Trial Ended',
+        body: 'Your 7-day trial has ended. Subscribe to keep full access to all categories!',
+        data: { 
+          type: NotificationType.TRIAL_EXPIRED,
+          route: '/home/subscription',
+        },
+      })
+    );
   }
 
   private shouldSendNotification(user: any, type: NotificationType): boolean {

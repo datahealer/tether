@@ -144,7 +144,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Admin from '../models/admin';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const getJWTSecret = () => process.env.JWT_SECRET || 'your-secret-key';
 
 interface JwtPayload {
   id?: string;
@@ -171,6 +171,7 @@ export const authMiddleware = async (
       return res.status(401).json({ error: 'No token provided' });
     }
 
+    const JWT_SECRET = getJWTSecret();
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
     // Check token type
@@ -226,17 +227,25 @@ export const adminAuth = async (
     const token = authHeader.substring(7);
 
     try {
+      const JWT_SECRET = getJWTSecret();
+      console.log('🔑 Verifying with JWT_SECRET:', JWT_SECRET.substring(0, 10) + '...');
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+      
+      console.log('🔍 Decoded admin token:', JSON.stringify(decoded, null, 2));
 
       if (decoded.type !== 'admin') {
+        console.log('❌ Token type mismatch. Expected: admin, Got:', decoded.type);
         res.status(403).json({ message: 'Access denied. Admin access required.' });
         return;
       }
 
       const adminId = decoded.userId || decoded.id;
+      console.log('🔑 Admin ID from token:', adminId);
+      
       const admin = await Admin.findById(adminId).select('-password');
 
       if (!admin) {
+        console.log('❌ Admin not found with ID:', adminId);
         res.status(401).json({ message: 'Admin not found' });
         return;
       }
@@ -251,8 +260,10 @@ export const adminAuth = async (
         email: admin.email,
       };
 
+      console.log('✅ Admin auth successful:', admin.email);
       next();
     } catch (error) {
+      console.error('❌ Token verification error:', error);
       if ((error as any).name === 'TokenExpiredError') {
         res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
         return;

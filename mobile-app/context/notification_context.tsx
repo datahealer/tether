@@ -89,59 +89,79 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
     const data = response.notification.request.content.data as NotificationData;
 
-    console.log('🔔 Notification data:', data);
+    console.log('🔔 Notification tapped - Type:', data.type);
+    console.log('📍 Navigation data:', {
+      questionId: data.questionId || data.tetherId,
+      categoryId: data.categoryId,
+      route: data.route,
+    });
 
     // Handle different notification types
     switch (data.type) {
       case 'NEW_TETHER':
       case 'PARTNER_ANSWERED':
       case 'BOTH_ANSWERED':
-        if (data.tetherId && data.categoryId) {
+      case 'QUESTION_EXPIRING':
+        // Use questionId (new format) or tetherId (legacy) and categoryId
+        const questionId = data.questionId || data.tetherId;
+        
+        if (questionId && data.categoryId) {
+          console.log(`➡️ Navigating to question ${questionId} in category ${data.categoryId}`);
           router.push({
             pathname: '/home/category-question',
             params: {
               categoryId: data.categoryId,
-              tetherQuestion: data.tetherId,
+              tetherQuestion: questionId,
             },
           });
+        } else if (data.categoryId) {
+          // Has category but no specific question - go to category view
+          console.log(`➡️ Navigating to category ${data.categoryId}`);
+          router.push({
+            pathname: '/home/category-packs',
+            params: { selectedCategory: data.categoryId },
+          });
         } else {
+          // No specific data - go to category packs
+          console.log('➡️ No specific data, navigating to category packs');
           router.push('/home/category-packs');
         }
         break;
 
-      case 'QUESTION_EXPIRING':
-        if (data.tetherId && data.categoryId) {
-          router.push({
-            pathname: '/home/category-question',
-            params: {
-              categoryId: data.categoryId,
-              tetherQuestion: data.tetherId,
-            },
-          });
-        }
-        break;
-
       case 'GENTLE_REMINDER':
+        console.log('➡️ Reminder notification - navigating to category packs');
         router.push('/home/category-packs');
         break;
 
       case 'MILESTONE':
+        console.log('➡️ Milestone notification - navigating to tether history');
         router.push('/home/tether-history');
         break;
 
       case 'COUPLE_INVITE':
+        console.log('➡️ Couple invite - navigating to partner invite');
         router.push('/onboarding/partner-invite');
         break;
+        
       case 'PARTNER_REFRESHED':
+        console.log('➡️ Partner refreshed - navigating to category question');
         router.push({
           pathname: data.route || '/home/category-question',
           params: {
             categoryId: data.categoryId,
+            tetherQuestion: data.questionId || data.tetherId,
           },
         });
-        break;  
+        break;
+
+      case 'TRIAL_EXPIRED':
+        console.log('➡️ Trial expired - navigating to subscription screen');
+        // Navigate to subscription/paywall screen
+        router.push('/home/draw-locked-upsell'); // or wherever subscription screen is
+        break;
 
       default:
+        console.log('➡️ Unknown notification type, navigating to category packs');
         router.push('/home/category-packs');
     }
 

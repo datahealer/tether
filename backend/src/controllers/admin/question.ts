@@ -113,12 +113,15 @@ export const getAllQuestions = async (req: Request, res: Response): Promise<void
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const questions = await Question.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip(skip);
-
-    const total = await Question.countDocuments(filter);
+    // Optimized: Execute count and find in parallel
+    const [questions, total] = await Promise.all([
+      Question.find(filter)
+        .sort({ createdAt: -1 })
+        .limit(Number(limit))
+        .skip(skip)
+        .lean(), // Use lean() for better performance when not modifying documents
+      Question.countDocuments(filter),
+    ]);
 
     console.log(`✅ Found ${questions.length} questions (total: ${total})`);
 
@@ -537,7 +540,7 @@ export const importQuestionsFromExcel = async (req: Request, res: Response): Pro
             continue;
           }
 
-          // Generate sequential ID based on category
+          // Generate sequential ID based on category (optimized: batch ID generation could be done, but sequential is safer)
           if (!questionData.questionId) {
             questionData.questionId = await generateQuestionId(categoryId);
           }
@@ -562,8 +565,8 @@ export const importQuestionsFromExcel = async (req: Request, res: Response): Pro
           if (questionData.contextTag) cleanData.contextTag = questionData.contextTag;
           if (questionData.writerNotes) cleanData.writerNotes = questionData.writerNotes;
 
-          const newQuestion = new Question(cleanData);
-          await newQuestion.save();
+          // Optimized: Use create() instead of new + save
+          const newQuestion = await Question.create(cleanData);
           imported.push(newQuestion);
         } catch (rowError: any) {
           errors.push({ row, error: rowError.message });
@@ -594,38 +597,42 @@ export const getQuestionStats = async (req: Request, res: Response): Promise<voi
   try {
     console.log('📊 Fetching question stats...');
 
-    const totalQuestions = await Question.countDocuments();
-    const publishedQuestions = await Question.countDocuments({ status: 'Published' });
-    const draftQuestions = await Question.countDocuments({ status: 'Draft' });
-
-    const categoryStats = await Question.aggregate([
-      {
-        $group: {
-          _id: '$categoryId',
-          count: { $sum: 1 },
-        },
-      },
+    // Optimized: Execute all counts in parallel
+    const [totalQuestions, publishedQuestions, draftQuestions] = await Promise.all([
+      Question.countDocuments(),
+      Question.countDocuments({ status: 'Published' }),
+      Question.countDocuments({ status: 'Draft' }),
     ]);
 
-    const genderFocusStats = await Question.aggregate([
-      {
-        $group: {
-          _id: '$genderFocus',
-          count: { $sum: 1 },
+    // Optimized: Execute all aggregations in parallel
+    const [categoryStats, genderFocusStats, difficultyStats] = await Promise.all([
+      Question.aggregate([
+        {
+          $group: {
+            _id: '$categoryId',
+            count: { $sum: 1 },
+          },
         },
-      },
-    ]);
-
-    const difficultyStats = await Question.aggregate([
-      {
-        $group: {
-          _id: '$difficulty',
-          count: { $sum: 1 },
+      ]),
+      Question.aggregate([
+        {
+          $group: {
+            _id: '$genderFocus',
+            count: { $sum: 1 },
+          },
         },
-      },
-      {
-        $sort: { _id: 1 },
-      },
+      ]),
+      Question.aggregate([
+        {
+          $group: {
+            _id: '$difficulty',
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+      ]),
     ]);
 
     console.log('✅ Stats fetched successfully');

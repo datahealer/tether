@@ -1189,6 +1189,7 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: 2,
     opacity: 0.7,
+    pointerEvents: 'none',
   },
   header: {
     flexDirection: 'row',
@@ -1254,7 +1255,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.lg,
-    zIndex: 10,
+    zIndex: 20,
   },
   rightButton: {
     width: 40,

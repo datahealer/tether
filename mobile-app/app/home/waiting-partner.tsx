@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +16,7 @@ import { BlurView } from 'expo-blur';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function WaitingPartnerScreen() {
   const router = useRouter();

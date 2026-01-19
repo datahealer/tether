@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+ 
   ScrollView,
   Alert,
 } from 'react-native';
@@ -16,6 +16,7 @@ import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../the
 import { useAuth } from '@/context/auth_context';
 import { useTetherStats } from '@/hooks/useTetherStats';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function QuestionExpiredScreen() {
   const router = useRouter();
@@ -148,21 +149,21 @@ export default function QuestionExpiredScreen() {
       {/* Fixed Bottom Button */}
       <View style={styles.bottomContainer}>
         {!isRevealed ? (
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.primaryButton}
             onPress={handleRevealAnswer}
             activeOpacity={0.9}
           >
             <Text style={styles.primaryButtonText}>Reveal Partner's Answer</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         ) : (
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.secondaryButton}
             onPress={handleContinue}
             activeOpacity={0.9}
           >
             <Text style={styles.secondaryButtonText}>Continue</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         )}
       </View>
     </OnboardingLayout>

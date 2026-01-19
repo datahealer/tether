@@ -45,11 +45,12 @@ import tetherRoutes from './tethers';
 
 import adminAuthRoutes from './admin/auth';
 import adminQuestionRoutes from './admin/questions';
+import adminCategoryRoutes from './admin/category';
+import adminSubscriptionRoutes from './admin/subscription';
 import subscriptionRoutes from './subscription';
 import profileRoutes from './profile';
 import logsRoutes from './logs';
 import notificationRoutes from './notification';
-import adminCategoryRoutes from './admin/category'
 
 import revenueCatRoutes from './revenuecat';
 
@@ -65,6 +66,7 @@ router.use('/tethers', tetherRoutes);
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/questions', adminQuestionRoutes);
 router.use('/admin/categories', adminCategoryRoutes);
+router.use('/admin/subscriptions', adminSubscriptionRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/profile', profileRoutes);
 router.use('/logs', logsRoutes);

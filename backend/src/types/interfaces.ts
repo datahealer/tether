@@ -167,6 +167,11 @@ export interface ICoupleQuestionState extends Document {
   }[];
   cooldownEnd?: Date;
   skippedBy?: Types.ObjectId[];
+  reactions?: {
+    userId: Types.ObjectId;
+    emoji: string;
+    timestamp: Date;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -194,6 +199,7 @@ export interface IUserEntitlement extends Document {
   premiumEnd?: Date;
   createdAt: Date;
   updatedAt: Date;
+  hasPremiumAccess(): boolean;
   getRefreshesForCycle(): number; 
 }
 

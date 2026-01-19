@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { QuestionServiceEngine } from '../services/questionService';
-import { CategoryId, QuestionState, Rhythm } from '../types/enums';
+import { CategoryId, QuestionState } from '../types/enums';
 import { UserEntitlement } from '../models/UserEntitlement';
 import Couple from '../models/Couple';
 import User from '../models/User';
 import { Category } from '../models/Category';
 import { NotificationTriggers } from '../services/notification/triggers';
 import { CoupleQuestionState } from '../models/CoupleQuestionState';
-import { RHYTHM_HOURS } from '../services/questionService';
 
 /**
  * Get active tethers for the logged-in user's couple
@@ -20,13 +19,14 @@ export const getActiveTethers = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Only fetch coupleId field
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) {
       return res.status(404).json({ message: 'Not in a couple' });
     }
 
     // Ensure categories are initialized
-    let progress = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
+    const progress = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
     if (!progress || progress.length === 0) {
       console.log('📚 Initializing categories for couple:', user.coupleId);
       await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
@@ -41,7 +41,10 @@ export const getActiveTethers = async (req: Request, res: Response) => {
       result = await QuestionServiceEngine.getActiveTethers(user.coupleId, userId);
     }
 
-    const couple = await Couple.findById(user.coupleId);
+    // Optimized: Only fetch stats fields needed
+    const couple = await Couple.findById(user.coupleId)
+      .select('sharedData.currentStreak sharedData.totalTethersCompleted sharedData.lastTetherDate')
+      .lean();
     const stats = {
       totalAnswered: couple?.sharedData?.totalTethersCompleted || 0,
       currentStreak: couple?.sharedData?.currentStreak || 0,
@@ -88,14 +91,16 @@ export const submitAnswer = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'questionId and answer required' });
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
+    // Optimized: Use lean() for read-only query
     // Get question state BEFORE submitting to know how many answers existed
     const questionStateBefore = await CoupleQuestionState.findOne({
       coupleId: user.coupleId,
       questionId,
-    });
+    }).lean();
 
     if (!questionStateBefore) {
       return res.status(404).json({ message: 'Question not found' });
@@ -111,11 +116,12 @@ export const submitAnswer = async (req: Request, res: Response) => {
       answer
     );
 
+    // Optimized: Use lean() for read-only query
     // Get the updated question state
     const questionStateAfter = await CoupleQuestionState.findOne({
       coupleId: user.coupleId,
       questionId,
-    });
+    }).lean();
 
     if (!questionStateAfter) {
       return res.status(500).json({ message: 'Failed to retrieve updated question state' });
@@ -151,15 +157,17 @@ export const submitAnswer = async (req: Request, res: Response) => {
     if (error.message === 'Already answered this question') {
       try {
         // Fetch the existing answer to return to the user
-        const user = await User.findById(userId);
+        // Optimized: Use lean() and select only coupleId
+        const user = await User.findById(userId).select('coupleId').lean();
         if (!user?.coupleId) {
           return res.status(404).json({ message: 'Not in a couple' });
         }
         
+        // Optimized: Use lean() for read-only query
         const questionState = await CoupleQuestionState.findOne({
           coupleId: user.coupleId,
           questionId,
-        });
+        }).lean();
         
         if (!userId) {
           return res.status(401).json({ message: 'Unauthorized' });
@@ -213,7 +221,8 @@ export const skipTether = async (req: Request, res: Response) => {
 
     if (!questionId) return res.status(400).json({ message: 'questionId required' });
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
     const result = await QuestionServiceEngine.skipQuestion(user.coupleId, userId, questionId);
@@ -248,11 +257,11 @@ export const skipTether = async (req: Request, res: Response) => {
           return res.status(404).json({ message: 'Not in a couple' });
         }
         
-        // Get the question state to provide context
+        // Optimized: Use lean() for read-only query
         const questionState = await CoupleQuestionState.findOne({
           coupleId: user.coupleId,
           questionId,
-        });
+        }).lean();
         
         if (!questionState) {
           return res.status(404).json({
@@ -347,29 +356,38 @@ export const getCategoryProgress = async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
     const coupleStates = await QuestionServiceEngine.getCategoryProgress(user.coupleId);
 
-    const progressWithDetails = await Promise.all(
-      coupleStates.map(async (state) => {
-        const category = await Category.findOne({ categoryId: state.categoryId });
-        return {
-          coupleId: state.coupleId,
-          categoryId: state.categoryId,
-          categoryName: category?.name || state.categoryId,
-          colorCode: category?.colorCode || '#CCCCCC',
-          answeredCount: state.answeredCount,
-          totalQuestions: state.totalQuestions,
-          skippedCount: state.skippedCount,
-          isComplete: state.isComplete,
-          unlocked: state.unlocked,
-          unlockExpiry: state.unlockExpiry,
-          lastActivityAt: state.lastActivityAt,
-        };
-      })
-    );
+    // Optimized: Fetch all categories in one query instead of N+1
+    const categoryIds = [...new Set(coupleStates.map(state => state.categoryId))];
+    const categories = await Category.find({ categoryId: { $in: categoryIds } })
+      .select('categoryId name colorCode')
+      .lean();
+    
+    // Create lookup map for O(1) access
+    const categoryMap = new Map(categories.map(c => [c.categoryId, c]));
+
+    // Map to response format (no async operations needed)
+    const progressWithDetails = coupleStates.map((state) => {
+      const category = categoryMap.get(state.categoryId);
+      return {
+        coupleId: state.coupleId,
+        categoryId: state.categoryId,
+        categoryName: category?.name || state.categoryId,
+        colorCode: category?.colorCode || '#CCCCCC',
+        answeredCount: state.answeredCount,
+        totalQuestions: state.totalQuestions,
+        skippedCount: state.skippedCount,
+        isComplete: state.isComplete,
+        unlocked: state.unlocked,
+        unlockExpiry: state.unlockExpiry,
+        lastActivityAt: state.lastActivityAt,
+      };
+    });
 
     res.json({ success: true, progress: progressWithDetails });
   } catch (error: any) {
@@ -391,14 +409,16 @@ export const unlockCategory = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid categoryId' });
     }
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
     const entitlement = await UserEntitlement.findOne({ userId });
     if (!entitlement) return res.status(403).json({ message: 'No entitlement found' });
 
-    if (entitlement.tier !== 'PREMIUM' && !temporary) {
-      return res.status(403).json({ message: 'Premium subscription required' });
+    // Check if user has premium access (TRIAL or PREMIUM tier) for permanent unlocks
+    if (!entitlement.hasPremiumAccess() && !temporary) {
+      return res.status(403).json({ message: 'Premium subscription or trial required' });
     }
 
     await QuestionServiceEngine.unlockCategory(user.coupleId, categoryId, temporary, durationDays);
@@ -418,7 +438,8 @@ export const triggerTetherDrop = async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user || !user.coupleId) return res.status(400).json({ success: false, message: 'Not in a couple' });
 
     const force = req.query.force === 'true' || req.body.force === true;
@@ -442,13 +463,14 @@ export const getCoupleStats = async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
     const couple = await Couple.findById(user.coupleId);
     if (!couple) return res.status(404).json({ message: 'Couple not found' });
 
-    // Ensure sharedData is initialized
+    // Ensure sharedData is initialized (need full document for save)
     if (!couple.sharedData) {
       couple.sharedData = {
         currentStreak: 0,
@@ -490,7 +512,8 @@ export const initializeCoupleCategories = async (req: Request, res: Response) =>
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const user = await User.findById(userId);
+    // Optimized: Use lean() and select only coupleId
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user || !user.coupleId) return res.status(400).json({ message: 'Not in a couple' });
 
     await QuestionServiceEngine.initializeCategoriesForCouple(user.coupleId);
@@ -510,54 +533,68 @@ export const getTetherHistory = async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('coupleId').lean();
     if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
 
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = parseInt(req.query.skip as string) || 0;
 
-    // Get completed tethers (where both partners answered)
-    const completedTethers = await CoupleQuestionState.find({
-      coupleId: user.coupleId,
-      state: QuestionState.COMPLETED,
-    })
-      .sort({ 'answers.1.timestamp': -1 }) // Sort by when second partner answered (most recent first)
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await CoupleQuestionState.countDocuments({
-      coupleId: user.coupleId,
-      state: QuestionState.COMPLETED,
-    });
-
-    // Get question details and map to response format
-    const history = await Promise.all(
-      completedTethers.map(async (tether) => {
-        const question = await mongoose.model('Question').findOne({ questionId: tether.questionId });
-        const category = await Category.findOne({ categoryId: tether.categoryId });
-
-        // Find user's answer and partner's answer
-        const userAnswer = tether.answers.find(
-          (a) => a.userId.toString() === userId.toString()
-        );
-        const partnerAnswer = tether.answers.find(
-          (a) => a.userId.toString() !== userId.toString()
-        );
-
-        return {
-          questionId: tether.questionId,
-          question: question?.question || 'Question not found',
-          categoryId: tether.categoryId,
-          categoryName: category?.name || tether.categoryId,
-          userAnswer: userAnswer?.text || '',
-          partnerAnswer: partnerAnswer?.text || '',
-          answeredAt: userAnswer?.timestamp?.toISOString() || new Date().toISOString(),
-          partnerAnsweredAt: partnerAnswer?.timestamp?.toISOString() || new Date().toISOString(),
-          completedAt: (tether.answers[1]?.timestamp || tether.updatedAt).toISOString(),
-        };
+    // Get completed tethers (where both partners answered) - optimized query
+    const [completedTethers, total] = await Promise.all([
+      CoupleQuestionState.find({
+        coupleId: user.coupleId,
+        state: QuestionState.COMPLETED,
       })
-    );
+        .sort({ 'answers.1.timestamp': -1 }) // Sort by when second partner answered (most recent first)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      CoupleQuestionState.countDocuments({
+        coupleId: user.coupleId,
+        state: QuestionState.COMPLETED,
+      }),
+    ]);
+
+    // Extract unique question IDs and category IDs
+    const questionIds = [...new Set(completedTethers.map(t => t.questionId))];
+    const categoryIds = [...new Set(completedTethers.map(t => t.categoryId))];
+
+    // Fetch all questions and categories in parallel (optimized - no N+1)
+    const [questions, categories] = await Promise.all([
+      mongoose.model('Question').find({ questionId: { $in: questionIds } }).lean(),
+      Category.find({ categoryId: { $in: categoryIds } }).lean(),
+    ]);
+
+    // Create lookup maps for O(1) access
+    const questionMap = new Map(questions.map(q => [q.questionId, q]));
+    const categoryMap = new Map(categories.map(c => [c.categoryId, c]));
+
+    // Map to response format (no async operations needed)
+    const history = completedTethers.map((tether) => {
+      const question = questionMap.get(tether.questionId);
+      const category = categoryMap.get(tether.categoryId);
+
+      // Find user's answer and partner's answer
+      const userAnswer = tether.answers.find(
+        (a) => a.userId.toString() === userId.toString()
+      );
+      const partnerAnswer = tether.answers.find(
+        (a) => a.userId.toString() !== userId.toString()
+      );
+
+      return {
+        questionId: tether.questionId,
+        question: question?.question || 'Question not found',
+        categoryId: tether.categoryId,
+        categoryName: category?.name || tether.categoryId,
+        userAnswer: userAnswer?.text || '',
+        partnerAnswer: partnerAnswer?.text || '',
+        answeredAt: userAnswer?.timestamp?.toISOString() || new Date().toISOString(),
+        partnerAnsweredAt: partnerAnswer?.timestamp?.toISOString() || new Date().toISOString(),
+        completedAt: (tether.answers[1]?.timestamp || tether.updatedAt).toISOString(),
+        reactions: tether.reactions || [],
+      };
+    });
 
     res.json({
       success: true,
@@ -569,5 +606,67 @@ export const getTetherHistory = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error getting tether history:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to get tether history' });
+  }
+};
+
+/**
+ * Add emoji reaction to a completed tether
+ * POST /api/tethers/:questionId/react
+ */
+export const addReaction = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    const { questionId } = req.params;
+    const { emoji } = req.body;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!emoji) return res.status(400).json({ message: 'Emoji is required' });
+
+    const user = await User.findById(userId).select('coupleId').lean();
+    if (!user?.coupleId) return res.status(404).json({ message: 'Not in a couple' });
+
+    // Find the tether
+    const tether = await CoupleQuestionState.findOne({
+      coupleId: user.coupleId,
+      questionId,
+      state: QuestionState.COMPLETED,
+    });
+
+    if (!tether) {
+      return res.status(404).json({ message: 'Tether not found or not completed' });
+    }
+
+    // Remove previous reaction from this user if exists
+    tether.reactions = (tether.reactions || []).filter(
+      r => r.userId.toString() !== userId.toString()
+    );
+
+    // Add new reaction
+    tether.reactions.push({
+      userId: userId as mongoose.Types.ObjectId,
+      emoji,
+      timestamp: new Date(),
+    });
+
+    await tether.save();
+
+    // Send notification to partner
+    try {
+      await NotificationTriggers.onReactionAdded(
+        user.coupleId,
+        userId as mongoose.Types.ObjectId,
+        emoji
+      );
+    } catch (notifError) {
+      console.warn('Failed to send reaction notification:', notifError);
+    }
+
+    res.json({
+      success: true,
+      reactions: tether.reactions,
+    });
+  } catch (error: any) {
+    console.error('Error adding reaction:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to add reaction' });
   }
 };

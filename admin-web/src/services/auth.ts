@@ -72,9 +72,13 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await axios.post(`${API_URL}/api/admin/auth/login`, credentials);
+    console.log('🔐 Login response received:', { hasToken: !!response.data.token, user: response.data.user });
     if (response.data.token) {
       localStorage.setItem('authToken', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      console.log('✅ Token saved to localStorage:', response.data.token.substring(0, 20) + '...');
+    } else {
+      console.error('❌ No token in login response!');
     }
     return response.data;
   }

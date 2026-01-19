@@ -18,6 +18,7 @@ export {
   scheduleExpiryHandlerJob,
   scheduleReminderJob,
   scheduleUnlockExpiryJob,
+  scheduleTrialExpiryJob,
 } from './services/scheduledJobs';
 
 // Controllers

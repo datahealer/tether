@@ -67,6 +67,11 @@ export interface TetherHistory {
   partnerAnswer?: string;
   answeredAt: string;
   partnerAnsweredAt?: string;
+  reactions?: Array<{
+    userId: string;
+    emoji: string;
+    timestamp: string;
+  }>;
 }
 
 // ==================== API CALLS ====================
@@ -360,6 +365,54 @@ export async function getTetherHistory(
     };
   } catch (error) {
     console.error('Error fetching tether history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add emoji reaction to a completed tether
+ */
+export async function addReaction(
+  questionId: string,
+  emoji: string
+): Promise<{
+  success: boolean;
+  reactions: Array<{
+    userId: string;
+    emoji: string;
+    timestamp: string;
+  }>;
+}> {
+  try {
+    const response = await authenticatedFetch(
+      `${API_URL}/api/tethers/${questionId}/react`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ emoji }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', response.status, errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.message || 'Failed to add reaction');
+      } catch {
+        throw new Error(`Server error: ${response.status}`);
+      }
+    }
+
+    const data = await response.json();
+    return {
+      success: data.success,
+      reactions: data.reactions || [],
+    };
+  } catch (error) {
+    console.error('Error adding reaction:', error);
     throw error;
   }
 }

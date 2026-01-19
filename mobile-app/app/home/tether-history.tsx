@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -14,17 +13,24 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
-import { getTetherHistory, type TetherHistory } from '@/services/tether_service';
+import { getTetherHistory, addReaction, type TetherHistory } from '@/services/tether_service';
 import { useOnboarding } from '@/context/onboarding_context';
 import { useTetherStats } from '@/hooks/useTetherStats';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface TetherAnswer {
+  questionId: string;
   categoryName: string;
   question: string;
   userAnswer: string;
   partnerAnswer: string;
   date: string;
   gradient: readonly [string, string];
+  reactions?: Array<{
+    userId: string;
+    emoji: string;
+    timestamp: string;
+  }>;
 }
 
 // Map category names to gradients
@@ -48,7 +54,6 @@ export default function TetherHistoryScreen() {
   const { user } = useAuth();
   const { onboardingData } = useOnboarding();
   const tetherStats = useTetherStats();
-  const [selectedEmoji, setSelectedEmoji] = useState<{ [key: number]: string }>({});
   const [tetherHistory, setTetherHistory] = useState<TetherAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -74,6 +79,7 @@ export default function TetherHistoryScreen() {
       const mappedHistory: TetherAnswer[] = response.history
         .filter((item: TetherHistory) => item.partnerAnswer) // Only show completed tethers
         .map((item: TetherHistory) => ({
+          questionId: item.questionId,
           categoryName: item.categoryName,
           question: item.question,
           userAnswer: item.userAnswer,
@@ -85,6 +91,7 @@ export default function TetherHistoryScreen() {
             year: 'numeric',
           }),
           gradient: categoryGradients[item.categoryName] || ['#FFB8A0', '#FFA07A'],
+          reactions: item.reactions || [],
         }));
       
       setTetherHistory(mappedHistory);
@@ -96,13 +103,24 @@ export default function TetherHistoryScreen() {
     }
   };
 
-  const handleEmojiPress = async (answerIndex: number, emoji: string) => {
+  const handleEmojiPress = async (questionId: string, emoji: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedEmoji(prev => ({
-      ...prev,
-      [answerIndex]: prev[answerIndex] === emoji ? '' : emoji,
-    }));
-    // TODO: Send emoji reaction to backend
+    
+    try {
+      const result = await addReaction(questionId, emoji);
+      
+      // Update local state with new reactions
+      setTetherHistory(prev => 
+        prev.map(item => 
+          item.questionId === questionId 
+            ? { ...item, reactions: result.reactions }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      Alert.alert('Error', 'Failed to add reaction. Please try again.');
+    }
   };
 
   const handleAnswerPress = (answer: TetherAnswer) => {
@@ -149,7 +167,7 @@ export default function TetherHistoryScreen() {
               {tetherHistory.map((answer, index) => (
                 <View key={index}>
                   {/* Answer Card */}
-                  <TouchableOpacity
+                  <DebouncedButton
                     style={styles.answerCardWrapper}
                     onPress={() => handleAnswerPress(answer)}
                 activeOpacity={0.95}
@@ -192,23 +210,39 @@ export default function TetherHistoryScreen() {
                     </View>
                   </View>
                 </LinearGradient>
-              </TouchableOpacity>
+              </DebouncedButton>
 
               {/* Emoji Reactions */}
               <View style={styles.emojiContainer}>
-                {emojis.map((emoji, emojiIndex) => (
-                  <TouchableOpacity
-                    key={emojiIndex}
-                    style={[
-                      styles.emojiButton,
-                      selectedEmoji[index] === emoji && styles.emojiButtonSelected,
-                    ]}
-                    onPress={() => handleEmojiPress(index, emoji)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.emojiText}>{emoji}</Text>
-                  </TouchableOpacity>
-                ))}
+                {emojis.map((emoji, emojiIndex) => {
+                  // Check if current user or partner reacted with this emoji
+                  const userReacted = answer.reactions?.some(
+                    r => r.userId === user?.id && r.emoji === emoji
+                  );
+                  const partnerReacted = answer.reactions?.some(
+                    r => r.userId !== user?.id && r.emoji === emoji
+                  );
+                  const isSelected = userReacted;
+
+                  return (
+                    <DebouncedButton
+                      key={emojiIndex}
+                      style={[
+                        styles.emojiButton,
+                        isSelected && styles.emojiButtonSelected,
+                      ]}
+                      onPress={() => handleEmojiPress(answer.questionId, emoji)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.emojiText}>{emoji}</Text>
+                      {partnerReacted && (
+                        <View style={styles.partnerReactionBadge}>
+                          <Text style={styles.partnerReactionText}>+1</Text>
+                        </View>
+                      )}
+                    </DebouncedButton>
+                  );
+                })}
               </View>
 
               {/* Date Separator */}
@@ -390,6 +424,25 @@ const styles = StyleSheet.create({
   },
   emojiText: {
     fontSize: 28,
+  },
+  partnerReactionBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  partnerReactionText: {
+    fontSize: 12,
   },
   dateSeparator: {
     alignItems: 'center',
