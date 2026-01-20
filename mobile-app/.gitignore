@@ -66,3 +66,7 @@ local.properties
 
 # But allow google-services.json
 !/android/app/google-services.json
+
+Tether_Partner_B_Onboarding_Flow.postman_collection.json
+Tether_Streak_Milestone_Testing_FIXED.postman_collection.json
+Tether_Category_Testing_v2.postman_collection.json
