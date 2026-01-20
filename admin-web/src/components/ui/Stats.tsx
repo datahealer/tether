@@ -1,5 +1,4 @@
 import React from 'react';
-
 interface StatCard {
   label: string;
   value: number;
@@ -8,11 +7,9 @@ interface StatCard {
   border: string;
   bg: string;
 }
-
 interface StatsCardsProps {
   cards: StatCard[];
 }
-
 export const StatsCards: React.FC<StatsCardsProps> = ({ cards }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

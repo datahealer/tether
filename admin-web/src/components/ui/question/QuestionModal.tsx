@@ -3,14 +3,12 @@ import { X ,Loader} from 'lucide-react';
 import { Question } from '../../../services/question';
 import { categoriesService, Category } from '../../../services/category';
 import { useQuery } from '@tanstack/react-query';
-
 interface QuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (question: Partial<Question>) => Promise<void>;
   question?: Question | null;
 }
-
 export const QuestionModal: React.FC<QuestionModalProps> = ({
   isOpen,
   onClose,

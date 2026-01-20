@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { X, Upload, Download, Lock } from 'lucide-react';
 import axios from 'axios';
 import { authService } from '../../services/auth';
-
 const uri = import.meta.env['VITE_API_URL'];
-
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (count: number) => void;
 }
-
 export const ImportModal: React.FC<ImportModalProps> = ({
   isOpen,
   onClose,

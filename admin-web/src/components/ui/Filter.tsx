@@ -54,13 +54,12 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
         <button
           onClick={onExport}
-  className="flex items-center cursor-pointer gap-2 bg-[#FF7E3D] text-white px-6 py-3 rounded-xl hover:bg-white/20 hover:border hover:border-[#FF7E3D] hover:text-[#FF7E3D] transition-all"
+          className="flex items-center cursor-pointer gap-2 bg-[#FF7E3D] text-white px-6 py-3 rounded-xl hover:bg-white/20 hover:border hover:border-[#FF7E3D] hover:text-[#FF7E3D] transition-all"
         >
           <Download size={20} />
           Export
         </button>
       </div>
-
       <div className="flex flex-wrap gap-4">
         <div>
           <label className="block text-[#626262] text-sm mb-2">Category</label>
