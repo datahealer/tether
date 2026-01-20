@@ -71,6 +71,14 @@ const handleGoogleSignIn = async () => {
       router.replace('/onboarding/privacy');
     } catch (error: any) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.error('Apple sign-in error:', error);
+      
+      // Handle specific error cases
+      if (error.message?.includes('canceled')) {
+        // User canceled, don't show error
+        return;
+      }
+      
       Alert.alert('Error', error.message || 'Failed to sign in with Apple');
     } finally {
       setLoading(false);

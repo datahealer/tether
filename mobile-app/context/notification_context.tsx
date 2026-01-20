@@ -86,7 +86,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setIsEnabled(false);
   };
 
-  const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
+  const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
     const data = response.notification.request.content.data as NotificationData;
 
     console.log('🔔 Notification tapped - Type:', data.type);
@@ -99,31 +99,65 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Handle different notification types
     switch (data.type) {
       case 'NEW_TETHER':
+        // New tether available - go to category packs
+        console.log('➡️ New tether available - navigating to category packs');
+        router.push('/home/category-packs');
+        break;
+
       case 'PARTNER_ANSWERED':
       case 'BOTH_ANSWERED':
-      case 'QUESTION_EXPIRING':
-        // Use questionId (new format) or tetherId (legacy) and categoryId
+        // Partner answered or both answered - fetch tether state and route accordingly
         const questionId = data.questionId || data.tetherId;
         
-        if (questionId && data.categoryId) {
-          console.log(`➡️ Navigating to question ${questionId} in category ${data.categoryId}`);
+        if (questionId) {
+          try {
+            console.log('➡️ Fetching tether state for:', questionId);
+            // TODO: Create a getTetherById service function that returns full state
+            // For now, determine route based on notification type
+            
+            if (data.type === 'BOTH_ANSWERED') {
+              // Both answered - go to history
+              console.log('➡️ Both answered - navigating to tether history');
+              router.push('/home/tether-history');
+            } else {
+              // Partner answered - user needs to answer (show waiting-partner screen)
+              console.log('➡️ Partner answered - navigating to waiting-partner');
+              router.push({
+                pathname: '/home/waiting-partner',
+                params: {
+                  questionId: questionId,
+                  categoryName: data.categoryName || '',
+                  question: data.question || '',
+                  partnerAnswer: data.partnerAnswer || '',
+                  expiresAt: data.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                },
+              });
+            }
+          } catch (error) {
+            console.error('❌ Error fetching tether state:', error);
+            // Fallback to category packs
+            router.push('/home/category-packs');
+          }
+        } else {
+          console.log('➡️ No questionId, navigating to category packs');
+          router.push('/home/category-packs');
+        }
+        break;
+
+      case 'QUESTION_EXPIRING':
+        // Question expiring soon - navigate to the specific question
+        const expiringQuestionId = data.questionId || data.tetherId;
+        
+        if (expiringQuestionId && data.categoryId) {
+          console.log(`➡️ Question expiring - navigating to question ${expiringQuestionId}`);
           router.push({
             pathname: '/home/category-question',
             params: {
               categoryId: data.categoryId,
-              tetherQuestion: questionId,
+              tetherQuestion: expiringQuestionId,
             },
           });
-        } else if (data.categoryId) {
-          // Has category but no specific question - go to category view
-          console.log(`➡️ Navigating to category ${data.categoryId}`);
-          router.push({
-            pathname: '/home/category-packs',
-            params: { selectedCategory: data.categoryId },
-          });
         } else {
-          // No specific data - go to category packs
-          console.log('➡️ No specific data, navigating to category packs');
           router.push('/home/category-packs');
         }
         break;
@@ -156,8 +190,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       case 'TRIAL_EXPIRED':
         console.log('➡️ Trial expired - navigating to subscription screen');
-        // Navigate to subscription/paywall screen
-        router.push('/home/draw-locked-upsell'); // or wherever subscription screen is
+        router.push('/home/draw-locked-upsell');
+        break;
+
+      case 'REACTION_ADDED':
+        console.log('➡️ Reaction added - navigating to tether history');
+        router.push('/home/tether-history');
         break;
 
       default:

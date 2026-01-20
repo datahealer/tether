@@ -489,24 +489,40 @@ export const signInWithApple = async (): Promise<AuthUser> => {
       ],
     });
 
+    console.log('🍎 Apple credential received:', {
+      user: credential.user,
+      email: credential.email,
+      hasFullName: !!credential.fullName,
+      hasIdentityToken: !!credential.identityToken,
+    });
+
     const response = await fetch(`${API_URL}/api/auth/apple`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         identityToken: credential.identityToken,
         user: credential.user,
-        email: credential.email,
-        fullName: credential.fullName,
+        email: credential.email, // Explicitly pass email
+        fullName: credential.fullName, // Pass fullName object directly
         platform: Platform.OS,
       }),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to authenticate with server');
+      const errorText = await response.text();
+      console.error('❌ Apple auth API error:', response.status, errorText);
+      
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.error || 'Failed to authenticate with server');
+      } catch (e) {
+        throw new Error('Failed to authenticate with server');
+      }
     }
 
     const data = await response.json();
+    
+    console.log('✅ Apple auth successful:', data.user.email);
     
     // Store tokens
     await storeTokens(data.accessToken, data.refreshToken);
@@ -525,9 +541,12 @@ export const signInWithApple = async (): Promise<AuthUser> => {
       onboardingData: data.user.onboardingData,
     };
   } catch (error: any) {
-    if (error.code === 'ERR_REQUEST_CANCELED') {
+    console.error('❌ Apple sign-in error:', error);
+    
+    if (error.code === 'ERR_REQUEST_CANCELED' || error.code === 'ERR_CANCELED') {
       throw new Error('Sign in was canceled');
     }
+    
     throw error;
   }
 };

@@ -441,6 +441,7 @@ import QuestionCard from '../../components/ui/cards/QuestionCard';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { useOnboarding } from '@/context/onboarding_context';
+import { Ionicons } from '@expo/vector-icons';
 import {
   getActiveTethers,
   submitAnswer,
@@ -476,6 +477,8 @@ export default function CategoryQuestionScreen() {
   const [timeLeft] = useState('6 h'); // TODO: Calculate real time left
   const [refreshing, setRefreshing] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
+  const [alreadyAnswered, setAlreadyAnswered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadActiveTethers = useCallback(async (isPullToRefresh = false) => {
     try {
@@ -490,8 +493,34 @@ export default function CategoryQuestionScreen() {
 
       if (categoryTether) {
         setCurrentQuestion(categoryTether);
+        
+        // Check if partner already answered (but user hasn't)
+        if (categoryTether.partnerAnswer && !categoryTether.userAnswer) {
+          console.log('🎯 Partner answered first! Navigating to reveal screen...');
+          
+          // Navigate to the reveal screen showing blurred partner answer
+          router.replace({
+            pathname: '/home/waiting-partner',
+            params: {
+              questionId: categoryTether.questionId,
+              categoryId: categoryTether.categoryId,
+              categoryName: categoryTether.categoryName || categoryTitle,
+              question: categoryTether.question,
+              partnerAnswer: categoryTether.partnerAnswer,
+              expiresAt: categoryTether.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            },
+          });
+          return; // Stop further processing
+        }
+        
+        // Check if user already answered this tether
         if (categoryTether.userAnswer) {
           setResponse(categoryTether.userAnswer);
+          setAlreadyAnswered(true);
+          console.log('ℹ️ User already answered this tether, showing waiting state');
+        } else {
+          setAlreadyAnswered(false);
+          setResponse('');
         }
         
         // Auto-detect if tether was completed (both answered)
@@ -603,6 +632,15 @@ export default function CategoryQuestionScreen() {
   };
 
   const handleShareTether = async () => {
+    if (alreadyAnswered) {
+      Alert.alert(
+        'Already Answered',
+        'You\'ve already answered this tether. Waiting for your partner to respond!',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!response.trim()) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert('Empty Response', 'Please type your response before sharing.');
@@ -615,13 +653,20 @@ export default function CategoryQuestionScreen() {
     }
 
     try {
+      setIsSubmitting(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
       const result = await submitAnswer(currentQuestion.questionId, response);
 
+      // Mark as answered immediately to prevent re-submission
+      setAlreadyAnswered(true);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // ✅ Trigger immediate tether stats update
+      tetherStats.triggerUpdate();
+
       if (result.state === 'COMPLETED' && result.partnerAnswer) {
         // BOTH COMPLETED: Backend automatically dropped new tethers
-        // Refresh to show the new question
         console.log('🎉 Both answered! Fetching new tethers automatically...');
         await loadActiveTethers(false); // Auto-refresh to get new question
         
@@ -629,16 +674,42 @@ export default function CategoryQuestionScreen() {
           'Tether Completed! 🎉',
           `You both answered!\n\nYour partner said: "${result.partnerAnswer}"\n\nNew questions are ready!`,
           [
-            { text: 'View History', onPress: () => router.push('/home/tether-history') },
-            { text: 'Continue', onPress: () => router.back(), style: 'cancel' },
+            { text: 'View History', onPress: () => router.replace('/home/tether-history') },
+            { text: 'Continue', style: 'cancel' },
           ]
         );
+      } else if (result.state === 'WAITING_FOR_PARTNER') {
+        // FIRST ANSWER: Navigate to waiting screen
+        console.log('⏳ Waiting for partner to answer...');
+        
+        setTimeout(() => {
+          router.replace({
+            pathname: '/home/waiting-for-partner-answer',
+            params: {
+              questionId: currentQuestion.questionId,
+              categoryName: categoryTitle || currentQuestion.categoryName || 'Deeper Connection',
+              question: currentQuestion.question,
+              userAnswer: response,
+              expiresAt: currentQuestion.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            },
+          });
+        }, 500);
       } else {
-        Alert.alert(
-          'Tether Shared! 🎉',
-          'Your response has been sent to your partner. They have 24 hours to respond!',
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
+        // Fallback - navigate to waiting screen
+        console.log('⏳ Fallback: Navigating to waiting screen...');
+        
+        setTimeout(() => {
+          router.replace({
+            pathname: '/home/waiting-for-partner-answer',
+            params: {
+              questionId: currentQuestion.questionId,
+              categoryName: categoryTitle || currentQuestion.categoryName || 'Deeper Connection',
+              question: currentQuestion.question,
+              userAnswer: response,
+              expiresAt: currentQuestion.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            },
+          });
+        }, 500);
       }
 
       if (result.milestones && result.milestones.length > 0 && result.milestones[0]?.message) {
@@ -646,30 +717,38 @@ export default function CategoryQuestionScreen() {
           Alert.alert('🏆 Milestone Achieved!', result.milestones![0].message, [
             { text: 'Awesome!' },
           ]);
-        }, 1000);
+        }, 1500);
       }
     } catch (error: any) {
+      setAlreadyAnswered(false); // Reset on error
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
       // Handle 'already answered' error gracefully
       if (error.response?.data?.error === 'ALREADY_ANSWERED') {
         const data = error.response.data.data;
-        const previousAnswer = data?.userAnswer || 'your previous response';
-        const partnerStatus = data?.partnerAnswer 
-          ? `\n\nYour partner said: "${data.partnerAnswer}"`
-          : '\n\nWaiting for your partner to respond...';
+        const previousAnswer = data?.userAnswer || response;
         
-        Alert.alert(
-          'Already Answered',
-          `You already answered this question.\n\nYour answer: "${previousAnswer}"${partnerStatus}`,
-          [
-            { text: 'View History', onPress: () => router.push('/home/tether-history') },
-            { text: 'OK', onPress: () => router.back(), style: 'cancel' },
-          ]
-        );
+        setAlreadyAnswered(true);
+        setResponse(previousAnswer);
+        
+        // Navigate to waiting screen
+        setTimeout(() => {
+          router.replace({
+            pathname: '/home/waiting-for-partner-answer',
+            params: {
+              questionId: currentQuestion.questionId,
+              categoryName: categoryTitle || currentQuestion.categoryName || 'Deeper Connection',
+              question: currentQuestion.question,
+              userAnswer: previousAnswer,
+              expiresAt: currentQuestion.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            },
+          });
+        }, 500);
       } else {
         Alert.alert('Error', error.message || 'Failed to submit answer');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -723,6 +802,16 @@ export default function CategoryQuestionScreen() {
             <Text style={styles.headerSubtitle}>Pull each other closer...</Text>
           </View>
 
+          {/* Already Answered Message */}
+          {alreadyAnswered && (
+            <View style={styles.waitingMessage}>
+              <Ionicons name="time-outline" size={24} color={Colors.darkOrange} />
+              <Text style={styles.waitingText}>
+                You've already answered! Waiting for {partnerName} to respond.
+              </Text>
+            </View>
+          )}
+
           {currentQuestion && (
             <QuestionCard
               categoryName={currentQuestion.categoryName || categoryTitle}
@@ -733,6 +822,7 @@ export default function CategoryQuestionScreen() {
               onDrawAnother={handleDrawAnother}
               isSkipping={isSkipping}
               refreshesRemaining={refreshesRemaining}
+              disabled={alreadyAnswered}
             />
           )}
 
@@ -748,24 +838,43 @@ export default function CategoryQuestionScreen() {
         </ScrollView>
 
         <View style={styles.bottomContainer}>
-          <DebouncedButton
-            style={[
-              styles.shareButton,
-              !response.trim() && styles.shareButtonDisabled,
-            ]}
-            onPress={handleShareTether}
-            disabled={!response.trim()}
-            activeOpacity={0.9}
-          >
-            <Text
-              style={[
-                styles.shareButtonText,
-                !response.trim() && styles.shareButtonTextDisabled,
-              ]}
+          {alreadyAnswered ? (
+            <DebouncedButton
+              style={styles.continueButton}
+              onPress={() => router.replace({
+                pathname: '/home/waiting-for-partner-answer',
+                params: {
+                  questionId: currentQuestion?.questionId || '',
+                  categoryName: categoryTitle || currentQuestion?.categoryName || 'Deeper Connection',
+                  question: currentQuestion?.question || '',
+                  userAnswer: response,
+                  expiresAt: currentQuestion?.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                },
+              })}
+              activeOpacity={0.9}
             >
-              Share My Tether
-            </Text>
-          </DebouncedButton>
+              <Text style={styles.buttonText}>View Waiting Screen</Text>
+            </DebouncedButton>
+          ) : (
+            <DebouncedButton
+              style={[
+                styles.shareButton,
+                (!response.trim() || isSubmitting) && styles.shareButtonDisabled,
+              ]}
+              onPress={handleShareTether}
+              disabled={!response.trim() || isSubmitting}
+              activeOpacity={0.9}
+            >
+              <Text
+                style={[
+                  styles.shareButtonText,
+                  (!response.trim() || isSubmitting) && styles.shareButtonTextDisabled,
+                ]}
+              >
+                {isSubmitting ? 'Sharing...' : 'Share My Tether'}
+              </Text>
+            </DebouncedButton>
+          )}
         </View>
       </KeyboardAvoidingView>
     </OnboardingLayout>
@@ -867,5 +976,39 @@ const styles = StyleSheet.create({
   },
   shareButtonTextDisabled: {
     color: Colors.inputText,
+  },
+  waitingMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.veryLightOrange,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.lg,
+    gap: 12,
+  },
+  waitingText: {
+    fontFamily: 'SFProDisplay-Medium',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.inputText,
+    flex: 1,
+  },
+  continueButton: {
+    backgroundColor: Colors.darkOrange,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonText: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: FontSizes.buttonLarge,
+    fontWeight: FontWeights.bold,
+    color: Colors.white,
   },
 });

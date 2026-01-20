@@ -109,6 +109,8 @@ export const submitAnswer = async (req: Request, res: Response) => {
     const answerCountBefore = questionStateBefore.answers.length;
 
     // Submit the answer
+    // NOTE: When both partners answer, new questions are dropped asynchronously
+    // in the background (see questionService.ts) to avoid blocking Partner B's response
     const result = await QuestionServiceEngine.submitAnswer(
       user.coupleId,
       userId,

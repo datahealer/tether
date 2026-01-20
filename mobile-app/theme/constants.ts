@@ -107,6 +107,9 @@ export const Colors = {
   black: '#1F2935',
   white: '#FFFFFF',
   
+  // Success/Action Colors
+  successGreen: '#27AE60',
+  
   // Eclipse Layers for background
   eclipseA: '#FF894B',
   eclipseB: '#C4A683',

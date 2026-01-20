@@ -49,7 +49,11 @@ export class NotificationTriggers {
           type: 'PARTNER_ANSWERED',
           categoryId: questionState.categoryId,
           questionId: questionState.questionId,
-          route: '/home/category-question',
+          question: question.question,
+          categoryName: questionState.categoryId,
+          partnerAnswer: questionState.answers[0].text,
+          expiresAt: questionState.expiryTimestamp?.toISOString(),
+          route: '/home/waiting-partner',
         },
       });
 

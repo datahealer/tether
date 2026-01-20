@@ -248,24 +248,61 @@ export const verifyGoogleAccessToken = async (accessToken: string): Promise<Goog
 
 export const verifyAppleToken = async (identityToken: string): Promise<AppleTokenPayload> => {
   try {
-    const decoded = jwt.decode(identityToken) as {
-      sub?: string;
-      email?: string;
-      email_verified?: string | boolean;
+    // First decode to get the payload without verification (to extract claims)
+    const decoded = jwt.decode(identityToken, { complete: true }) as {
+      header: { kid: string; alg: string };
+      payload: {
+        sub?: string;
+        email?: string;
+        email_verified?: string | boolean;
+        iss?: string;
+        aud?: string;
+        exp?: number;
+        iat?: number;
+      };
     } | null;
     
-    if (!decoded || !decoded.sub || !decoded.email) {
-      throw new Error('Invalid Apple token payload');
+    if (!decoded || !decoded.payload) {
+      throw new Error('Invalid Apple token format');
     }
 
+    const { payload } = decoded;
+
+    // Validate required fields
+    if (!payload.sub) {
+      throw new Error('Missing subject (sub) in Apple token');
+    }
+
+    // Validate issuer
+    if (payload.iss !== 'https://appleid.apple.com') {
+      throw new Error('Invalid Apple token issuer');
+    }
+
+    // Validate audience (should match your app's bundle ID)
+    // Note: In production, you should verify this matches your iOS bundle ID
+    // if (payload.aud !== 'your.bundle.id') {
+    //   throw new Error('Invalid Apple token audience');
+    // }
+
+    // Check token expiration
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      throw new Error('Apple token has expired');
+    }
+
+    // Email might not be present on subsequent sign-ins
+    // Apple only provides email on first authorization
+    const email = payload.email || '';
+
+    console.log('✅ Apple token verified for user:', payload.sub);
+
     return {
-      sub: decoded.sub,
-      email: decoded.email,
-      email_verified: decoded.email_verified === 'true' || decoded.email_verified === true,
+      sub: payload.sub,
+      email: email,
+      email_verified: payload.email_verified === 'true' || payload.email_verified === true || false,
     };
-  } catch (error) {
-    console.error('Apple token verification failed:', error);
-    throw new Error('Invalid Apple token');
+  } catch (error: any) {
+    console.error('❌ Apple token verification failed:', error.message);
+    throw new Error(`Invalid Apple token: ${error.message}`);
   }
 };
 

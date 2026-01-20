@@ -201,10 +201,13 @@ export default function PartnerInviteScreen() {
 
         {/* Continue Button */}
         <DebouncedButton
-          style={[styles.continueButton, connecting && styles.continueButtonDisabled]}
+          style={[
+            styles.continueButton,
+            (connecting || partnerCode.trim()) && styles.continueButtonDisabled,
+          ]}
           onPress={handleContinue}
           activeOpacity={0.8}
-          disabled={connecting}
+          disabled={connecting || partnerCode.trim().length > 0}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
         </DebouncedButton>

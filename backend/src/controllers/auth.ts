@@ -379,7 +379,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
  */
 export const appleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { identityToken, user: appleUserData, platform = 'ios' } = req.body;
+    const { identityToken, user: appleUserData, email: clientEmail, fullName, platform = 'ios' } = req.body;
 
     if (!identityToken) {
       res.status(400).json({ error: 'Identity token is required' });
@@ -388,11 +388,54 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
 
     const appleUser = await verifyAppleToken(identityToken);
 
+    // Apple only provides email on FIRST sign-in
+    // On subsequent sign-ins, we need to use the client-provided email or fetch from DB
+    const email = appleUser.email || clientEmail || '';
+
+    if (!email) {
+      // Try to find existing user by providerId
+      const existingUser = await User.findOne({ providerId: appleUser.sub, provider: Provider.APPLE });
+      if (existingUser) {
+        // User exists, use their stored email
+        const { accessToken, refreshToken } = generateTokenPair(existingUser._id.toString());
+        await existingUser.addRefreshToken(refreshToken);
+
+        console.log('🔑 Apple Login (Existing User) - Access Token:', accessToken);
+
+        res.status(200).json({
+          success: true,
+          accessToken,
+          refreshToken,
+          user: {
+            id: existingUser._id,
+            email: existingUser.email,
+            name: existingUser.name,
+            provider: existingUser.provider || 'apple',
+            avatar: existingUser.avatar,
+            onboarded: existingUser.onboarded,
+            subscribed: existingUser.subscribed,
+            coupleId: existingUser.coupleId,
+            onboardingData: existingUser.onboardingData,
+          },
+        });
+        return;
+      } else {
+        // New user but no email provided
+        res.status(400).json({ 
+          error: 'Email is required for first-time Apple sign-in',
+          code: 'APPLE_EMAIL_REQUIRED'
+        });
+        return;
+      }
+    }
+
     const userData = {
-      email: appleUser.email,
-      name: appleUserData?.fullName?.givenName 
-        ? `${appleUserData.fullName.givenName} ${appleUserData.fullName.familyName || ''}`.trim()
-        : appleUser.email.split('@')[0],
+      email: email,
+      name: fullName?.givenName 
+        ? `${fullName.givenName} ${fullName.familyName || ''}`.trim()
+        : appleUserData?.fullName?.givenName 
+          ? `${appleUserData.fullName.givenName} ${appleUserData.fullName.familyName || ''}`.trim()
+          : email.split('@')[0],
       provider: Provider.APPLE,
       providerId: appleUser.sub,
       platform,

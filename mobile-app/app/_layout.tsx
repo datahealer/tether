@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/auth_context';
 import { OnboardingProvider } from '@/context/onboarding_context';
 import { NotificationProvider } from '@/context/notification_context';
+import { TetherStatsProvider } from '@/context/tether_stats_context';
 import SplashScreenComponent from '../components/splash';
 import { NavigationHandler } from '../components/NavigationHandler';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -65,11 +66,12 @@ export default function RootLayout() {
     <AuthProvider>
       <OnboardingProvider>
         <NotificationProvider>
-          <NavigationHandler/>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="onboarding/welcome" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/account-creation" options={{ headerShown: false }} />
+          <TetherStatsProvider>
+            <NavigationHandler/>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="onboarding/welcome" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/account-creation" options={{ headerShown: false }} />
             
             <Stack.Screen name="onboarding/login" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding/settings/settings" options={{ headerShown: false }} />
@@ -103,6 +105,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding/partner-invite" options={{ headerShown: false }} />
             <Stack.Screen name="home/category-packs" options={{ headerShown: false }} />
             <Stack.Screen name="home/waiting-partner" options={{ headerShown: false }} />
+            <Stack.Screen name="home/waiting-for-partner-answer" options={{ headerShown: false }} />
             <Stack.Screen name="home/tether-history" options={{ headerShown: false }} />
             <Stack.Screen name="home/question-expired" options={{ headerShown: false }} />
             <Stack.Screen name="home/both-expired" options={{ headerShown: false }} />
@@ -117,6 +120,7 @@ export default function RootLayout() {
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
+        </TetherStatsProvider>
         </NotificationProvider>
       </OnboardingProvider>
     </AuthProvider>

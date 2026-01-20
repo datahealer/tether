@@ -745,15 +745,19 @@ static async updateCategoryAccessForTierChange(
       // Update couple stats and check for streak/milestone
       milestones = await this.updateCoupleStats(coupleId, questionState.expiryTimestamp!);
 
-      // BOTH ANSWERED: Immediately drop new tethers (UX optimization)
-      console.log('🎉 Both partners answered - immediately dropping new tethers');
-      try {
-        await this.dropTethersForCouple(coupleId, true); // force = true bypasses rhythm check
-        console.log('✅ New tethers dropped successfully');
-      } catch (dropError) {
-        console.error('⚠️ Failed to drop new tethers after completion:', dropError);
-        // Don't fail the whole request if tether drop fails
-      }
+      // 🚀 BOTH ANSWERED: Drop new tethers asynchronously (performance optimization)
+      // Run in background to avoid blocking the response to Partner B
+      console.log('🎉 Both partners answered - scheduling new tethers drop in background');
+      process.nextTick(async () => {
+        try {
+          console.log(`🔄 Dropping new questions for couple ${coupleId}...`);
+          await this.dropTethersForCouple(coupleId, true); // force = true bypasses rhythm check
+          console.log(`✅ New questions ready for couple ${coupleId}`);
+        } catch (dropError) {
+          console.error('❌ Failed to drop new tethers after completion:', dropError);
+          // Background task - log error but don't fail the original request
+        }
+      });
     } else {
       questionState.state = QuestionState.WAITING_FOR_PARTNER;
     }

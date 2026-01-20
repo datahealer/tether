@@ -37,6 +37,7 @@ export function NavigationHandler() {
 
   const isSettingsScreen = currentRoute.includes('/settings');
   const isHomeScreen = currentRoute.includes('/home/');
+  const isWaitingScreen = currentRoute.includes('/waiting-for-partner-answer') || currentRoute.includes('/waiting-partner') || currentRoute.includes('/waiting-for-partner');
 
   console.log('🔍 Navigation Check:', {
     user: user?.email,
@@ -70,7 +71,7 @@ export function NavigationHandler() {
         }
       } else if (!user.coupleId) {
         // Onboarded but no couple - go to waiting screen
-        if (currentRoute !== '/home/waiting-for-partner' && !isSettingsScreen) {
+        if (currentRoute !== '/home/waiting-for-partner' && !isSettingsScreen && !isWaitingScreen) {
           console.log('➡️ Redirecting to waiting-for-partner (no couple yet)');
           hasNavigated.current = true;
           router.replace('/home/waiting-for-partner');
@@ -84,7 +85,7 @@ export function NavigationHandler() {
           '/settings',
         ];
         
-        if (allowedFreeRoutes.some(route => currentRoute.startsWith(route)) || isSettingsScreen || isHomeScreen) {
+        if (allowedFreeRoutes.some(route => currentRoute.startsWith(route)) || isSettingsScreen || isHomeScreen || isWaitingScreen) {
           // User is on an allowed route, don't redirect
           return;
         }
@@ -100,14 +101,14 @@ export function NavigationHandler() {
             
             if (tethers && tethers.length > 0) {
               // User has active tethers - send to first-tether screen
-              if (currentRoute !== '/onboarding/first-tether' && !isSettingsScreen && !isHomeScreen) {
+              if (currentRoute !== '/onboarding/first-tether' && !isSettingsScreen && !isHomeScreen && !isWaitingScreen) {
                 console.log('➡️ Redirecting to first-tether (active tethers available)');
                 hasNavigated.current = true;
                 router.replace('/onboarding/first-tether');
               }
             } else {
               // No active tethers - send to subscription
-              if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
+              if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen && !isWaitingScreen) {
                 console.log('➡️ Redirecting to subscription (no active tethers)');
                 hasNavigated.current = true;
                 router.replace('/onboarding/subscription');
@@ -116,7 +117,7 @@ export function NavigationHandler() {
           } catch (error) {
             console.error('❌ Error checking active tethers:', error);
             // On error, default to subscription screen
-            if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen) {
+            if (currentRoute !== '/onboarding/subscription' && !isSettingsScreen && !isHomeScreen && !isWaitingScreen) {
               console.log('➡️ Redirecting to subscription (error checking tethers)');
               hasNavigated.current = true;
               router.replace('/onboarding/subscription');
@@ -140,7 +141,8 @@ export function NavigationHandler() {
         if (
           !inHome &&
           !allowedPostSubscription.some(route => currentRoute.startsWith(route)) &&
-          !isSettingsScreen
+          !isSettingsScreen &&
+          !isWaitingScreen
         ) {
           console.log('➡️ Redirecting fully ready user to category packs');
           hasNavigated.current = true;

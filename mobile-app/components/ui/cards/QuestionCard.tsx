@@ -19,6 +19,7 @@ interface QuestionCardProps {
   onDrawAnother: () => void;
   isSkipping: boolean;                    // ← Controlled by parent
   refreshesRemaining: number;             // ← For display only
+  disabled?: boolean;                     // ← Make card inactive when answered
 }
 
 export default function QuestionCard({
@@ -30,8 +31,9 @@ export default function QuestionCard({
   onDrawAnother,
   isSkipping,
   refreshesRemaining,
+  disabled = false,
 }: QuestionCardProps) {
-  const isDrawDisabled = isSkipping || refreshesRemaining <= 0;
+  const isDrawDisabled = isSkipping || refreshesRemaining <= 0 || disabled;
 
   return (
     <View style={styles.container}>
@@ -48,13 +50,14 @@ export default function QuestionCard({
 
       {/* Response Input */}
       <TextInput
-        style={styles.responseInput}
-        placeholder="Type your response..."
+        style={[styles.responseInput, disabled && styles.responseInputDisabled]}
+        placeholder={disabled ? "Waiting for partner..." : "Type your response..."}
         placeholderTextColor={Colors.inputText}
         value={response}
         onChangeText={onResponseChange}
         multiline
         textAlignVertical="top"
+        editable={!disabled}
       />
 
       {/* Draw Another Button */}
@@ -171,5 +174,9 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     textAlign: 'center',
+  },
+  responseInputDisabled: {
+    backgroundColor: Colors.inputFill,
+    opacity: 0.7,
   },
 });
