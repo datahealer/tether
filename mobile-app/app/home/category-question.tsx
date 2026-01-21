@@ -841,16 +841,24 @@ export default function CategoryQuestionScreen() {
           {alreadyAnswered ? (
             <DebouncedButton
               style={styles.continueButton}
-              onPress={() => router.replace({
-                pathname: '/home/waiting-for-partner-answer',
-                params: {
-                  questionId: currentQuestion?.questionId || '',
-                  categoryName: categoryTitle || currentQuestion?.categoryName || 'Deeper Connection',
-                  question: currentQuestion?.question || '',
+              onPress={() => {
+                console.log('🔄 Navigating to waiting screen with params:', {
+                  questionId: currentQuestion?.questionId,
+                  categoryName: categoryTitle || currentQuestion?.categoryName,
+                  question: currentQuestion?.question,
                   userAnswer: response,
-                  expiresAt: currentQuestion?.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                },
-              })}
+                });
+                router.replace({
+                  pathname: '/home/waiting-for-partner-answer',
+                  params: {
+                    questionId: currentQuestion?.questionId || '',
+                    categoryName: categoryTitle || currentQuestion?.categoryName || 'Deeper Connection',
+                    question: currentQuestion?.question || '',
+                    userAnswer: response,
+                    expiresAt: currentQuestion?.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  },
+                });
+              }}
               activeOpacity={0.9}
             >
               <Text style={styles.buttonText}>View Waiting Screen</Text>
