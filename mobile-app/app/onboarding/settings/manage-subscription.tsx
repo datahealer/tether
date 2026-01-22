@@ -46,46 +46,67 @@ export default function ManageSubscriptionScreen() {
     if (!user?.id) return;
 
     try {
-      // Initialize RevenueCat
-      await initializeRevenueCat(user.id);
-      const availablePackages = await getSubscriptionPackages();
-      setPackages(availablePackages);
-      setIsInitialized(true);
+      // Initialize RevenueCat with optimistic error handling
+      const initialized = await initializeRevenueCat(user.id);
+      
+      if (initialized) {
+        const availablePackages = await getSubscriptionPackages();
+        setPackages(availablePackages);
+        setIsInitialized(true);
+        console.log('✅ RevenueCat ready for manage-subscription');
+      } else {
+        console.warn('⚠️ RevenueCat not available - limited subscription management');
+        setIsInitialized(false);
+      }
 
-      // Load subscription status
+      // Always try to load subscription status from backend
       await loadSubscriptionStatus();
-    } catch (error) {
-      console.error('Failed to initialize:', error);
+    } catch (error: any) {
+      console.error('Failed to initialize:', error?.message || error);
+      setIsInitialized(false);
+      
+      // Still load backend status even if RevenueCat fails
+      try {
+        await loadSubscriptionStatus();
+      } catch (statusError) {
+        console.error('Failed to load subscription status:', statusError);
+      }
     }
   };
 
   const loadSubscriptionStatus = async () => {
     try {
-      // Check RevenueCat status
-      const rcStatus = await checkRevenueCatSubscription();
-      
-      if (rcStatus.isPremium) {
-        setCurrentSubscription({
-          isSubscribed: true,
-          planType: rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly',
-          expiresAt: rcStatus.expirationDate,
-          autoRenew: true,
-        });
+      // Check RevenueCat status first (if initialized)
+      if (isInitialized) {
+        const rcStatus = await checkRevenueCatSubscription();
         
-        setSelectedPlan(rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly');
-      } else {
-        // Fallback to backend status
-        const status = await getSubscriptionStatus();
-        setCurrentSubscription(status);
-        
-        if (status.isSubscribed && status.planType) {
-          setSelectedPlan(status.planType as PlanType);
-        } else {
-          setSelectedPlan('free');
+        if (rcStatus.isPremium && !rcStatus.error) {
+          setCurrentSubscription({
+            isSubscribed: true,
+            planType: rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly',
+            expiresAt: rcStatus.expirationDate,
+            autoRenew: true,
+          });
+          
+          setSelectedPlan(rcStatus.productId?.includes('yearly') ? 'yearly' : 'monthly');
+          return;
         }
       }
-    } catch (error) {
-      console.error('Failed to load subscription status:', error);
+      
+      // Fallback to backend status
+      const status = await getSubscriptionStatus();
+      setCurrentSubscription(status);
+      
+      if (status.isSubscribed && status.planType) {
+        setSelectedPlan(status.planType as PlanType);
+      } else {
+        setSelectedPlan('free');
+      }
+    } catch (error: any) {
+      console.error('Failed to load subscription status:', error?.message || error);
+      // Set safe defaults
+      setCurrentSubscription({ isSubscribed: false });
+      setSelectedPlan('free');
     }
   };
 
@@ -94,14 +115,13 @@ export default function ManageSubscriptionScreen() {
     setSelectedPlan(plan);
   };
 
-  const handleSaveChanges = async () => {
-    if (selectedPlan === currentSubscription?.planType) {
-      Alert.alert('Same Plan', 'You are already on this plan.');
-      return;
-    }
-
+  const handleChangePlan = async () => {
     if (!isInitialized && selectedPlan !== 'free') {
-      Alert.alert('Not Ready', 'Subscription service is still loading. Please wait...');
+      Alert.alert(
+        'RevenueCat Not Available', 
+        'In-app purchases are not currently available. Please try again later or contact support.',
+        [{ text: 'OK' }]
+      );
       return;
     }
 
@@ -166,14 +186,20 @@ export default function ManageSubscriptionScreen() {
               : identifier.includes('trial');
         });
 
-        if (!packageToPurchase && selectedPlan !== 'trial') {
-          throw new Error(`No ${selectedPlan} package available`);
-        }
-
         if (packageToPurchase) {
           console.log('📦 Changing plan to:', packageToPurchase.product.identifier);
           
           const result = await purchaseSubscription(packageToPurchase);
+          
+          // Handle optimistic error responses
+          if (result.error || !result.success) {
+            throw new Error(result.message || 'Failed to change subscription');
+          }
+          
+          if (result.cancelled) {
+            // User cancelled - exit silently
+            return;
+          }
           
           if (result.success && result.isPremium) {
             // Update user context
@@ -364,7 +390,7 @@ export default function ManageSubscriptionScreen() {
             styles.saveButton,
             isLoading && styles.saveButtonDisabled,
           ]}
-          onPress={handleSaveChanges}
+          onPress={handleChangePlan}
           activeOpacity={0.8}
           disabled={isLoading}
         >

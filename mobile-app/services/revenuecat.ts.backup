@@ -3,10 +3,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 /**
- * RevenueCat SDK Configuration with Optimistic Error Handling
- * 
- * This service wraps RevenueCat SDK calls with error handling to prevent app crashes
- * on physical devices when using test API keys or when network is unavailable.
+ * RevenueCat SDK Configuration
  * 
  * IMPORTANT: Get your PUBLIC API keys from RevenueCat Dashboard:
  * 1. Go to RevenueCat Dashboard → Your Project
@@ -31,13 +28,9 @@ const REVENUECAT_GOOGLE_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY 
  * Call this when user logs in or app starts
  * 
  * OPTIMISTIC ERROR HANDLING:
- * - Returns boolean (true = success, false = failure)
  * - Catches all errors gracefully
  * - Allows app to continue even if RevenueCat fails
  * - Works on physical devices with test API keys
- * 
- * @param userId - Unique identifier for the user
- * @returns Promise<boolean> - true if initialized successfully, false otherwise
  */
 export const initializeRevenueCat = async (userId: string): Promise<boolean> => {
   try {
@@ -49,17 +42,6 @@ export const initializeRevenueCat = async (userId: string): Promise<boolean> => 
       console.warn(
         `⚠️ RevenueCat ${Platform.OS === 'ios' ? 'Apple' : 'Google'} API key not configured. ` +
         `Subscription features will be limited.`
-      );
-      return false;
-    }
-
-    // Skip RevenueCat in production builds with test API keys
-    // RevenueCat forces app closure when test keys are used in release builds
-    if (!__DEV__ && apiKey.startsWith('test_')) {
-      console.warn(
-        `⚠️ Test API key detected in production build. ` +
-        `RevenueCat will be disabled to prevent app crashes. ` +
-        `Use production API keys for real subscriptions.`
       );
       return false;
     }
@@ -132,10 +114,6 @@ export const getOfferings = async (): Promise<PurchasesOffering | null> => {
     return null;
   } catch (error: any) {
     console.error('❌ Failed to get offerings:', error?.message || error);
-    return null;
-  }
-};
-
 /**
  * Check if user has active premium subscription
  * Checks both entitlements AND active subscriptions for maximum compatibility
@@ -192,20 +170,13 @@ export const checkSubscriptionStatus = async (): Promise<{
     // CRITICAL: Return safe default instead of throwing
     // This prevents app crashes on physical devices with test API
     return { 
-      isPremium: false, 
-      error: true 
-    };
-  }
-};
-
 /**
  * Purchase a subscription package
  * Checks both entitlements AND active subscriptions to determine premium status
  * 
  * OPTIMISTIC ERROR HANDLING:
- * - Returns structured response instead of throwing
- * - Differentiates between user cancellation and real errors
- * - Works with test API on physical devices
+ * - Provides clear error messages for debugging
+ * - Handles test API failures gracefully
  */
 export const purchasePackage = async (packageToPurchase: any) => {
   try {
@@ -243,18 +214,6 @@ export const purchasePackage = async (packageToPurchase: any) => {
         success: false,
         cancelled: true,
         message: 'Purchase cancelled',
-      };
-    }
-    
-    console.error('❌ Purchase failed:', error?.message || error);
-    return {
-      success: false,
-      error: true,
-      message: error?.message || 'Purchase failed',
-    };
-  }
-};
-
 /**
  * Restore previous purchases
  * Call this when user taps "Restore Purchases"
@@ -287,6 +246,8 @@ export const restorePurchases = async () => {
       message: error?.message || 'Failed to restore purchases',
     };
   }
+};  throw error;
+  }
 };
 
 /**
@@ -302,10 +263,6 @@ export const getCustomerInfo = async () => {
     return customerInfo;
   } catch (error: any) {
     console.error('❌ Failed to get customer info:', error?.message || error);
-    return null;
-  }
-};
-
 /**
  * Logout from RevenueCat (call when user logs out)
  * 
@@ -320,6 +277,34 @@ export const logoutRevenueCat = async (): Promise<void> => {
   } catch (error: any) {
     console.warn('⚠️ Failed to logout from RevenueCat:', error?.message || error);
     // Silently continue - logout should never fail
+  }
+};  console.error('❌ Failed to restore purchases:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get customer info (subscription details)
+ */
+export const getCustomerInfo = async () => {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    return customerInfo;
+  } catch (error) {
+    console.error('❌ Failed to get customer info:', error);
+    throw error;
+  }
+};
+
+/**
+ * Logout from RevenueCat (call when user logs out)
+ */
+export const logoutRevenueCat = async () => {
+  try {
+    await Purchases.logOut();
+    console.log('👋 Logged out from RevenueCat');
+  } catch (error) {
+    console.error('❌ Failed to logout from RevenueCat:', error);
   }
 };
 

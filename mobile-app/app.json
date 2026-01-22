@@ -15,7 +15,7 @@
       "androidCollapsedTitle": "#{unread_notifications} new notifications"
     },
     "splash": {
-      "image": "./assets/images/Splash.png",
+      "image": "./assets/images/SplashScreen.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5E6D3"
     },

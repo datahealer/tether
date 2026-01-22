@@ -373,7 +373,14 @@ export default function SubscriptionScreen() {
     
     try {
       console.log('Initializing RevenueCat...');
-      await initializeRevenueCat(user.id);
+      const initialized = await initializeRevenueCat(user.id);
+      
+      if (!initialized) {
+        console.warn('⚠️ RevenueCat initialization failed - using fallback mode');
+        setIsInitialized(false);
+        // Don't show error - allow trial flow to work
+        return;
+      }
       
       // Load available packages
       const availablePackages = await getSubscriptionPackages();
@@ -381,12 +388,12 @@ export default function SubscriptionScreen() {
       setIsInitialized(true);
       
       console.log('✅ RevenueCat initialized with', availablePackages.length, 'packages');
-    } catch (error) {
-      console.error('Failed to initialize RevenueCat:', error);
-      Alert.alert(
-        'Setup Error',
-        'Failed to load subscription options. Please try again later.'
-      );
+    } catch (error: any) {
+      console.error('Failed to initialize RevenueCat:', error?.message || error);
+      setIsInitialized(false);
+      
+      // Don't block the user - they can still use trial mode
+      console.log('ℹ️ Continuing without RevenueCat - trial mode available');
     }
   };
 
@@ -440,7 +447,20 @@ export default function SubscriptionScreen() {
     }
 
     if (!isInitialized) {
-      Alert.alert('Not Ready', 'Subscription service is still loading. Please wait...');
+      Alert.alert(
+        'RevenueCat Not Available',
+        'In-app purchases are not available right now. Would you like to start with a free trial instead?',
+        [
+          {
+            text: 'Start Trial',
+            onPress: handleStartTrial,
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
       return;
     }
 
@@ -452,9 +472,9 @@ export default function SubscriptionScreen() {
       
       // Find the corresponding package from RevenueCat
       const packageToPurchase = packages.find(pkg => {
-        const identifier = pkg.product.identifier;
-        return selectedPlan === 'yearly' 
-          ? identifier.includes('yearly') 
+        const identifier = pkg.product.identifier.toLowerCase();
+        return selectedPlan === 'yearly'
+          ? identifier.includes('annual') || identifier.includes('yearly')
           : identifier.includes('monthly');
       });
 
@@ -466,6 +486,16 @@ export default function SubscriptionScreen() {
       
       // Purchase through App Store/Play Store via RevenueCat SDK
       const result = await purchaseSubscription(packageToPurchase);
+      
+      // Handle error responses from optimistic error handling
+      if (result.error || !result.success) {
+        throw new Error(result.message || 'Purchase failed');
+      }
+      
+      if (result.cancelled) {
+        // User cancelled - exit silently
+        return;
+      }
       
       if (result.success && result.isPremium) {
         console.log('✅ Purchase successful!');

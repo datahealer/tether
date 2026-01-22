@@ -79,7 +79,7 @@ const handleContinue = async () => {
 };
 
   return (
-    <OnboardingLayout progress={0.42} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.07} showBackButton={true} showLogoutAvatar={true}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   inputContainer: {
     flexDirection: 'row',

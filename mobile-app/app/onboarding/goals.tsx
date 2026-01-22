@@ -244,7 +244,7 @@ export default function GoalsScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.75} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.42} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -295,9 +295,6 @@ export default function GoalsScreen() {
           })}
         </View>
 
-        {/* Spacer */}
-        <View style={{ flex: 1, minHeight: Spacing.xxl * 2 }} />
-
         {/* Continue Button */}
         <DebouncedButton
           style={[
@@ -331,6 +328,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'InterTight-Regular',
@@ -340,6 +338,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   optionsContainer: {
     gap: Spacing.md,

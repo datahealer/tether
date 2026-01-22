@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  ScrollView,
   Alert,
-  Share,
   ActivityIndicator,
+  TouchableOpacity,
+  Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,9 +24,8 @@ export default function PartnerInviteScreen() {
   const { onboardingData } = useOnboarding();
   const [inviteCode, setInviteCode] = useState('');
   const [partnerCode, setPartnerCode] = useState('');
-  const [partnerCodeFocused, setPartnerCodeFocused] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false); // New state for connection loading
+  const [connecting, setConnecting] = useState(false);
 
   const partnerName = onboardingData.partnerFirstName || 'Partner';
 
@@ -42,7 +41,6 @@ export default function PartnerInviteScreen() {
     } catch (error: any) {
       console.error('Error generating invite code:', error);
       Alert.alert('Error', error.message || 'Failed to generate invite code');
-      // Fallback to local code if API fails
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       setInviteCode(code);
     } finally {
@@ -63,7 +61,7 @@ export default function PartnerInviteScreen() {
       await acceptCoupleInvite(partnerCode.trim());
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success!', 'You are now connected with your partner!');
-      router.push('/onboarding/attribution');
+      router.replace('/onboarding/attribution');
     } catch (error: any) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to connect with partner');
@@ -93,15 +91,14 @@ export default function PartnerInviteScreen() {
     }
   };
 
-  const handleContinue = async () => {
+  const handleSkip = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/onboarding/attribution');
+    router.replace('/onboarding/attribution');
   };
 
-  // Show initial loading state
   if (loading) {
     return (
-      <OnboardingLayout progress={0.84} showBackButton={true} showLogoutAvatar={true}>
+      <OnboardingLayout showBackButton={true} showLogo={true}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.darkOrange} />
           <Text style={styles.loadingText}>Generating your invite code...</Text>
@@ -111,131 +108,87 @@ export default function PartnerInviteScreen() {
   }
 
   return (
-    <OnboardingLayout progress={0.84} showBackButton={true} showLogoutAvatar={true}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+    <OnboardingLayout showBackButton={true} showLogo={true}>
+      <View style={styles.container}>
         {/* Heading */}
         <Text style={styles.heading}>Tether yourselves together</Text>
 
         {/* Invite Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            I want to invite {partnerName}
-          </Text>
+        <Text style={styles.sectionLabel}>I want to invite {partnerName}</Text>
+        
+        <TouchableOpacity 
+          style={styles.codeBox} 
+          onPress={handleCopyCode}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.codeText}>{inviteCode}</Text>
+          <Ionicons name="copy-outline" size={24} color={Colors.darkOrange} />
+        </TouchableOpacity>
 
-          {/* Invite Code Display */}
-          <View style={styles.codeContainer}>
-            <Text style={styles.codeText}>{inviteCode}</Text>
-            <DebouncedButton onPress={handleCopyCode} style={styles.copyButton}>
-              <Ionicons name="copy-outline" size={20} color={Colors.inputText} />
-            </DebouncedButton>
-          </View>
-
-          {/* Share Button */}
-          <DebouncedButton
-            style={styles.shareButton}
-            onPress={handleShareCode}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.shareButtonText}>Share Your Tether Code</Text>
-          </DebouncedButton>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.divider} />
+        <DebouncedButton
+          style={styles.shareButton}
+          onPress={handleShareCode}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.shareButtonText}>Share Your Tether Code</Text>
+        </DebouncedButton>
 
         {/* Partner Code Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            I have a code from {partnerName}
-          </Text>
+        <Text style={styles.sectionLabel}>I have a code from {partnerName}</Text>
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Enter partner code"
+          placeholderTextColor={Colors.darkGrey}
+          value={partnerCode}
+          onChangeText={setPartnerCode}
+          autoCapitalize="characters"
+          maxLength={6}
+          editable={!connecting}
+        />
 
-          {/* Partner Code Input */}
-          <View
-            style={[
-              styles.inputContainer,
-              partnerCodeFocused && styles.inputFocused,
-            ]}
-          >
-            <TextInput
-              style={styles.input}
-              placeholder="Enter partner code"
-              placeholderTextColor={Colors.darkGrey}
-              value={partnerCode}
-              onChangeText={setPartnerCode}
-              autoCapitalize="characters"
-              maxLength={6}
-              onFocus={() => setPartnerCodeFocused(true)}
-              onBlur={() => setPartnerCodeFocused(false)}
-              editable={!connecting}
-            />
-          </View>
-
-          {/* Tether Together Button */}
-          <DebouncedButton
-            style={[
-              styles.tetherButton,
-              (!partnerCode.trim() || connecting) && styles.tetherButtonDisabled,
-            ]}
-            onPress={handleTetherTogether}
-            disabled={!partnerCode.trim() || connecting}
-            activeOpacity={0.8}
-          >
-            {connecting ? (
-              <View style={styles.buttonLoadingContainer}>
-                <ActivityIndicator size="small" color={Colors.inputText} />
-                <Text style={styles.tetherButtonText}>Connecting...</Text>
-              </View>
-            ) : (
-              <Text style={styles.tetherButtonText}>Tether Us Together</Text>
-            )}
-          </DebouncedButton>
-        </View>
-
-        {/* Spacer */}
-        <View style={{ flex: 1, minHeight: Spacing.xl }} />
-
-        {/* Continue Button */}
         <DebouncedButton
           style={[
-            styles.continueButton,
-            (connecting || partnerCode.trim()) && styles.continueButtonDisabled,
+            styles.tetherButton,
+            (!partnerCode.trim() || connecting) && styles.buttonDisabled,
           ]}
-          onPress={handleContinue}
+          onPress={handleTetherTogether}
+          disabled={!partnerCode.trim() || connecting}
           activeOpacity={0.8}
-          disabled={connecting || partnerCode.trim().length > 0}
         >
-          <Text style={styles.continueButtonText}>Continue</Text>
+          {connecting ? (
+            <ActivityIndicator size="small" color={Colors.inputText} />
+          ) : (
+            <Text style={styles.tetherButtonText}>Tether Us Together</Text>
+          )}
         </DebouncedButton>
-      </ScrollView>
+
+        {/* Skip Link */}
+        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+          <Text style={styles.skipText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
     </OnboardingLayout>
   );
 }
 
+
 const styles = StyleSheet.create({
-  scrollView: {
+  container: {
     flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    paddingBottom: Spacing.xl,
+    paddingTop: Spacing.md,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.md,
   },
   loadingText: {
     fontFamily: 'InterTight-Medium',
     fontSize: FontSizes.medium,
     fontWeight: FontWeights.medium,
     color: Colors.inputText,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
   },
   heading: {
     fontFamily: 'InterTight-SemiBold',
@@ -244,129 +197,89 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.black,
     marginBottom: Spacing.xl,
-    letterSpacing: 0,
+    textAlign: 'center',
   },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionTitle: {
-    fontFamily: 'InterTight-Medium',
-    fontSize: FontSizes.large,
-    lineHeight: 24,
-    fontWeight: FontWeights.medium,
+  sectionLabel: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.description,
+    fontWeight: FontWeights.regular,
     color: Colors.black,
-    marginBottom: Spacing.md,
-    letterSpacing: 0,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.lg,
   },
-  codeContainer: {
+  codeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.white,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.mediumGrey,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.darkOrange,
+    borderStyle: 'dashed',
     marginBottom: Spacing.md,
   },
   codeText: {
-    fontFamily: 'SFProDisplay-Semibold',
-    fontSize: 24,
-    lineHeight: 32,
+    fontFamily: 'SFProDisplay-Medium',
+    fontSize: 20,
     fontWeight: FontWeights.semibold,
     color: Colors.black,
-    letterSpacing: 2,
-  },
-  copyButton: {
-    padding: 8,
+    letterSpacing: 3,
   },
   shareButton: {
     backgroundColor: Colors.darkOrange,
     borderRadius: BorderRadius.xl,
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    marginBottom: Spacing.md,
   },
   shareButtonText: {
     fontFamily: 'InterTight-SemiBold',
     fontSize: FontSizes.buttonLarge,
-    lineHeight: 28,
     fontWeight: FontWeights.semibold,
     color: Colors.white,
-    letterSpacing: 0.45,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.mediumGrey,
-    marginVertical: Spacing.xl,
-  },
-  inputContainer: {
-    backgroundColor: Colors.inputFill,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  inputFocused: {
-    borderColor: Colors.lightOrange,
-    backgroundColor: Colors.white,
   },
   input: {
+    backgroundColor: Colors.white,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.mediumGrey,
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.input,
-    fontWeight: FontWeights.regular,
     color: Colors.inputText,
-    letterSpacing: 1,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+    letterSpacing: 2,
   },
   tetherButton: {
     backgroundColor: Colors.mediumGrey,
     borderRadius: BorderRadius.xl,
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: 'center',
-  },
-  tetherButtonDisabled: {
-    opacity: 0.5,
-  },
-  buttonLoadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   tetherButtonText: {
     fontFamily: 'InterTight-SemiBold',
     fontSize: FontSizes.buttonLarge,
-    lineHeight: 28,
     fontWeight: FontWeights.semibold,
     color: Colors.inputText,
-    letterSpacing: 0.45,
   },
-  continueButton: {
-    backgroundColor: Colors.darkOrange,
-    borderRadius: BorderRadius.xl,
-    paddingVertical: 18,
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  continueButtonDisabled: {
+  buttonDisabled: {
     opacity: 0.5,
   },
-  continueButtonText: {
-    fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.buttonLarge,
-    lineHeight: 28,
-    fontWeight: FontWeights.semibold,
-    color: Colors.white,
-    letterSpacing: 0.45,
+  skipButton: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.md,
+    marginTop: 'auto',
+  },
+  skipText: {
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: FontSizes.description,
+    fontWeight: FontWeights.regular,
+    color: Colors.black,
+    textDecorationLine: 'underline',
   },
 });
