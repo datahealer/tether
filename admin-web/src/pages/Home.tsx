@@ -5,6 +5,8 @@ import Stars from "../assets/home/stars.svg";
 import Applestore from "../assets/home/applestore.png";
 import Googlestore from "../assets/home/googleplay.png";
 import PhoneIcon from "../assets/home/phone-img.png";
+import FooterLogo from "../assets/home/footer-logo.png";
+import LeftFooter from "../assets/home/logo-column.png";
 export default function HeaderAndHero() {
   const categories = [
     { title: "More Fun Together", text: "Lighthearted questions to spark laughter and joy." },
@@ -326,171 +328,173 @@ export default function HeaderAndHero() {
     <div className="">
       {/* Question 1 - Closed */}
       <details className="group bg-white shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           What is Tether?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           Tether is an app designed for couples to answer thoughtful, intimate questions together — helping you stay emotionally connected even when life gets busy.
         </div>
       </details>
 
       {/* Question 2 - OPEN by default with orange highlight */}
       <details open className="group bg-[#FF7E3D]/10 rounded-xl shadow-lg border border-[#FF7E3D]/30 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-[#FF7E3D]">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold  bg-white text-[#FF7E3D]">
           How do Tether questions work?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-800 text-base leading-relaxed bg-white/60">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           Both partners answer the same question, separately. Answers stay hidden until you've both responded, so there's no pressure, no one going first, and no guessing what the other person meant. When both answers unlock, you see the full picture together.
         </div>
       </details>
 
       {/* Question 3 */}
       <details className="group bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           How often do we get questions?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           You set the rhythm — daily, every few days, or weekly. Questions appear gently in your notifications when you're both ready.
         </div>
       </details>
 
       {/* Question 4 */}
       <details className="group bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           Is Tether private?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           Yes — completely. Your answers are end-to-end encrypted and only visible to you and your partner. We never store or share them.
         </div>
       </details>
 
       {/* Question 5 */}
       <details className="group bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           Is Tether right for every kind of couple?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           It's built for couples at any stage — new relationships, long-term partners, or those rebuilding connection. Questions adapt to fun, deep, spicy, or healing moments.
         </div>
       </details>
 
       {/* Question 6 */}
       <details className="group bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           What do we get for free?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           Free users get access to two categories, a selection of questions, and the core "hidden until both answer" mechanic. Premium unlocks all categories and more frequent questions.
         </div>
       </details>
 
       {/* Question 7 */}
       <details className="group bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl font-semibold text-gray-900 hover:text-[#FF7E3D] transition">
+        <summary className="flex justify-between items-center cursor-pointer p-6 md:p-7 text-lg md:text-xl 
+border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3D] transition">
           Do both partners need to pay?
           <span className="text-[#FF7E3D] text-2xl group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="px-6 md:px-7 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed">
+        <div className="px-6 md:px-7 pt-6 pb-6 md:pb-7 text-gray-700 text-base leading-relaxed  bg-[#FF7E3D]">
           No — only one partner needs a premium subscription. The other can join for free and still participate fully in shared questions.
         </div>
       </details>
     </div>
 
-    {/* Optional CTA below FAQs */}
-    <div className="text-center mt-12 md:mt-16">
-      <button className="bg-[#FF7E3D] text-white font-semibold text-lg px-10 py-4 rounded-full shadow-lg hover:bg-[#e56a2f] transition transform hover:scale-105">
-        Start Pulling Each Other Closer Now
-      </button>
-    </div>
+
   </div>
 </section>
-<footer className="relative bg-gradient-to-b from-[#fff3eb] to-[#FF7E3D] pt-16 pb-12 px-5 sm:px-8 lg:px-12 text-center overflow-hidden">
-  {/* Decorative subtle wave or overlay if desired */}
-  <div className="absolute inset-0 opacity-10 pointer-events-none">
-    <div className="absolute bottom-0 left-0 w-full h-32 bg-white/20 blur-3xl" />
-  </div>
+<footer className="relative bg-gradient-to-b from-[#fff3eb] to-[#FF7E3D] pt-10 pb-12 px-5 sm:px-8 lg:px-12 overflow-hidden">
 
-  <div className="relative max-w-6xl mx-auto z-10">
-    {/* Main CTA Section */}
-    <div className="mb-16 md:mb-20">
-      <div className="flex justify-center items-center gap-3 mb-6">
-        <div className="text-5xl md:text-6xl font-bold text-[#FF7E3D]">
-          ♥
-        </div>
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-          Tether
-        </h2>
-      </div>
 
-      <h3 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900 mb-4">
-        Start pulling each other closer now
-      </h3>
 
-      <p className="text-lg md:text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-        Download the app today and begin answering premium questions for free.
-      </p>
+  <div className="relative max-w-6xl mx-auto z-10 text-center">
 
-      <button className="bg-white text-[#FF7E3D] font-semibold text-lg px-10 py-4 rounded-full shadow-lg border-2 border-[#FF7E3D] hover:bg-[#FF7E3D] hover:text-white transition transform hover:scale-105">
-        Download the App
-      </button>
+    {/* Logo */}
+    <div className="flex justify-center mb-6">
+      <img
+        src={FooterLogo}
+        alt="Tether"
+        className=""
+      />
     </div>
+              <h3 className="text-[#FF7E3D] font-bold text-3xl">Start pulling eachother closer now</h3>
+    {/* Subtext */}
+    <p className="text-lg md:text-xl text-gray-700 mb-8 mt-4  max-w-2xl mx-auto">
+      Download the app today and begin answering premium questions for free.
+    </p>
+
+    {/* CTA Button */}
+    <button className="!bg-[#F57123] text-white font-semibold text-lg px-10 py-3 rounded-full shadow-lg border-2 border-white hover:bg-[#FF7E3D] hover:text-white transition text-white transform hover:scale-105">
+      Download the App
+    </button>
 
     {/* Divider */}
-    <div className="h-px bg-gray-300/50 max-w-4xl mx-auto mb-12" />
+    <div className="h-px bg-white/40 max-w-4xl mx-auto my-14" />
 
-    {/* Footer Links Grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 md:gap-16 text-left sm:text-center">
-      {/* Site Links */}
+    {/* Footer Links */}
+    <div className="grid grid-cols-1 md:grid-cols-[40%_20%_20%_20%] gap-10 md:gap-12 text-center md:text-left">
+
+      {/* Brand Column */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Site</h4>
-        <ul className="space-y-3 text-gray-700">
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">Home</a></li>
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">About</a></li>
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">FAQs</a></li>
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">Download</a></li>
+        <img
+          src={LeftFooter}
+          alt="Tether"
+          className=""
+        />
+     
+      </div>
+
+      {/* Site */}
+      <div>
+        <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Site</h4>
+        <ul className="space-y-3 text-gray-800">
+          <li><a href="#" className="hover:text-white transition text-white">Home</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">About</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">FAQs</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">Download</a></li>
         </ul>
       </div>
 
-      {/* Support Links */}
+      {/* Support */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Support</h4>
-        <ul className="space-y-3 text-gray-700">
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">Contact Us</a></li>
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">Terms of Service</a></li>
-          <li><a href="#" className="hover:text-[#FF7E3D] transition">Privacy Policy</a></li>
+        <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Support</h4>
+        <ul className="space-y-3 text-gray-800">
+          <li><a href="#" className="hover:text-white transition text-white">Contact Us</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">Terms of Service</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">Privacy Policy</a></li>
         </ul>
       </div>
 
-      {/* Social Links */}
+      {/* Social */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Social</h4>
-        <ul className="space-y-3 text-gray-700">
-          <li>
-            <a href="#" className="flex items-center justify-center sm:justify-start gap-2 hover:text-[#FF7E3D] transition">
-              Instagram
-            </a>
-          </li>
-          <li>
-            <a href="#" className="flex items-center justify-center sm:justify-start gap-2 hover:text-[#FF7E3D] transition">
-              Facebook
-            </a>
-          </li>
+        <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Social</h4>
+        <ul className="space-y-3 text-gray-800">
+          <li><a href="#" className="hover:text-white transition text-white">Instagram</a></li>
+          <li><a href="#" className="hover:text-white transition text-white">Facebook</a></li>
         </ul>
       </div>
+
     </div>
 
-    {/* Optional small copyright */}
-    <div className="mt-12 text-sm text-gray-600">
+    {/* Copyright */}
+    <div className="mt-14 text-sm text-white">
       © {new Date().getFullYear()} Tether. All rights reserved.
     </div>
+
   </div>
 </footer>
+
       </div>
 
       <style>{`
