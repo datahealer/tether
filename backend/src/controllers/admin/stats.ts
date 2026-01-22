@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../../models/User';
 import Couple from '../../models/Couple';
 import Question from '../../models/Question';
-import Tether from '../../models/Tether';
+import { Tether } from '../../models/Tether';
 import { UserEntitlement } from '../../models/UserEntitlement';
 import { Tier } from '../../types/enums';
 

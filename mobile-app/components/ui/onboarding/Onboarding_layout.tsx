@@ -1096,7 +1096,7 @@ export default function OnboardingLayout({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.fullScreen}>
       <View style={styles.container}>
         <View style={styles.blobTopRight} />
         <View style={styles.blobBottomLeft} />
@@ -1116,7 +1116,9 @@ export default function OnboardingLayout({
             resizeMode="cover"
           />
         )}
+      </View>
 
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           {getLeftComponent()}
           {showLogo ? (
@@ -1142,19 +1144,26 @@ export default function OnboardingLayout({
         <View style={styles.content}>
           {children}
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  fullScreen: {
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  container: {
+  safeArea: {
     flex: 1,
-    position: 'relative',
+    zIndex: 10,
+  },
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     overflow: 'hidden',
   },
   blobTopRight: {
