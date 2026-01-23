@@ -27,7 +27,7 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
     console.error('Get notifications error:', error);
     res.status(500).json({ error: error.message || 'Failed to get notifications' });
   }
-};
+};  
 
 export const markAsRead = async (req: Request, res: Response): Promise<void> => {
   try {
