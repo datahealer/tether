@@ -35,7 +35,7 @@ export default function ConnectTethersScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.91} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.56} showBackButton={true} showLogoutAvatar={true}>
       <View style={styles.container}>
         {/* Heart Icon */}
         <View style={styles.iconContainer}>

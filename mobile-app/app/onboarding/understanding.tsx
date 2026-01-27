@@ -126,7 +126,7 @@ export default function UnderstandingScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.28} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout showBackButton={true} showLogoutAvatar={true}>
       <View style={styles.content}>
         {/* Heart Icon */}
         <View style={styles.iconContainer}>

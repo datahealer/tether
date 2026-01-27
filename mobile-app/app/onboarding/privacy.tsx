@@ -16,7 +16,11 @@ export default function PrivacyScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.28} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout 
+      showBackButton={true} 
+      showLogoutAvatar={false}
+      showTetherLine={true}
+    >
       <View style={styles.content}>
         {/* Heart Icon */}
         <View style={styles.iconContainer}>
@@ -69,18 +73,18 @@ const styles = StyleSheet.create({
     height: 80,
   },
   title: {
-    fontFamily: 'InterTight-Bold',
-    fontSize: FontSizes.heading,
-    lineHeight: 36,
-    fontWeight: FontWeights.bold,
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: 36,
+    lineHeight: 40,
+    fontWeight: FontWeights.semibold,
     textAlign: 'center',
     color: Colors.black,
     marginBottom: 20,
-    letterSpacing: 0,
+    letterSpacing: -0.72,
   },
   description: {
     fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.description,
+    fontSize: 16,
     lineHeight: 24,
     fontWeight: FontWeights.regular,
     textAlign: 'center',

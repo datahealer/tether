@@ -54,7 +54,7 @@ export default function LivingSituationScreen() {
   };
 
   return (
-    <OnboardingLayout progress={0.56} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.28} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.xl + Spacing.md,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   optionsContainer: {
     gap: Spacing.md,

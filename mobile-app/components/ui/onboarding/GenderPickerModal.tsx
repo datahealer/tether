@@ -20,7 +20,7 @@ interface GenderPickerModalProps {
 
 const { height } = Dimensions.get('window');
 
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-Binary'];
+const GENDER_OPTIONS = ['Male', 'Female', 'Prefer not to say'];
 
 export default function GenderPickerModal({
   visible,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   optionButtonSelected: {
     borderColor: Colors.darkOrange,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.veryLightOrange, // Faded orange background
   },
   optionText: {
     fontFamily: 'SFProDisplay-Regular',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     fontFamily: 'SFProDisplay-Semibold',
     fontWeight: FontWeights.semibold,
-    color: Colors.black,
+    color: Colors.darkOrange, // Bold orange text
   },
   saveButton: {
     backgroundColor: Colors.darkOrange,

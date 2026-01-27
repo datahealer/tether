@@ -50,7 +50,7 @@ export default function ChildrenScreen() {
 };
 
   return (
-    <OnboardingLayout progress={0.63} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.35} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -131,18 +131,20 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.medium,
-    lineHeight: 20,
+    fontFamily: 'SFProDisplay-Regular',
+    fontSize: 16,
+    lineHeight: 24,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   optionsContainer: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   optionButton: {
     flexDirection: 'row',

@@ -70,11 +70,11 @@ export function NavigationHandler() {
           router.replace('/onboarding/privacy');
         }
       } else if (!user.coupleId) {
-        // Onboarded but no couple - go to waiting screen
-        if (currentRoute !== '/home/waiting-for-partner' && !isSettingsScreen && !isWaitingScreen) {
-          console.log('➡️ Redirecting to waiting-for-partner (no couple yet)');
+        // Onboarded but no couple - go to partner invite screen
+        if (currentRoute !== '/onboarding/partner-invite' && !isSettingsScreen && !isWaitingScreen) {
+          console.log('➡️ Redirecting to partner-invite (no couple yet)');
           hasNavigated.current = true;
-          router.replace('/home/waiting-for-partner');
+          router.replace('/onboarding/partner-invite');
         }
       } else if (!user.subscribed) {
         // Onboarded + coupled but not subscribed

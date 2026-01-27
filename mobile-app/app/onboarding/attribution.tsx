@@ -97,7 +97,7 @@ export default function AttributionScreen() {
 
   return (
     <OnboardingLayout 
-      progress={0.95} 
+      progress={0.70} 
       showBackButton={true}
       rightAction={{
         icon: 'close',
@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'InterTight-Regular',
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   optionsContainer: {
     gap: Spacing.md,

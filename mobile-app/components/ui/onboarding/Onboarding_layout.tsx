@@ -1096,7 +1096,7 @@ export default function OnboardingLayout({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.fullScreen}>
       <View style={styles.container}>
         <View style={styles.blobTopRight} />
         <View style={styles.blobBottomLeft} />
@@ -1116,7 +1116,9 @@ export default function OnboardingLayout({
             resizeMode="cover"
           />
         )}
+      </View>
 
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           {getLeftComponent()}
           {showLogo ? (
@@ -1142,19 +1144,26 @@ export default function OnboardingLayout({
         <View style={styles.content}>
           {children}
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  fullScreen: {
     flex: 1,
     backgroundColor: Colors.cream,
   },
-  container: {
+  safeArea: {
     flex: 1,
-    position: 'relative',
+    zIndex: 10,
+  },
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     overflow: 'hidden',
   },
   blobTopRight: {
@@ -1193,25 +1202,32 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
     marginTop: Spacing.xxl,
     zIndex: 10,
+    position: 'relative',
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    position: 'absolute',
+    left: Spacing.md,
+    zIndex: 15,
   },
   heartLogoContainer: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    position: 'absolute',
+    left: Spacing.md,
+    zIndex: 15,
   },
   heartLogo: {
     width: 32,
@@ -1224,9 +1240,6 @@ const styles = StyleSheet.create({
   tetherLogo: {
     width: 81,
     height: 25,
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -40.5,
   },
   logoPlaceholder: {
     width: 81,
@@ -1234,16 +1247,16 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+    position: 'absolute',
+    right: Spacing.md,
   },
   progressSection: {
-    paddingHorizontal: Spacing.md,
     paddingTop: Spacing.sm,
     zIndex: 10,
   },
   progressContainer: {
     height: 4,
     backgroundColor: Colors.mediumGrey,
-    borderRadius: 2,
     overflow: 'hidden',
   },
   progressBar: {
@@ -1262,11 +1275,17 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-end',
+    position: 'absolute',
+    right: Spacing.md,
+    zIndex: 15,
   },
   rightButtonGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    position: 'absolute',
+    right: Spacing.md,
+    zIndex: 15,
   },
   chatIconButton: {
     width: 56,
@@ -1326,6 +1345,9 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'absolute',
+    right: Spacing.md,
+    zIndex: 15,
   },
   avatarCircle: {
     width: 32,

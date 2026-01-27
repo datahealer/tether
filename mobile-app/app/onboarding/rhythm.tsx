@@ -220,6 +220,7 @@ import NotificationPermissionModal from '../../components/ui/onboarding/Notifica
 import { useOnboarding } from '@/context/onboarding_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
+import { center } from '@shopify/react-native-skia';
 
 type RhythmOption = 'Every day' | 'A few times a week' | 'Once a week' | "We'll decide as we go";
 
@@ -269,7 +270,7 @@ export default function RhythmScreen() {
   const partnerName = onboardingData.partnerFirstName || 'Partner';
 
   return (
-    <OnboardingLayout progress={0.77} showBackButton={true} showLogoutAvatar={true}>
+    <OnboardingLayout progress={0.49} showBackButton={true} showLogoutAvatar={true}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -360,6 +361,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+     textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'InterTight-Regular',
@@ -369,6 +371,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+     textAlign: 'center',
   },
   optionsContainer: {
     gap: Spacing.md,

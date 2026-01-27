@@ -41,7 +41,7 @@ export default function RelationshipDurationScreen() {
     <OnboardingLayout 
       showBackButton={true} 
       showLogo={true}
-      // progress={2/8}
+      progress={0.21}
       showLogoutAvatar={true}
     >
       <ScrollView 
@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign: 'center',
   },
   optionsContainer: {
     gap: Spacing.sm,

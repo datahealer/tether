@@ -256,7 +256,7 @@ export default function FirstTetherScreen() {
   if (fetchingQuestion && !currentQuestion) {
     return (
       <OnboardingLayout 
-        progress={0.98} 
+        progress={0.77} 
         showBackButton={true}
         rightAction={{
           icon: 'close',
@@ -275,7 +275,7 @@ export default function FirstTetherScreen() {
   if (!currentQuestion) {
     return (
       <OnboardingLayout 
-        progress={0.98} 
+        progress={0.77} 
         showBackButton={true}
       >
         <View style={styles.errorContainer}>
@@ -304,7 +304,7 @@ export default function FirstTetherScreen() {
 
   return (
     <OnboardingLayout 
-    progress={0.98} 
+    progress={0.77} 
     showBackButton={true}
     rightAction={{
       icon: 'close',

@@ -44,7 +44,7 @@ export interface SubscriptionStatus {
 /**
  * Initialize RevenueCat when user logs in
  */
-export const initializeRevenueCat = async (userId: string): Promise<void> => {
+export const initializeRevenueCat = async (userId: string): Promise<boolean> => {
   return initRevenueCat(userId);
 };
 
@@ -170,14 +170,26 @@ export const purchaseSubscription = async (
   packageToPurchase: PurchasesPackage
 ): Promise<{
   success: boolean;
-  isPremium: boolean;
-  backendSynced: boolean;
+  isPremium?: boolean;
+  backendSynced?: boolean;
+  error?: boolean;
+  cancelled?: boolean;
+  message?: string;
 }> => {
   try {
     const result = await revenueCatPurchase(packageToPurchase);
     
+    // Handle optimistic error responses
+    if (result.error) {
+      return { success: false, error: true, message: result.message };
+    }
+    
+    if (result.cancelled) {
+      return { success: false, cancelled: true, message: result.message };
+    }
+    
     if (!result.success || !result.isPremium) {
-      return { ...result, backendSynced: false };
+      return { success: false, isPremium: false, backendSynced: false };
     }
     
     // Manually process purchase with backend (webhooks don't fire in test mode)
@@ -190,10 +202,10 @@ export const purchaseSubscription = async (
     // Verify backend has updated
     const backendSynced = await syncSubscriptionWithBackend(5, 1000);
     
-    return { ...result, backendSynced };
+    return { success: true, isPremium: true, backendSynced };
   } catch (error: any) {
     console.error('❌ Purchase error:', error);
-    throw error;
+    return { success: false, error: true, message: error?.message || 'Purchase failed' };
   }
 };
 
@@ -250,7 +262,9 @@ export const subscribeToPlan = async (
  */
 export const restoreSubscriptionPurchases = async (): Promise<{
   success: boolean;
-  isPremium: boolean;
+  isPremium?: boolean;
+  error?: boolean;
+  message?: string;
 }> => {
   try {
     const result = await revenueCatRestore();
@@ -259,9 +273,9 @@ export const restoreSubscriptionPurchases = async (): Promise<{
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Restore purchases error:', error);
-    throw error;
+    return { success: false, error: true, message: error?.message || 'Failed to restore purchases' };
   }
 };
 
@@ -272,12 +286,14 @@ export const checkRevenueCatSubscription = async (): Promise<{
   isPremium: boolean;
   expirationDate?: string;
   productId?: string;
+  error?: boolean;
 }> => {
   try {
     return await revenueCatCheckStatus();
   } catch (error) {
     console.error('❌ Check subscription error:', error);
-    throw error;
+    // Return safe default instead of throwing
+    return { isPremium: false, error: true };
   }
 };
 
