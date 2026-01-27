@@ -53,7 +53,7 @@ export class NotificationTriggers {
           categoryName: questionState.categoryId,
           partnerAnswer: questionState.answers[0].text,
           expiresAt: questionState.expiryTimestamp?.toISOString(),
-          route: '/home/waiting-partner',
+          route: '/onboarding/first-tether',
         },
       });
 
@@ -220,6 +220,41 @@ export class NotificationTriggers {
       console.log(`✅ Sent REACTION_ADDED notification: ${emoji}`);
     } catch (error) {
       console.error('❌ Error in onReactionAdded trigger:', error);
+    }
+  }
+
+  /**
+   * Triggered when a solo mode question expires (partner not linked)
+   * @param userId - The solo user's ID
+   * @param questionStateId - The question state ID that expired
+   */
+  static async onSoloQuestionExpired(
+    userId: mongoose.Types.ObjectId,
+    questionStateId: string
+  ): Promise<void> {
+    try {
+      const questionState = await CoupleQuestionState.findById(questionStateId);
+      if (!questionState) return;
+
+      const question = await Question.findOne({ questionId: questionState.questionId });
+      if (!question) return;
+
+      await notificationService.sendNotification({
+        userId: userId.toString(),
+        type: NotificationType.GENTLE_REMINDER,
+        title: '⏰ Question Expired - Partner Not Linked',
+        body: 'Your question expired because your partner hasn\'t joined yet. Invite them to complete tethers together!',
+        data: {
+          type: 'SOLO_QUESTION_EXPIRED',
+          questionId: questionState.questionId,
+          categoryId: question.categoryId,
+          route: '/onboarding/partner-invite',
+        },
+      });
+
+      console.log(`✅ Sent SOLO_QUESTION_EXPIRED notification to user ${userId}`);
+    } catch (error) {
+      console.error('❌ Error in onSoloQuestionExpired trigger:', error);
     }
   }
 }

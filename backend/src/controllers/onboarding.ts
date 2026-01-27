@@ -6,6 +6,7 @@ import { UserEntitlement } from '../models/UserEntitlement';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { Tier } from '../questionServiceEngine';
+import { VirtualPartnerService } from '../services/virtualPartner.service';
 
 /**
  * Generate a 6-digit invite code
@@ -38,7 +39,6 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
       livingType,
       hasChildren,
       goals,
-      emotionalNeeds,
       rhythm,
       tone,
       packPreferences,
@@ -55,7 +55,6 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<voi
     if (livingType) updateData['onboardingData.livingType'] = livingType;
     if (hasChildren !== undefined) updateData['onboardingData.hasChildren'] = hasChildren;
     if (goals) updateData['onboardingData.goals'] = goals;
-    if (emotionalNeeds) updateData['onboardingData.emotionalNeeds'] = emotionalNeeds;
     if (rhythm) updateData['onboardingData.rhythm'] = rhythm;
     if (tone) updateData['onboardingData.tone'] = tone;
     if (packPreferences) updateData['onboardingData.packPreferences'] = packPreferences;
@@ -110,6 +109,41 @@ export const completeOnboarding = async (req: Request, res: Response): Promise<v
 
     user.onboarded = true;
     await user.save();
+
+    // 🆕 SOLO MODE: If user has no coupleId, create a solo couple with virtual partner
+    if (!user.coupleId) {
+      console.log('🚪 Creating solo couple for user without partner');
+      const rhythm = user.onboardingData?.rhythm;
+      const soloCouple = await VirtualPartnerService.createSoloCouple(
+        new mongoose.Types.ObjectId(userId),
+        rhythm
+      );
+
+      // Drop initial tethers for solo user
+      const { QuestionServiceEngine } = await import('../services/questionService');
+      await QuestionServiceEngine.initializeCategoriesForCouple(soloCouple._id);
+      await QuestionServiceEngine.dropTethersForCouple(soloCouple._id, true);
+
+      // Refresh user data to include coupleId
+      const updatedUser = await User.findById(userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Onboarding completed (solo mode)',
+        isSoloMode: true,
+        user: {
+          id: updatedUser!._id,
+          email: updatedUser!.email,
+          name: updatedUser!.name,
+          onboarded: updatedUser!.onboarded,
+          subscribed: updatedUser!.subscribed,
+          coupleId: updatedUser!.coupleId,
+          onboardingData: updatedUser!.onboardingData,
+          isSoloMode: true,
+        },
+      });
+      return;
+    }
 
     res.status(200).json({
       success: true,
@@ -245,6 +279,134 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
     if (!inviter || !accepter) {
       res.status(404).json({ error: 'User not found' });
       return;
+    }
+
+    // 🆕 SOLO MODE: Check if inviter is in solo mode and upgrade to real couple
+    if (inviter.coupleId && !accepter.coupleId) {
+      const inviterCouple = await Couple.findById(inviter.coupleId);
+      
+      if (inviterCouple?.isSoloMode) {
+        console.log('🔄 Upgrading solo couple to real couple');
+        
+        // Upgrade solo couple to real couple
+        const upgradedCouple = await VirtualPartnerService.upgradeSoloCouple(
+          new mongoose.Types.ObjectId(invite.inviterId.toString()),
+          new mongoose.Types.ObjectId(userId)
+        );
+
+        // Initialize categories and drop tethers
+        const { QuestionServiceEngine } = await import('../services/questionService');
+        await QuestionServiceEngine.initializeCategoriesForCouple(upgradedCouple._id);
+        await QuestionServiceEngine.dropTethersForCouple(upgradedCouple._id, true);
+
+        // Mark invite as accepted
+        invite.status = 'accepted';
+        invite.acceptedById = new mongoose.Types.ObjectId(userId);
+        invite.acceptedAt = new Date();
+        await invite.save();
+
+        // Send couple creation notifications
+        try {
+          const { NotificationTriggers } = await import('../services/notification/triggers');
+          await NotificationTriggers.onCoupleCreated(upgradedCouple._id.toString());
+        } catch (notifError) {
+          console.error('Error sending notifications:', notifError);
+        }
+
+        // Refresh user data
+        const [updatedInviter, updatedAccepter] = await Promise.all([
+          User.findById(invite.inviterId),
+          User.findById(userId),
+        ]);
+
+        res.status(200).json({
+          success: true,
+          message: 'Partner connected! Solo mode ended.',
+          upgradedFromSolo: true,
+          couple: {
+            _id: upgradedCouple._id,
+            id: upgradedCouple._id,
+            partner1Id: updatedInviter!._id,
+            partner2Id: updatedAccepter!._id,
+            user1: {
+              id: updatedInviter!._id,
+              name: updatedInviter!.name,
+              avatar: updatedInviter!.avatar,
+            },
+            user2: {
+              id: updatedAccepter!._id,
+              name: updatedAccepter!.name,
+              avatar: updatedAccepter!.avatar,
+            },
+          },
+          user: {
+            id: updatedAccepter!._id,
+            email: updatedAccepter!.email,
+            name: updatedAccepter!.name,
+            coupleId: upgradedCouple._id,
+            onboarded: updatedAccepter!.onboarded,
+            subscribed: updatedAccepter!.subscribed,
+            linkedToRealPartner: true,
+          },
+        });
+        return;
+      }
+    }
+
+    // 🆕 SOLO MODE: Check if both users are in solo mode - merge couples
+    if (inviter.coupleId && accepter.coupleId) {
+      const [inviterCouple, accepterCouple] = await Promise.all([
+        Couple.findById(inviter.coupleId),
+        Couple.findById(accepter.coupleId),
+      ]);
+
+      if (inviterCouple?.isSoloMode && accepterCouple?.isSoloMode) {
+        console.log('🔀 Both users in solo mode - merging couples');
+        
+        const mergedCouple = await VirtualPartnerService.mergeSoloCouples(
+          new mongoose.Types.ObjectId(invite.inviterId.toString()),
+          new mongoose.Types.ObjectId(userId)
+        );
+
+        // Mark invite as accepted
+        invite.status = 'accepted';
+        invite.acceptedById = new mongoose.Types.ObjectId(userId);
+        invite.acceptedAt = new Date();
+        await invite.save();
+
+        // Send notifications
+        try {
+          const { NotificationTriggers } = await import('../services/notification/triggers');
+          await NotificationTriggers.onCoupleCreated(mergedCouple._id.toString());
+        } catch (notifError) {
+          console.error('Error sending notifications:', notifError);
+        }
+
+        const [updatedInviter, updatedAccepter] = await Promise.all([
+          User.findById(invite.inviterId),
+          User.findById(userId),
+        ]);
+
+        res.status(200).json({
+          success: true,
+          message: 'Solo couples merged successfully!',
+          mergedFromSolo: true,
+          couple: {
+            _id: mergedCouple._id,
+            id: mergedCouple._id,
+            partner1Id: updatedInviter!._id,
+            partner2Id: updatedAccepter!._id,
+          },
+          user: {
+            id: updatedAccepter!._id,
+            email: updatedAccepter!.email,
+            name: updatedAccepter!.name,
+            coupleId: mergedCouple._id,
+            linkedToRealPartner: true,
+          },
+        });
+        return;
+      }
     }
 
     if (inviter.coupleId || accepter.coupleId) {

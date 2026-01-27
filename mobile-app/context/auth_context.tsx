@@ -301,7 +301,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
           refreshToken: tokens.refreshToken,
         };
         
-        console.log('✅ Loaded user:', loadedUser.email);
+        console.log('✅ Loaded user:', {
+          email: loadedUser.email,
+          coupleId: loadedUser.coupleId,
+          isSoloMode: loadedUser.isSoloMode,
+          linkedToRealPartner: loadedUser.linkedToRealPartner,
+        });
         setUser(loadedUser);
 
         // Re-initialize push notifications on app restart
@@ -336,12 +341,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         return false;
       }
 
+      // Small delay to ensure AsyncStorage write in refreshAccessToken completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Reload user data from storage (now includes updated coupleId)
       const storedUser = await AsyncStorage.getItem('user');
       if (storedUser) {
         const userData = JSON.parse(storedUser);
-        setUser({ ...userData, token: newToken });
-        console.log('✅ Session refreshed with coupleId:', userData.coupleId);
+        const tokens = await getStoredTokens();
+        const updatedUser = {
+          ...userData,
+          token: tokens?.accessToken || newToken,
+          refreshToken: tokens?.refreshToken || userData.refreshToken,
+        };
+        setUser(updatedUser);
+        console.log('✅ Session refreshed:', {
+          email: updatedUser.email,
+          coupleId: updatedUser.coupleId,
+          isSoloMode: updatedUser.isSoloMode,
+          linkedToRealPartner: updatedUser.linkedToRealPartner,
+        });
       } else {
         setUser(prev => prev ? { ...prev, token: newToken } : null);
       }
@@ -408,8 +427,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
         onboardingData: data.user.onboardingData,
-        coupleId: undefined
+        coupleId: data.user.coupleId,
+        isSoloMode: data.user.isSoloMode,
+        linkedToRealPartner: data.user.linkedToRealPartner,
       };
+      
+      console.log('✅ Signup complete - User data:', {
+        email: userData.email,
+        coupleId: userData.coupleId,
+        isSoloMode: userData.isSoloMode,
+        linkedToRealPartner: userData.linkedToRealPartner,
+      });
       
       await signIn(userData);
     } catch (error) {
@@ -446,8 +474,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         onboarded: data.user.onboarded,
         subscribed: data.user.subscribed,
         onboardingData: data.user.onboardingData,
-        coupleId: undefined
+        coupleId: data.user.coupleId,
+        isSoloMode: data.user.isSoloMode,
+        linkedToRealPartner: data.user.linkedToRealPartner,
       };
+      
+      console.log('✅ Login complete - User data:', {
+        email: userData.email,
+        coupleId: userData.coupleId,
+        isSoloMode: userData.isSoloMode,
+        linkedToRealPartner: userData.linkedToRealPartner,
+      });
       
       await signIn(userData);
     } catch (error) {

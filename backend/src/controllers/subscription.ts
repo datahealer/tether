@@ -426,59 +426,88 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
     subscription.cancelledAt = new Date();
     
     if (isTrial) {
-      // TRIAL CANCELLATION: Immediate effect - downgrade to FREE tier
+      // TRIAL CANCELLATION: Immediate effect - check partner's subscription first
       subscription.status = 'cancelled';
       subscription.expiresAt = new Date(); // Expire immediately
       console.log(`🚫 Trial cancelled immediately for user: ${user.email}`);
 
-      // Get partner IDs if user is in a couple
+      // 🔄 ONE PLAN PER COUPLE: Get partner IDs and check their subscriptions
       let partnerIds = [user._id];
+      let newTier = Tier.FREE;
+      
       if (user.coupleId) {
         const couple = await Couple.findById(user.coupleId).select('user1Id user2Id').lean();
         if (couple) {
           partnerIds = [couple.user1Id, couple.user2Id];
+          const partnerId = partnerIds.find(id => id.toString() !== user._id.toString());
+          
+          if (partnerId) {
+            // Check if partner has active subscription
+            const partnerSubscription = await Purchase.findOne({
+              userId: partnerId,
+              status: 'active',
+              expiresAt: { $gt: new Date() },
+            });
+            
+            if (partnerSubscription) {
+              // Partner has subscription - couple stays on that tier
+              const planType = partnerSubscription.planType;
+              newTier = planType === 'trial' ? Tier.TRIAL : Tier.PREMIUM;
+              console.log(`✅ Partner has active ${planType} - couple remains on ${newTier} tier`);
+            } else {
+              console.log('⬇️ Partner also has no subscription - couple downgrading to FREE');
+            }
+          }
         }
       }
 
-      // Downgrade both partners to FREE tier
+      // Update tier for all partners based on highest tier available
       await Promise.all(
         partnerIds.map(async (partnerId) => {
+          const isCancellingUser = partnerId.toString() === user._id.toString();
           const entitlement = await UserEntitlement.findOne({ userId: partnerId });
+          
           if (entitlement) {
-            entitlement.tier = Tier.FREE;
-            entitlement.refreshesDefault = 1; // Free tier: 1 refresh
-            entitlement.trialEnd = new Date(); // Mark trial as ended
+            entitlement.tier = newTier;
+            if (newTier === Tier.FREE) {
+              entitlement.refreshesDefault = 1;
+              entitlement.trialEnd = new Date();
+            }
             await entitlement.save();
-            console.log(`⬇️  Downgraded user ${partnerId} to FREE tier`);
+            console.log(`${isCancellingUser ? '🚫 Cancelling user' : '👥 Partner'} tier set to ${newTier}:`, partnerId);
           }
         })
       );
 
-      // Update User.subscribed flag for both partners
-      await Promise.all(
-        partnerIds.map(partnerId => 
-          User.findByIdAndUpdate(partnerId, { subscribed: false })
-            .then(() => console.log(`✅ Set subscribed=false for user ${partnerId}`))
-        )
-      );
+      // Update User.subscribed flag (only set to false if going to FREE tier)
+      if (newTier === Tier.FREE) {
+        await Promise.all(
+          partnerIds.map(partnerId => 
+            User.findByIdAndUpdate(partnerId, { subscribed: false })
+              .then(() => console.log(`✅ Set subscribed=false for user ${partnerId}`))
+          )
+        );
+      }
 
-      // 🔒 LOCK CATEGORIES - return to free tier access
+      // 🔒 Update category access based on new tier
       if (user.coupleId) {
         await QuestionServiceEngine.updateCategoryAccessForTierChange(
           user.coupleId,
-          Tier.FREE
+          newTier
         );
-        console.log('🔒 Locked categories - returned to FREE tier access');
+        console.log(`🔒 Category access updated to ${newTier} tier`);
       }
 
       await subscription.save();
 
       res.status(200).json({
         success: true,
-        message: 'Trial cancelled. You have been returned to the Free experience.',
+        message: newTier === Tier.FREE 
+          ? 'Trial cancelled. You have been returned to the Free experience.'
+          : `Trial cancelled. Your partner's subscription keeps you both on ${newTier} tier.`,
         subscription: {
-          isSubscribed: false,
-          planType: 'free',
+          isSubscribed: newTier !== Tier.FREE,
+          planType: newTier === Tier.FREE ? 'free' : newTier === Tier.TRIAL ? 'trial' : 'premium',
           expiresAt: new Date(),
           autoRenew: false,
         },

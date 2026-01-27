@@ -172,7 +172,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     if (entitlement) {
       if (entitlement.tier === Tier.PREMIUM) {
         const hasLifetime = activePurchases.some(
-          p => new Date(p.expiresAt) > new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000)
+          p => p.expiresAt && new Date(p.expiresAt) > new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000)
         );
         subscriptionState = hasLifetime ? 'lifetime' : 'premium';
       } else if (entitlement.tier === Tier.TRIAL) {
@@ -249,7 +249,7 @@ export const grantPremium = async (req: Request, res: Response): Promise<void> =
         userId: user._id,
         tier: Tier.PREMIUM,
         premiumEnd: expiresAt,
-        refreshesDefault: 999, // Premium gets unlimited refreshes
+        refreshesDefault: 3, // Premium gets 3 refreshes per cycle
       },
       { upsert: true, new: true }
     );

@@ -29,7 +29,7 @@ type AttributionSource =
 export default function AttributionScreen() {
   const router = useRouter();
   const { updateField, submitOnboarding } = useOnboarding();
-  const { refreshSession } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [selectedSource, setSelectedSource] = useState<AttributionSource | null>(null);
   const [otherText, setOtherText] = useState('');
   const [otherTextFocused, setOtherTextFocused] = useState(false);
@@ -65,27 +65,38 @@ export default function AttributionScreen() {
     setLoading(true);
 
     try {
-      // Save attribution data to context (will be included in submission)
+      // Attribution tracking (optional - can be sent to analytics)
       const attributionValue = selectedSource === 'Other' ? otherText : selectedSource;
-      updateField('emotionalNeeds', [
-        ...([] as string[]),
-        JSON.stringify({ attribution: attributionValue })
-      ]);
+      console.log('📊 Attribution:', attributionValue);
 
-      console.log('✅ Attribution saved, submitting all onboarding data...');
+      console.log('✅ Submitting all onboarding data...');
       
       // Submit all onboarding data + complete onboarding
       // This calls updateOnboardingData() AND completeOnboarding()
       await submitOnboarding();
       
-      // Refresh user session to get updated onboarded flag
-      await refreshSession();
+      // Refresh user session to get updated onboarded flag and coupleId
+      const refreshed = await refreshSession();
       
       console.log('✅ Onboarding completed! User is now onboarded with all data saved.');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      // Navigate to waiting screen
-      router.push('/home/waiting-for-partner');
+      // Wait a moment for session to fully refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate based on couple status (check refreshed session data)
+      // Note: refreshSession updates the auth context, so we need to check the latest state
+      if (refreshed) {
+        // User object will be updated via auth context
+        // Solo mode users will have coupleId (virtual partner)
+        // Navigate to first-tether to let them start answering questions
+        console.log('✅ User onboarded successfully, navigating to first-tether');
+        router.replace('/onboarding/first-tether');
+      } else {
+        // Fallback: if refresh failed, go to partner-invite
+        console.log('⚠️ Session refresh failed, navigating to partner-invite');
+        router.replace('/onboarding/partner-invite');
+      }
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

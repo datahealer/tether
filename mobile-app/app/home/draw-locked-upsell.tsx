@@ -3,9 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
- 
   ScrollView,
-  Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../the
 import { useTetherStats } from '@/hooks/useTetherStats';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
+import { purchaseRefreshBundle } from '@/services/revenuecat';
 
 interface PricingOption {
   id: string;
@@ -45,6 +46,7 @@ const pricingOptions: PricingOption[] = [
 export default function DrawLockedUpsellScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string>('6');
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const tetherStats = useTetherStats();
   const { push: debouncedPush} = useNavigationDebounce();
 
@@ -54,11 +56,51 @@ export default function DrawLockedUpsellScreen() {
   };
 
   const handlePurchase = async () => {
+    if (isPurchasing) return;
+    
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    // TODO: Implement actual payment processing
-    console.log('Purchase option:', selectedOption);
-    // For now, just go back
-    router.back();
+    setIsPurchasing(true);
+    
+    try {
+      const refreshCount = parseInt(selectedOption) as 3 | 6 | 10;
+      console.log('💳 Starting purchase for', refreshCount, 'refreshes');
+      
+      const result = await purchaseRefreshBundle(refreshCount);
+      
+      if (result.success) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Purchase Successful! 🎉',
+          `You now have ${refreshCount} additional permanent refreshes! These never expire and are shared with your partner.`,
+          [
+            {
+              text: 'Start Using Them!',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      } else if (result.cancelled) {
+        console.log('ℹ️ User cancelled purchase');
+        // No alert needed for cancellation
+      } else {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert(
+          'Purchase Failed',
+          result.message || 'Something went wrong. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.error('❌ Purchase error:', error);
+      Alert.alert(
+        'Purchase Error',
+        error.message || 'Failed to process purchase. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsPurchasing(false);
+    }
   };
 
   return (
@@ -150,13 +192,21 @@ export default function DrawLockedUpsellScreen() {
       {/* Fixed Bottom Button */}
       <View style={styles.bottomContainer}>
         <DebouncedButton
-          style={styles.purchaseButton}
+          style={[styles.purchaseButton, isPurchasing && styles.purchaseButtonDisabled]}
           onPress={handlePurchase}
+          disabled={isPurchasing}
           activeOpacity={0.9}
         >
-          <Text style={styles.purchaseButtonText}>
-            Unlock More Questions
-          </Text>
+          {isPurchasing ? (
+            <View style={styles.purchaseButtonContent}>
+              <ActivityIndicator size="small" color={Colors.white} />
+              <Text style={styles.purchaseButtonText}>Processing...</Text>
+            </View>
+          ) : (
+            <Text style={styles.purchaseButtonText}>
+              Unlock More Questions
+            </Text>
+          )}
         </DebouncedButton>
       </View>
     </OnboardingLayout>
@@ -334,6 +384,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
+  },
+  purchaseButtonDisabled: {
+    backgroundColor: Colors.mediumGrey,
+    shadowOpacity: 0.1,
+  },
+  purchaseButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   purchaseButtonText: {
     fontFamily: 'InterTight-Bold',

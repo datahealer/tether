@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { QuestionServiceEngine } from '../services/questionService';
+import { TetherDropService } from '../services/tetherDropService';
 import { CategoryId, QuestionState } from '../types/enums';
 import { UserEntitlement } from '../models/UserEntitlement';
 import Couple from '../models/Couple';
@@ -8,6 +9,7 @@ import User from '../models/User';
 import { Category } from '../models/Category';
 import { NotificationTriggers } from '../services/notification/triggers';
 import { CoupleQuestionState } from '../models/CoupleQuestionState';
+import { Tether } from '../models/Tether';
 
 /**
  * Get active tethers for the logged-in user's couple
@@ -479,6 +481,8 @@ export const getCoupleStats = async (req: Request, res: Response) => {
         totalTethersCompleted: 0,
         milestoneRecords: [],
         permanentRefreshBalance: 0,
+        refreshesUsedThisCycle: 0,
+        lastRefreshCycleReset: new Date(),
       };
       await couple.save();
       console.log('⚠️ Initialized missing sharedData for couple:', couple._id);
@@ -670,5 +674,256 @@ export const addReaction = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error adding reaction:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to add reaction' });
+  }
+};
+
+/**
+ * NEW: Get active tethers using new TetherDropService
+ * Returns live tethers from current cycle with refresh pool info
+ */
+export const getActiveTethersV2 = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId).select('coupleId').lean();
+    if (!user?.coupleId) {
+      return res.status(404).json({ message: 'Not in a couple' });
+    }
+
+    // ✅ Use QuestionServiceEngine instead of TetherDropService for CoupleQuestionState-based tethers
+    const { QuestionServiceEngine } = await import('../services/questionService');
+    const result = await QuestionServiceEngine.getActiveTethers(user.coupleId, userId);
+
+    // Get couple stats
+    const couple = await Couple.findById(user.coupleId)
+      .select('sharedData.currentStreak sharedData.totalTethersCompleted rhythm lastTetherDrop')
+      .lean();
+
+    res.json({
+      success: true,
+      tethers: result.tethers,
+      refreshes: result.refreshes,
+      stats: {
+        totalAnswered: couple?.sharedData?.totalTethersCompleted || 0,
+        currentStreak: couple?.sharedData?.currentStreak || 0,
+        rhythm: couple?.rhythm,
+        lastTetherDrop: couple?.lastTetherDrop?.toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('[TetherController] Error getting active tethers:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to get active tethers' });
+  }
+};
+
+/**
+ * NEW: Submit answer using TetherDropService
+ * Handles first-answer locking automatically
+ */
+// export const submitAnswerV2 = async (req: Request, res: Response) => {
+//   try {
+//     const userId = req.user?._id;
+//     const { tetherId, answer } = req.body;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: 'Unauthorized' });
+//     }
+
+//     if (!tetherId || !answer) {
+//       return res.status(400).json({ message: 'tetherId and answer required' });
+//     }
+
+//     const user = await User.findById(userId).select('coupleId').lean();
+//     if (!user?.coupleId) {
+//       return res.status(404).json({ message: 'Not in a couple' });
+//     }
+
+//     const tetherObjectId = new mongoose.Types.ObjectId(tetherId);
+//     const tether = await Tether.findById(tetherObjectId);
+//     if (!tether) {
+//       return res.status(404).json({ message: 'Tether not found' });
+//     }
+
+//     // Check if this is first or second answer
+//     const isFirstAnswer = tether.answers.length === 0;
+//     let result: any;
+
+//     if (isFirstAnswer) {
+//       await TetherDropService.handleFirstAnswer(tetherObjectId, userId, answer);
+//       result = { state: 'waiting_for_partner' };
+//     } else {
+//       result = await TetherDropService.handleSecondAnswer(tetherObjectId, userId, answer);
+//     }
+
+//     // Get updated tether
+//     const updatedTether = await Tether.findById(tetherObjectId);
+
+//     res.json({
+//       success: true,
+//       state: updatedTether?.status,
+//       tether: updatedTether,
+//       ...result,
+//     });
+//   } catch (error: any) {
+//     console.error('[TetherController] Error submitting answer:', error);
+//     res.status(500).json({ success: false, message: error.message || 'Failed to submit answer' });
+//   }
+// };
+export const submitAnswerV2 = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    const { questionId, answer } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!questionId || !answer) {
+      return res.status(400).json({ message: 'questionId and answer required' });
+    }
+
+    const user = await User.findById(userId).select('coupleId').lean();
+    if (!user?.coupleId) {
+      return res.status(404).json({ message: 'Not in a couple' });
+    }
+
+    // ✅ Use QuestionServiceEngine to submit answer (uses CoupleQuestionState)
+    const { QuestionServiceEngine } = await import('../services/questionService');
+    const result = await QuestionServiceEngine.submitAnswer(
+      user.coupleId,
+      userId,
+      questionId,
+      answer
+    );
+
+    // Fire notification if needed
+    try {
+      const { NotificationTriggers } = await import('../services/notification/triggers');
+      const CoupleQuestionState = (await import('../models/CoupleQuestionState')).CoupleQuestionState;
+      
+      // Find the question state to get its ID
+      const questionState = await CoupleQuestionState.findOne({
+        coupleId: user.coupleId,
+        questionId,
+      }).select('_id');
+      
+      if (questionState) {
+        if (result.state === 'waiting_for_partner') {
+          await NotificationTriggers.onTetherAnswered(questionState._id.toString());
+        } else if (result.state === 'completed') {
+          await NotificationTriggers.onBothAnswered(questionState._id.toString());
+        }
+      }
+    } catch (notificationError) {
+      console.error('Error sending notifications:', notificationError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Answer submitted successfully',
+      state: result.state,
+      partnerAnswer: result.partnerAnswer,
+      milestones: result.milestones,
+    });
+  } catch (error: any) {
+    console.error('[TetherController] Error submitting answer:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to submit answer' });
+  }
+};
+/**
+ * NEW: Refresh a question
+ * Uses per-cycle refreshes first, then permanent pool
+ */
+// export const refreshQuestionV2 = async (req: Request, res: Response) => {
+//   try {
+//     const userId = req.user?._id;
+//     const { tetherId } = req.body;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: 'Unauthorized' });
+//     }
+
+//     if (!tetherId) {
+//       return res.status(400).json({ message: 'tetherId required' });
+//     }
+
+//     const tetherObjectId = new mongoose.Types.ObjectId(tetherId);
+//     const result = await TetherDropService.refreshQuestion(tetherObjectId, userId);
+
+//     res.json({
+//       success: true,
+//       ...result,
+//     });
+//   } catch (error: any) {
+//     console.error('[TetherController] Error refreshing question:', error);
+//     res.status(500).json({ success: false, message: error.message || 'Failed to refresh question' });
+//   }
+// };
+export const refreshQuestionV2 = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    const { questionId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!questionId) {
+      return res.status(400).json({ message: 'questionId required' });
+    }
+
+    const user = await User.findById(userId).select('coupleId').lean();
+    if (!user?.coupleId) {
+      return res.status(404).json({ message: 'Not in a couple' });
+    }
+
+    // ✅ Use QuestionServiceEngine to skip/refresh question (uses CoupleQuestionState)
+    const { QuestionServiceEngine } = await import('../services/questionService');
+    const result = await QuestionServiceEngine.skipQuestion(
+      user.coupleId,
+      userId,
+      questionId
+    );
+
+    res.json({
+      success: true,
+      newQuestion: result.newQuestion,
+      message: result.newQuestion ? 'New question drawn' : 'No more questions available',
+      cycleRefreshesRemaining: result.cycleRefreshesRemaining,
+      permanentRefreshesRemaining: result.permanentRefreshesRemaining,
+      usedPermanent: result.usedPermanent,
+    });
+  } catch (error: any) {
+    console.error('[TetherController] Error refreshing question:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to refresh question' });
+  }
+};
+/**
+ * NEW: Force drop new tethers (admin/testing)
+ */
+export const forceDropTethers = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId).select('coupleId').lean();
+    if (!user?.coupleId) {
+      return res.status(404).json({ message: 'Not in a couple' });
+    }
+
+    await TetherDropService.checkAndDropTethers(user.coupleId);
+
+    res.json({
+      success: true,
+      message: 'Tethers dropped successfully',
+    });
+  } catch (error: any) {
+    console.error('[TetherController] Error force dropping tethers:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to drop tethers' });
   }
 };

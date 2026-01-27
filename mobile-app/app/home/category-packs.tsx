@@ -239,6 +239,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import Card3DCarousel, { CarouselCard } from '../../components/ui/cards/CardCarousel';
+import { SoloModeBanner } from '@/components/ui/SoloModeBanner';
 import { Colors, Spacing, FontSizes, FontWeights } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
 import { getCategoryProgress } from '@/services/tether_service';
@@ -363,6 +364,11 @@ export default function CategoryPacksScreen() {
       }}
     >
       <View style={styles.container}>
+        {/* Solo Mode Banner */}
+        {user?.isSoloMode && !user?.linkedToRealPartner && (
+          <SoloModeBanner />
+        )}
+
         {/* Header */}
         <View style={styles.headerSection}>
           <Text style={styles.mainTitle}>Category Packs</Text>

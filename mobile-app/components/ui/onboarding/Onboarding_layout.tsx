@@ -929,6 +929,7 @@ interface OnboardingLayoutProps {
     icon: string;
     onPress: () => void;
   };
+  onBackPress?: () => void; // Custom back button handler
 }
 
 export default function OnboardingLayout({
@@ -946,6 +947,7 @@ export default function OnboardingLayout({
   chatIconActive = false,
   onChatPress,
   showTetherLine = true,
+  onBackPress, // Custom back handler
 }: OnboardingLayoutProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -997,7 +999,9 @@ export default function OnboardingLayout({
     if (showBackButton) {
       return (
         <TouchableOpacity style={styles.backButton} onPress={() => {
-          if (router.canGoBack()) {
+          if (onBackPress) {
+            onBackPress();
+          } else if (router.canGoBack()) {
             router.back();
           } else {
             router.replace('/onboarding/welcome');

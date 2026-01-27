@@ -51,6 +51,8 @@ export interface IUser extends Document {
   platform: Platform;
   onboarded: boolean;
   subscribed: boolean; // ✅ New field
+  isVirtualPartner: boolean; // 🆕 Solo mode - marks system-created virtual users
+  linkedToRealPartner: boolean; // 🆕 Solo mode - tracks if real partner joined
   onboardingData: {
     firstName?: string;
     partnerFirstName?: string;
@@ -61,7 +63,6 @@ export interface IUser extends Document {
     livingType?: string[];
     hasChildren?: boolean;
     goals?: string[];
-    emotionalNeeds?: string[];
     rhythm?: Rhythm;
     tone?: Tone;
     packPreferences?: string[];
@@ -103,6 +104,8 @@ const UserSchema: Schema = new Schema(
     },
     onboarded: { type: Boolean, default: false },
     subscribed: { type: Boolean, default: false }, // ✅ New field
+    isVirtualPartner: { type: Boolean, default: false, index: true }, // 🆕 Solo mode
+    linkedToRealPartner: { type: Boolean, default: false }, // 🆕 Solo mode
     onboardingData: {
       firstName: { type: String },
       partnerFirstName: { type: String },
@@ -118,7 +121,6 @@ const UserSchema: Schema = new Schema(
       livingType: [{ type: String }],
       hasChildren: { type: Boolean },
       goals: [{ type: String }],
-      emotionalNeeds: [{ type: String }],
       rhythm: { 
         type: String,
         enum: Object.values(Rhythm)

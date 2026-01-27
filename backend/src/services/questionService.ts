@@ -44,7 +44,6 @@ export class QuestionServiceEngine {
     coupleProfile: {
       goals: string[];
       livingType: string[];
-      emotionalNeeds: string[];
       relationshipStage?: string;
     }
   ): number {
@@ -157,19 +156,6 @@ export class QuestionServiceEngine {
       }
     }
 
-    // Calculate score from emotional needs
-    for (const need of coupleProfile.emotionalNeeds) {
-      const normalizedNeed = need.toLowerCase().replace(/\s+/g, '_');
-      const mappings = emotionalNeedCategoryMap[normalizedNeed];
-      if (mappings) {
-        for (const mapping of mappings) {
-          if (mapping.categoryId === categoryId) {
-            score += mapping.weight;
-          }
-        }
-      }
-    }
-
     // Calculate score from living type
     for (const living of coupleProfile.livingType) {
       const normalizedLiving = living.toLowerCase().replace(/\s+/g, '_').replace(/,/g, '');
@@ -259,20 +245,14 @@ export class QuestionServiceEngine {
       ...(user1?.onboardingData?.livingType || []),
       ...(user2?.onboardingData?.livingType || []),
     ];
-    const rawEmotionalNeeds = [
-      ...(user1?.onboardingData?.emotionalNeeds || []),
-      ...(user2?.onboardingData?.emotionalNeeds || []),
-    ];
 
     // Normalize and remove duplicates
     const uniqueGoals = [...new Set(this.normalizeOnboardingData(rawGoals))];
     const uniqueLivingTypes = [...new Set(this.normalizeOnboardingData(rawLivingTypes))];
-    const uniqueEmotionalNeeds = [...new Set(this.normalizeOnboardingData(rawEmotionalNeeds))];
 
     const coupleProfile = {
       goals: uniqueGoals,
       livingType: uniqueLivingTypes,
-      emotionalNeeds: uniqueEmotionalNeeds,
       relationshipStage: user1?.onboardingData?.relationshipStatus || user2?.onboardingData?.relationshipStatus,
     };
 
@@ -309,6 +289,13 @@ export class QuestionServiceEngine {
  */
 static async initializeCategoriesForCouple(coupleId: mongoose.Types.ObjectId): Promise<void> {
   console.log(`Initializing categories for couple: ${coupleId}`);
+
+  // ✅ Check if categories already exist for this couple
+  const existingStates = await CoupleCategoryState.countDocuments({ coupleId });
+  if (existingStates > 0) {
+    console.log(`⏭️ Categories already initialized for couple ${coupleId} (${existingStates} states found), skipping...`);
+    return;
+  }
 
   const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
   if (!couple) throw new Error('Couple not found');
@@ -414,7 +401,6 @@ static async updateCategoryAccessForTierChange(
     coupleProfile: {
       livingType: string[];
       goals: string[];
-      emotionalNeeds: string[];
       relationshipStage?: string;
     }
   ): number {
@@ -432,12 +418,6 @@ static async updateCategoryAccessForTierChange(
     );
     score += goalMatches.length * 8;
 
-    // Emotional need match (Weight: 6 points per match)
-    const emotionalMatches = question.emotionalNeed.filter((en) =>
-      coupleProfile.emotionalNeeds.includes(en)
-    );
-    score += emotionalMatches.length * 6;
-
     // Relationship stage match (Weight: 4 points)
     if (
       coupleProfile.relationshipStage &&
@@ -450,10 +430,9 @@ static async updateCategoryAccessForTierChange(
     const dimensionsMatched = 
       (livingTypeMatches.length > 0 ? 1 : 0) +
       (goalMatches.length > 0 ? 1 : 0) +
-      (emotionalMatches.length > 0 ? 1 : 0) +
       (coupleProfile.relationshipStage && question.relationshipStage.includes(coupleProfile.relationshipStage as any) ? 1 : 0);
     
-    if (dimensionsMatched >= 3) {
+    if (dimensionsMatched >= 2) {
       score += 5; // Multi-dimensional match bonus
     }
 
@@ -495,10 +474,6 @@ static async updateCategoryAccessForTierChange(
       goals: [
         ...(user1?.onboardingData?.goals || []),
         ...(user2?.onboardingData?.goals || []),
-      ],
-      emotionalNeeds: [
-        ...(user1?.onboardingData?.emotionalNeeds || []),
-        ...(user2?.onboardingData?.emotionalNeeds || []),
       ],
       relationshipStage:
         user1?.onboardingData?.relationshipStatus ||
@@ -797,6 +772,8 @@ static async updateCategoryAccessForTierChange(
         totalTethersCompleted: 0,
         milestoneRecords: [],
         permanentRefreshBalance: 0,
+        refreshesUsedThisCycle: 0,
+        lastRefreshCycleReset: new Date(),
       };
       console.log('⚠️ Initialized missing sharedData for couple:', coupleId);
     }

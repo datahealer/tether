@@ -323,6 +323,82 @@ export const logoutRevenueCat = async (): Promise<void> => {
   }
 };
 
+/**
+ * Purchase a refresh bundle (non-consumable in-app purchase)
+ * These are permanent refreshes that never expire
+ * 
+ * Product IDs must match RevenueCat configuration:
+ * - refresh_3_shared: 3 permanent refreshes for $1.29
+ * - refresh_6_shared: 6 permanent refreshes for $2.79
+ * - refresh_10_shared: 10 permanent refreshes for $3.99
+ * 
+ * @param refreshCount - Number of refreshes (3, 6, or 10)
+ * @returns Promise with purchase result and updated refresh balance
+ */
+export const purchaseRefreshBundle = async (refreshCount: 3 | 6 | 10) => {
+  try {
+    const productId = `refresh_${refreshCount}_shared`;
+    console.log('💳 Purchasing refresh bundle:', productId);
+    
+    // Get the refresh bundles offering
+    const offerings = await Purchases.getOfferings();
+    const refreshOffering = offerings.all['refresh_bundles'];
+    
+    if (!refreshOffering) {
+      console.error('❌ Refresh bundles offering not found in RevenueCat');
+      return {
+        success: false,
+        error: true,
+        message: 'Refresh bundles not available. Please try again later.',
+      };
+    }
+    
+    // Find the specific package
+    const packageToPurchase = refreshOffering.availablePackages.find(
+      pkg => pkg.product.identifier === productId
+    );
+    
+    if (!packageToPurchase) {
+      console.error(`❌ Package ${productId} not found`);
+      return {
+        success: false,
+        error: true,
+        message: 'Selected refresh bundle not available.',
+      };
+    }
+    
+    // Make the purchase
+    const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+    
+    console.log('✅ Refresh bundle purchase successful');
+    
+    // Return success - backend webhook will update the permanent refresh balance
+    return {
+      success: true,
+      refreshCount,
+      productId,
+      customerInfo,
+    };
+  } catch (error: any) {
+    // Handle user cancellation gracefully
+    if (error.userCancelled) {
+      console.log('ℹ️ User cancelled refresh bundle purchase');
+      return {
+        success: false,
+        cancelled: true,
+        message: 'Purchase cancelled',
+      };
+    }
+    
+    console.error('❌ Refresh bundle purchase failed:', error?.message || error);
+    return {
+      success: false,
+      error: true,
+      message: error?.message || 'Purchase failed',
+    };
+  }
+};
+
 export default {
   initializeRevenueCat,
   getOfferings,
@@ -331,4 +407,5 @@ export default {
   restorePurchases,
   getCustomerInfo,
   logoutRevenueCat,
+  purchaseRefreshBundle,
 };

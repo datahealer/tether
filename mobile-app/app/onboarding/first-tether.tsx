@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
 import { useAuth } from '@/context/auth_context';
+import { SoloModeBanner } from '@/components/ui/SoloModeBanner';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 import { getActiveTethers, submitAnswer, skipTether, type TetherQuestion, type RefreshInfo } from '@/services/tether_service';
@@ -39,6 +40,20 @@ export default function FirstTetherScreen() {
 
   // Calculate total refreshes available
   const totalRefreshesAvailable = refreshInfo.cycleRefreshesRemaining + refreshInfo.permanentRefreshBalance;
+
+  // Custom back handler for solo mode users
+  const handleBackPress = () => {
+    if (user?.isSoloMode && !user?.linkedToRealPartner) {
+      // Solo mode user - go back to partner-invite
+      router.replace('/onboarding/partner-invite');
+    } else if (router.canGoBack()) {
+      // Regular coupled user - use default back
+      router.back();
+    } else {
+      // Fallback
+      router.replace('/onboarding/partner-invite');
+    }
+  };
 
   // Fetch dynamic question from backend on mount
   useEffect(() => {
@@ -258,6 +273,7 @@ export default function FirstTetherScreen() {
       <OnboardingLayout 
         progress={0.77} 
         showBackButton={true}
+        onBackPress={handleBackPress}
         rightAction={{
           icon: 'close',
           onPress: () => router.push('/onboarding/subscription'),
@@ -277,6 +293,7 @@ export default function FirstTetherScreen() {
       <OnboardingLayout 
         progress={0.77} 
         showBackButton={true}
+        onBackPress={handleBackPress}
       >
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color={Colors.darkOrange} />
@@ -306,6 +323,7 @@ export default function FirstTetherScreen() {
     <OnboardingLayout 
     progress={0.77} 
     showBackButton={true}
+    onBackPress={handleBackPress}
     rightAction={{
       icon: 'close',
       onPress: () => router.push('/onboarding/subscription'),
@@ -317,6 +335,11 @@ export default function FirstTetherScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Solo Mode Banner */}
+        {user?.isSoloMode && !user?.linkedToRealPartner && (
+          <SoloModeBanner />
+        )}
+
         {/* Upgrade Banner for Free Users */}
         {!user?.subscribed && (
           <DebouncedButton
@@ -464,6 +487,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   upgradeBanner: {
     flexDirection: 'row',

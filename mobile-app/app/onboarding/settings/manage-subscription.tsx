@@ -129,7 +129,7 @@ export default function ManageSubscriptionScreen() {
       // Show confirmation modal for cancellation
       Alert.alert(
         'Switch to Free Experience?',
-        'You will keep Premium access until the end of your current billing period. If you cancel during the 7-day trial you will not be charged.',
+        "If your partner has an active subscription, you'll both keep Premium access. Otherwise, you'll return to Free at the end of your billing period. Cancelling during the 7-day trial takes effect immediately.",
         [
           { text: 'Keep Premium', style: 'cancel' },
           {
@@ -250,7 +250,7 @@ export default function ManageSubscriptionScreen() {
         {/* Header */}
         <Text style={styles.heading}>Manage your Tether{'\n'}Subscription</Text>
         <Text style={styles.subtitle}>
-          View your plan, change it or cancel at any time.
+          Subscriptions are shared with your partner. When one person upgrades, both benefit from the same Premium experience.
         </Text>
 
         {/* Current Subscription Status */}

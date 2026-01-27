@@ -16,6 +16,19 @@ export function NavigationHandler() {
   
   const hasNavigated = useRef(false);
   const lastRoute = useRef(pathname);
+  const isInitialSession = useRef(true);
+  const hasRedirectedThisSession = useRef(false);
+
+  // Reset navigation flags on logout
+  useEffect(() => {
+    if (!user) {
+      // Reset on logout / unauthenticated state
+      isInitialSession.current = true;
+      hasRedirectedThisSession.current = false;
+      hasNavigated.current = false;
+      console.log('🔄 Reset navigation flags on logout/user null');
+    }
+  }, [user]);
 
   useEffect(() => {
   // ✅ Wait for auth to finish loading before any navigation
@@ -70,9 +83,68 @@ export function NavigationHandler() {
           router.replace('/onboarding/privacy');
         }
       } else if (!user.coupleId) {
-        // Onboarded but no couple - go to partner invite screen
-        if (currentRoute !== '/onboarding/partner-invite' && !isSettingsScreen && !isWaitingScreen) {
-          console.log('➡️ Redirecting to partner-invite (no couple yet)');
+        // Onboarded but no couple at all - go to partner-invite
+        if (currentRoute !== '/onboarding/partner-invite' && currentRoute !== '/onboarding/attribution' && !isSettingsScreen && !isWaitingScreen) {
+          console.log('➡️ Redirecting to partner-invite (no couple yet - must connect)');
+          hasNavigated.current = true;
+          router.replace('/onboarding/partner-invite');
+        }
+      } else if (user.isSoloMode && !user.linkedToRealPartner) {
+        // 🆕 SOLO MODE: User has virtual partner, exploring the app
+        console.log('👤 Solo mode detected - user can explore app fully', {
+          isInitialSession: isInitialSession.current,
+          hasRedirectedThisSession: hasRedirectedThisSession.current,
+          currentRoute,
+        });
+        
+        // Solo mode: Force partner-invite as the "home" screen on fresh login/session start
+        if (
+          user.onboarded &&
+          isInitialSession.current &&
+          !hasRedirectedThisSession.current &&
+          currentRoute !== '/onboarding/partner-invite' // Avoid loop if already there
+        ) {
+          console.log('➡️ Fresh solo login/session - forcing to partner-invite first');
+          hasRedirectedThisSession.current = true;
+          isInitialSession.current = false;
+          hasNavigated.current = true;
+          router.replace('/onboarding/partner-invite');
+          return;
+        }
+        
+        // Mark initial session as complete once we're past the first redirect
+        if (isInitialSession.current && currentRoute === '/onboarding/partner-invite') {
+          isInitialSession.current = false;
+          console.log('✅ Initial session complete - user on partner-invite');
+        }
+        
+        // Allow navigation within solo mode routes
+        const allowedSoloRoutes = [
+          '/onboarding/partner-invite',
+          '/onboarding/first-tether',
+          '/onboarding/attribution',
+          '/onboarding/subscription',
+          '/home/',
+          '/settings',
+        ];
+        
+        const isInAllowedRoute = allowedSoloRoutes.some(route => currentRoute.startsWith(route));
+        
+        // If already on partner-invite or actively navigating, allow it
+        if (currentRoute === '/onboarding/partner-invite' || isSettingsScreen || isHomeScreen || isWaitingScreen) {
+          console.log('👤 Solo user on partner-invite or navigating - no redirect');
+          return;
+        }
+        
+        // If on other allowed routes and has navigated before, allow free navigation
+        if (isInAllowedRoute && hasNavigated.current) {
+          console.log('👤 Solo user navigating freely within allowed routes');
+          return;
+        }
+        
+        // If they're lost or at root, send to partner-invite as the solo mode home
+        if (!inAuth && !inHome && !isSettingsScreen) {
+          console.log('➡️ Solo user at entry point - sending to partner-invite');
           hasNavigated.current = true;
           router.replace('/onboarding/partner-invite');
         }
