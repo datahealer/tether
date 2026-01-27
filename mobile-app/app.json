@@ -108,7 +108,7 @@
       "googleWebClientId": "251990719722-0u7bqse5r4pkvklfbfgivihvmrh63uf6.apps.googleusercontent.com",
       "googleIosClientId": "251990719722-4339ehd9uphkoplb6fs0d96j3q38h1el.apps.googleusercontent.com",
       "googleAndroidClientId": "251990719722-5jegc1q6gpthpmvttdh4ah13hlg4o25c.apps.googleusercontent.com",
-      "apiUrl": "http://192.168.29.107:3000",
+      "apiUrl": "https://ftvg8elzse.execute-api.us-east-1.amazonaws.com",
       "router": {},
       "eas": {
         "projectId": "2eb6e92a-7dbc-4bfb-b6fe-eee2f3c2a708"
