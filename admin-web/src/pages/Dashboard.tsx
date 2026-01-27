@@ -207,12 +207,12 @@ const confirmDeleteQuestion = async () => {
     <DashboardLayout>
       {/* Header */}
       <div className="flex items-start md:items-center flex-col md:flex-row gap-4 justify-between mb-12 border-b border-white/10 pb-6">
-  <div className="flex gap-8">
+  <div className="flex flex-wrap gap-4">
     <Link
       to="/admin/dashboard"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+      className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
     >
       Questions
     </Link>
@@ -220,9 +220,33 @@ const confirmDeleteQuestion = async () => {
       to="/admin/categories"
       activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
       inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-      className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+      className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
     >
       Categories
+    </Link>
+    <Link
+      to="/admin/users"
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+      className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+    >
+      Users
+    </Link>
+    <Link
+      to="/admin/stats"
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+      className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+    >
+      Stats
+    </Link>
+    <Link
+      to="/admin/unlocks"
+      activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+      inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+      className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+    >
+      Unlocks
     </Link>
   </div>
    <button
@@ -387,10 +411,10 @@ const confirmDeleteQuestion = async () => {
   onClose={() => setShowImportModal(false)}
   onSuccess={handleImportSuccess}
 />
-{/* View Question Modal */}
+      {/* View Question Modal */}
 {showViewModal && viewQuestion && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2">
-    <div className="bg-white rounded-2xl w-full max-w-xl p-6 relative">
+    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative">
       
       {/* Close */}
       <button
@@ -401,42 +425,142 @@ const confirmDeleteQuestion = async () => {
       </button>
 
       <h2 className="text-2xl font-semibold text-[#1F2935] mb-6">
-        View Question
+        Question Metadata
       </h2>
 
-      <div className="space-y-4 text-[#1F2935]">
+      <div className="space-y-6 text-[#1F2935]">
+        {/* Question Text */}
         <div>
-          <p className="text-sm text-gray-500">Question</p>
-          <p className="font-medium">{viewQuestion.question}</p>
+          <p className="text-sm text-gray-500 mb-2">Question</p>
+          <p className="font-medium text-lg bg-gray-50 p-4 rounded-xl">{viewQuestion.question}</p>
         </div>
 
+        {/* Basic Info Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-500">Category</p>
+            <p className="text-sm text-gray-500 mb-1">Question ID</p>
+            <p className="font-medium">{viewQuestion.questionId}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Category</p>
             <p className="font-medium">{viewQuestion.categoryId}</p>
           </div>
-
           <div>
-            <p className="text-sm text-gray-500">Gender Focus</p>
+            <p className="text-sm text-gray-500 mb-1">Gender Focus</p>
             <p className="font-medium">{viewQuestion.genderFocus}</p>
           </div>
-
           <div>
-            <p className="text-sm text-gray-500">Difficulty</p>
-            <p className="font-medium">{viewQuestion.difficulty}</p>
+            <p className="text-sm text-gray-500 mb-1">Tone</p>
+            <p className="font-medium">{viewQuestion.tone}</p>
           </div>
-
           <div>
-            <p className="text-sm text-gray-500">Status</p>
+            <p className="text-sm text-gray-500 mb-1">Difficulty</p>
+            <p className="font-medium">{viewQuestion.difficulty}/5</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Status</p>
             <p className="font-medium">{viewQuestion.status}</p>
           </div>
         </div>
 
-        <div>
-          <p className="text-sm text-gray-500">Created At</p>
-          <p className="font-medium">
-            {new Date(viewQuestion.createdAt).toLocaleDateString()}
-          </p>
+        {/* Relationship Stage */}
+        {viewQuestion.relationshipStage && viewQuestion.relationshipStage.length > 0 && (
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Relationship Stage</p>
+            <div className="flex flex-wrap gap-2">
+              {viewQuestion.relationshipStage.map((stage: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                  {stage}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Living Type */}
+        {viewQuestion.livingType && viewQuestion.livingType.length > 0 && (
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Living Type</p>
+            <div className="flex flex-wrap gap-2">
+              {viewQuestion.livingType.map((type: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm">
+                  {type}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Goal Tags */}
+        {viewQuestion.goalTag && viewQuestion.goalTag.length > 0 && (
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Goal Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {viewQuestion.goalTag.map((goal: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm">
+                  {goal}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Emotional Needs */}
+        {viewQuestion.emotionalNeed && viewQuestion.emotionalNeed.length > 0 && (
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Emotional Needs</p>
+            <div className="flex flex-wrap gap-2">
+              {viewQuestion.emotionalNeed.map((need: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-lg text-sm">
+                  {need}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Optional Fields */}
+        {(viewQuestion.formatType || viewQuestion.contextTag) && (
+          <div className="grid grid-cols-2 gap-4">
+            {viewQuestion.formatType && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Format Type</p>
+                <p className="font-medium">{viewQuestion.formatType}</p>
+              </div>
+            )}
+            {viewQuestion.contextTag && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Context Tag</p>
+                <p className="font-medium">{viewQuestion.contextTag}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Writer Notes - Internal */}
+        {viewQuestion.writerNotes && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <p className="text-sm font-semibold text-yellow-800 mb-2">Writer Notes (Internal)</p>
+            <p className="text-[#1F2935] whitespace-pre-wrap">{viewQuestion.writerNotes}</p>
+          </div>
+        )}
+
+        {/* Timestamps */}
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Created At</p>
+            <p className="font-medium text-sm">
+              {new Date(viewQuestion.createdAt).toLocaleString()}
+            </p>
+          </div>
+          {viewQuestion.updatedAt && (
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Updated At</p>
+              <p className="font-medium text-sm">
+                {new Date(viewQuestion.updatedAt).toLocaleString()}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

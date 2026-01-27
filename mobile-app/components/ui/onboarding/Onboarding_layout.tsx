@@ -827,87 +827,7 @@ import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 
 const frames = [
   require('../../../assets/loops/loop_000t.png'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_001.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_002.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_003.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_004.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_005.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_006.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_007.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_008.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_009.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_010.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_011.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_012.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_013.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_014.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_015.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_016.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_017.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_018.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_019.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_020.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_021.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_022.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_023.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_024.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_025.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_026.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_027.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_028.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_029.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_030.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_031.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_032.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_033.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_034.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_035.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_036.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_037.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_038.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_039.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_040.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_041.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_042.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_043.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_044.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_045.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_046.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_047.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_048.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_049.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_050.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_051.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_052.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_053.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_054.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_055.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_056.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_057.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_058.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_059.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_060.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_061.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_062.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_063.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_064.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_065.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_066.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_067.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_068.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_069.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_070.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_071.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_072.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_073.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_074.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_075.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_076.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_077.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_078.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_079.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_080.webp'),
-  // require('../../../assets/loops/Looping tether line for app_final_left side pull_081.webp'),
+  
 ];
 
 interface OnboardingLayoutProps {
@@ -1102,11 +1022,17 @@ export default function OnboardingLayout({
   return (
     <View style={styles.fullScreen}>
       <View style={styles.container}>
-        <View style={styles.blobTopRight} />
-        <View style={styles.blobBottomLeft} />
+        {/* Background Image - replaces circular blobs */}
+        <ImageBackground
+          source={require('../../../assets/images/bg.png')}
+          style={StyleSheet.absoluteFill}
+          imageStyle={{ opacity: 1 }}
+          resizeMode="cover"
+        />
 
         <BlurView intensity={Platform.OS === 'ios' ? 50 : 30} tint="light" style={StyleSheet.absoluteFill} />
 
+        {/* Noise texture overlay */}
         <ImageBackground
           source={require('../../../assets/images/noise-texture.png')}
           style={StyleSheet.absoluteFill}
@@ -1169,28 +1095,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     overflow: 'hidden',
-  },
-  blobTopRight: {
-    position: 'absolute',
-    top: -200,
-    right: -150,
-    width: 500,
-    height: 500,
-    borderRadius: 250,
-    backgroundColor: Colors.eclipseA,
-    opacity: 0.15,
-    zIndex: 1,
-  },
-  blobBottomLeft: {
-    position: 'absolute',
-    bottom: -250,
-    left: -150,
-    width: 600,
-    height: 600,
-    borderRadius: 300,
-    backgroundColor: Colors.eclipseB,
-    opacity: 0.08,
-    zIndex: 1,
   },
   tetherLineAnimation: {
     position: 'absolute',

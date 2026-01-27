@@ -509,7 +509,7 @@ export default function AccountCreationScreen() {
 
   return (
     <OnboardingLayout 
-      progress={0.14} 
+      // progress={0.14} 
       showBackButton={true}
       showLogoutAvatar={true}
       // rightButton={
