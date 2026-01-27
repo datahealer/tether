@@ -701,6 +701,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+    
 
     const user = await User.findById(userId).select('+refreshTokens');
     

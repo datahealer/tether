@@ -474,7 +474,7 @@ export default function WelcomeScreen() {
     
     <OnboardingLayout showBackButton={false} showLogo={false} showTetherLine={false}>
       {/* Animated Flowing Line */}
-      <AnimatedFlowingLine />
+      {/* <AnimatedFlowingLine /> */}
 
       <View style={styles.content}>
         {/* Logo Section */}

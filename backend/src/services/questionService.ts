@@ -1173,50 +1173,15 @@ static async getActiveTethers(
   /**
    * Get category progress for a couple
    */
-  // In QuestionServiceEngine.ts
-
-static async getCategoryProgress(coupleId: mongoose.Types.ObjectId) {
-  // Get all global categories
-  const allCategories = await Category.find({});
-
-  // Get current couple's category states
-  let coupleStates = await CoupleCategoryState.find({ coupleId });
-
-  const existingIds = new Set(coupleStates.map(s => s.categoryId));
-
-  const missingCategories = allCategories.filter(cat => !existingIds.has(cat.categoryId));
-
-  if (missingCategories.length > 0) {
-    console.log(`Syncing ${missingCategories.length} missing categories for couple ${coupleId}`);
-
-    const couple = await Couple.findById(coupleId).populate('user1Id user2Id');
-    if (!couple) throw new Error('Couple not found');
-
-    const unlockedIds = this.determineFreeCategoriesForCouple(couple);
-
-    for (const cat of missingCategories) {
-      await CoupleCategoryState.findOneAndUpdate(
-        { coupleId, categoryId: cat.categoryId },
-        {
-          $setOnInsert: {
-            answeredCount: 0,
-            totalQuestions: cat.totalQuestions || 180,
-            skippedCount: 0,
-            isComplete: false,
-            unlocked: unlockedIds.includes(cat.categoryId),
-            lastActivityAt: new Date(),
-          }
-        },
-        { upsert: true, setDefaultsOnInsert: true }
-      );
-    }
-
+  static async getCategoryProgress(coupleId: mongoose.Types.ObjectId) {
+    // Get all category states for this couple
+    const coupleStates = await CoupleCategoryState.find({ coupleId }).lean();
     
-
-    // Refresh coupleStates
-    coupleStates = await CoupleCategoryState.find({ coupleId });
+    // If no states exist, return empty array
+    if (!coupleStates || coupleStates.length === 0) {
+      return [];
+    }
+    
+    return coupleStates;
   }
-
-  return coupleStates;
-}
 }
