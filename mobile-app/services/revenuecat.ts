@@ -1,6 +1,7 @@
 import Purchases, { LOG_LEVEL, PurchasesOffering } from 'react-native-purchases';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { authenticatedFetch } from './auth_service';
 
 /**
  * RevenueCat SDK Configuration with Optimistic Error Handling
@@ -370,15 +371,71 @@ export const purchaseRefreshBundle = async (refreshCount: 3 | 6 | 10) => {
     // Make the purchase
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     
-    console.log('✅ Refresh bundle purchase successful');
+    console.log('✅ Refresh bundle purchase successful via RevenueCat');
     
-    // Return success - backend webhook will update the permanent refresh balance
-    return {
-      success: true,
-      refreshCount,
-      productId,
-      customerInfo,
-    };
+    // Get transaction ID from customerInfo
+    // For non-consumable purchases, use the latest transaction or generate one
+    const latestTransaction = customerInfo.nonSubscriptionTransactions?.[0];
+    const transactionId = latestTransaction?.transactionIdentifier || 
+                         customerInfo.originalAppUserId || 
+                         `refresh_${Date.now()}_${productId}`;
+    
+    // Extract price and currency from package
+    const price = packageToPurchase.product.price || 0;
+    const currency = packageToPurchase.product.currencyCode || 'USD';
+    const store = Platform.OS === 'ios' ? 'app_store' : 'play_store';
+    
+    // Call backend to add permanent refreshes
+    console.log('📤 Calling backend to process refresh purchase...');
+    const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+    
+    try {
+      const response = await authenticatedFetch(`${API_URL}/api/revenuecat/purchase-refreshes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          transactionId,
+          refreshCount,
+          price,
+          currency,
+          store,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('❌ Backend purchase processing failed:', error);
+        return {
+          success: false,
+          error: true,
+          message: error.error || 'Failed to process refresh purchase',
+        };
+      }
+      
+      const data = await response.json();
+      console.log('✅ Refresh bundle purchase processed successfully:', data);
+      
+      return {
+        success: true,
+        refreshCount,
+        productId,
+        customerInfo,
+        refreshes: data.refreshes,
+      };
+    } catch (backendError: any) {
+      console.error('❌ Backend call failed:', backendError);
+      // Even if backend call fails, the purchase was successful in RevenueCat
+      // Return success but note that backend sync may be needed
+      return {
+        success: true,
+        refreshCount,
+        productId,
+        customerInfo,
+        backendSynced: false,
+        message: 'Purchase successful, but backend sync failed. Refreshes may take a moment to appear.',
+      };
+    }
   } catch (error: any) {
     // Handle user cancellation gracefully
     if (error.userCancelled) {
