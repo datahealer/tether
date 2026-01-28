@@ -817,18 +817,9 @@ import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontWeights } from '../../../theme/constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
+import { BackgroundLine } from '../BackgroundLine';
 
-// Preload all 81 static .webp frames
-// Files are located in assets/loops/ and named:
-// Looping tether line for app_final_left side pull_000.webp
-// Looping tether line for app_final_left side pull_001.webp
-// ...
-// Looping tether line for app_final_left side pull_081.webp
-
-const frames = [
-  require('../../../assets/loops/loop_000t.png'),
-  
-];
+// Tether line animation now uses Lottie via BackgroundLine component
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -872,18 +863,6 @@ export default function OnboardingLayout({
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { push: debouncedPush, isNavigating } = useNavigationDebounce();
-  const [currentFrame, setCurrentFrame] = useState(0);
-
-  useEffect(() => {
-    if (!showTetherLine) return;
-
-    const fps = 30; // Adjust if needed to match your animation timing
-    const interval = setInterval(() => {
-      setCurrentFrame((prev) => (prev + 1) % frames.length);
-    }, 1000 / fps);
-
-    return () => clearInterval(interval);
-  }, [showTetherLine]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -1039,12 +1018,9 @@ export default function OnboardingLayout({
           imageStyle={{ opacity: 0.03 }}
         />
 
+        {/* Animated tether line using Lottie */}
         {showTetherLine && (
-          <Image
-            source={frames[currentFrame]}
-            style={styles.tetherLineAnimation}
-            resizeMode="cover"
-          />
+          <BackgroundLine opacity={0.7} autoPlay={true} />
         )}
       </View>
 
@@ -1095,18 +1071,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     overflow: 'hidden',
-  },
-  tetherLineAnimation: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 2,
-    opacity: 0.7,
-    pointerEvents: 'none',
   },
   header: {
     flexDirection: 'row',

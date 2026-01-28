@@ -539,21 +539,20 @@ import {
   View,
   StyleSheet,
   Dimensions,
-  
   Text,
   Animated,
   PanResponder,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../../theme/constants';
-import DebouncedButton from '../buttons/DebouncedButton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.55; // Slightly narrower for better stacking
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.7; // Fixed height based on screen
-const HORIZONTAL_OFFSET = 30; // Horizontal offset per card
-const VERTICAL_OFFSET = 10; // Vertical drop per card
-const HEIGHT_REDUCTION = 30; // Height reduction per background card
+const CARD_WIDTH = SCREEN_WIDTH * 0.55;
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.7;
+const HORIZONTAL_OFFSET = 30;
+const VERTICAL_OFFSET = 10;
+const HEIGHT_REDUCTION = 30;
 
 export interface CarouselCard {
   id: string;
@@ -584,6 +583,7 @@ export default function Card3DCarousel({
 }: Card3DCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(controlledIndex || 0);
   const animatedIndex = useRef(new Animated.Value(0)).current;
+  const lastTap = useRef<number>(0);
 
   useEffect(() => {
     if (hasWaitingTether && waitingTetherCategoryId) {
@@ -598,9 +598,17 @@ export default function Card3DCarousel({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+        // Detect horizontal movement with lower threshold for better responsiveness
+        const isHorizontal = Math.abs(gestureState.dx) > 3;
+        const isMoreHorizontalThanVertical = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+        return isHorizontal && isMoreHorizontalThanVertical;
+      },
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        // Capture horizontal swipes more aggressively
+        return Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onPanResponderGrant: () => {
         if (!hasWaitingTether) {
@@ -627,7 +635,7 @@ export default function Card3DCarousel({
         }
 
         const velocity = gestureState.vx;
-        const threshold = CARD_WIDTH * 0.25;
+        const threshold = CARD_WIDTH * 0.2; // Lower threshold for easier swiping
         
         let targetIndex = activeIndex;
 
@@ -640,7 +648,7 @@ export default function Card3DCarousel({
           }
         } 
         // Then check velocity for quick swipes
-        else if (Math.abs(velocity) > 0.3) {
+        else if (Math.abs(velocity) > 0.2) { // Lower velocity threshold
           if (velocity > 0 && activeIndex > 0) {
             targetIndex = activeIndex - 1;
           } else if (velocity < 0 && activeIndex < cards.length - 1) {
@@ -677,6 +685,13 @@ export default function Card3DCarousel({
   };
 
   const handleCardPress = (card: CarouselCard, index: number) => {
+    // Prevent double-tap issues
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      return;
+    }
+    lastTap.current = now;
+
     if (hasWaitingTether && card.id !== waitingTetherCategoryId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
@@ -758,80 +773,81 @@ export default function Card3DCarousel({
                   opacity,
                   zIndex: cards.length - position,
                   height: cardHeight,
-                  right: position * HORIZONTAL_OFFSET, // Stack cards to the right
+                  right: position * HORIZONTAL_OFFSET,
                 },
               ]}
             >
-              <DebouncedButton
-                activeOpacity={0.95}
-                onPress={() => handleCardPress(card, index)}
+              <TouchableWithoutFeedback
+                onPress={() => !isDisabled && handleCardPress(card, index)}
                 disabled={isDisabled}
-                style={styles.touchableCard}
               >
-                {/* Card Container */}
-                <View style={[
-                  styles.card,
-                  shouldShowBorder && styles.cardActive,
-                  !isActive && styles.cardInactive,
-                ]}>
-                  {/* Locked Badge - Top Right */}
-                  {card.isLocked && (
-                    <View style={styles.lockedBadge}>
-                      <Text style={styles.lockedText}>🔒 Unlock with Premium</Text>
-                    </View>
-                  )}
+                <View style={styles.touchableCard}>
+                  {/* Card Container */}
+                  <View style={[
+                    styles.card,
+                    shouldShowBorder && styles.cardActive,
+                    !isActive && styles.cardInactive,
+                  ]}>
+                    {/* Locked Badge - Top Right */}
+                    {card.isLocked && (
+                      <View style={styles.lockedBadge}>
+                        <Text style={styles.lockedText}>🔒 Unlock with Premium</Text>
+                      </View>
+                    )}
 
-                  {/* Card Content - Bottom Aligned */}
-                  <View style={styles.cardContent}>
-                    {/* Title */}
-                    <Text style={[styles.cardTitle, !isActive && styles.cardTitleInactive]}>
-                      {card.title}
-                    </Text>
-                    
-                    {/* Description */}
-                    <Text style={[styles.cardDescription, !isActive && styles.cardDescriptionInactive]}>
-                      {card.description}
-                    </Text>
-                    
-                    {/* Progress */}
-                    <View style={styles.progressSection}>
-                      <Text style={[styles.progressText, !isActive && styles.progressTextInactive]}>
-                        {card.questionsAnswered}/{card.totalQuestions} answered
+                    {/* Card Content - Bottom Aligned */}
+                    <View style={styles.cardContent}>
+                      {/* Title */}
+                      <Text style={[styles.cardTitle, !isActive && styles.cardTitleInactive]}>
+                        {card.title}
                       </Text>
+                      
+                      {/* Description */}
+                      <Text style={[styles.cardDescription, !isActive && styles.cardDescriptionInactive]}>
+                        {card.description}
+                      </Text>
+                      
+                      {/* Progress */}
+                      <View style={styles.progressSection}>
+                        <Text style={[styles.progressText, !isActive && styles.progressTextInactive]}>
+                          {card.questionsAnswered}/{card.totalQuestions} answered
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Subtle background pattern - only on active card */}
-                  {isActive && (
-                    <View style={styles.backgroundPattern}>
-                      {[...Array(8)].map((_, i) => (
-                        <View key={i} style={styles.patternLine} />
-                      ))}
-                    </View>
-                  )}
+                    {/* Subtle background pattern - only on active card */}
+                    {isActive && (
+                      <View style={styles.backgroundPattern}>
+                        {[...Array(8)].map((_, i) => (
+                          <View key={i} style={styles.patternLine} />
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </DebouncedButton>
+              </TouchableWithoutFeedback>
             </Animated.View>
           );
         })}
       </View>
 
-      {/* Navigation Dots - Optional, can be removed */}
+      {/* Navigation Dots */}
       {!hasWaitingTether && cards.length > 1 && (
         <View style={styles.dotsContainer}>
           {cards.map((_, index) => (
-            <DebouncedButton
+            <TouchableWithoutFeedback
               key={index}
               onPress={() => goToIndex(index)}
-              style={styles.dotWrapper}
             >
-              <View
-                style={[
-                  styles.dot,
-                  index === activeIndex && styles.dotActive,
-                ]}
-              />
-            </DebouncedButton>
+              <View style={styles.dotWrapper}>
+                <View
+                  style={[
+                    styles.dot,
+                    index === activeIndex && styles.dotActive,
+                  ]}
+                />
+              </View>
+            </TouchableWithoutFeedback>
           ))}
         </View>
       )}
@@ -843,13 +859,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'flex-end', // Align to the right like the reference
-    paddingRight: Spacing.xl, // Add right padding
+    alignItems: 'flex-end',
+    paddingRight: Spacing.xl,
   },
   cardsContainer: {
     height: CARD_HEIGHT + 100,
     justifyContent: 'center',
-    alignItems: 'flex-end', // Align cards to right
+    alignItems: 'flex-end',
     width: SCREEN_WIDTH,
     position: 'relative',
   },
@@ -864,10 +880,10 @@ const styles = StyleSheet.create({
   card: {
     width: '110%',
     height: '82%',
-    backgroundColor: '#ffffff', // Pure white for active card
-    borderRadius: 20, // Large border radius like reference
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
     borderWidth: 0.5,
-    borderColor: '#b3aba6', // Subtle border for inactive
+    borderColor: '#b3aba6',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -881,7 +897,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
   },
   cardInactive: {
-    backgroundColor: '#E3DEDB', // Muted beige for background cards
+    backgroundColor: '#E3DEDB',
   },
   lockedBadge: {
     position: 'absolute',
@@ -903,7 +919,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.xl,
-    paddingTop: CARD_HEIGHT * 0.45, // Reduced from 0.55 to shift content upward
+    paddingTop: CARD_HEIGHT * 0.45,
     justifyContent: 'flex-start',
     zIndex: 10,
   },
@@ -912,11 +928,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: FontWeights.bold,
     color: Colors.darkOrange,
-    marginBottom: Spacing.sm, // Reduced from Spacing.lg to reduce gap
+    marginBottom: Spacing.sm,
     lineHeight: 32,
   },
   cardTitleInactive: {
-    color: '#8B7F78', // Muted color for inactive cards
+    color: '#8B7F78',
   },
   cardDescription: {
     fontFamily: 'InterTight-Regular',
@@ -924,10 +940,10 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.regular,
     color: '#4A4A4A',
     lineHeight: 22,
-    marginBottom: Spacing.lg, // Reduced from Spacing.xl * 1.5
+    marginBottom: Spacing.lg,
   },
   cardDescriptionInactive: {
-    color: '#9B9390', // Muted description for inactive cards
+    color: '#9B9390',
   },
   progressSection: {
     marginTop: 'auto',
@@ -939,7 +955,7 @@ const styles = StyleSheet.create({
     color: Colors.darkOrange,
   },
   progressTextInactive: {
-    color: '#9B9390', // Muted progress for inactive cards
+    color: '#9B9390',
   },
   backgroundPattern: {
     position: 'absolute',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, Users, Heart, FileQuestion, FolderOpen, CreditCard, Unlock, RefreshCw } from 'lucide-react';
+import { Loader, Users, Heart, FileQuestion, FolderOpen } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/Dashboard_layout';
 import { statsService } from '../services/stats';
 import { StatsCards } from '../components/ui/Stats';

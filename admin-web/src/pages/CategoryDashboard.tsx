@@ -97,14 +97,14 @@ const confirmDeleteCategory = async () => {
        >
          Questions
        </Link>
-       <Link
+       {/* <Link
          to="/admin/dashboard"
          activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
          inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
          className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
        >
          Questions
-       </Link>
+       </Link> */}
        <Link
          to="/admin/categories"
          activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, RefreshCw, Unlock, AlertCircle } from 'lucide-react';
+import { Loader, RefreshCw, Unlock} from 'lucide-react';
 import { DashboardLayout } from '../components/layout/Dashboard_layout';
 import { unlockService } from '../services/unlock';
 
