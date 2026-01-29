@@ -1,0 +1,101 @@
+{
+  "identifier" : "TetherRefreshes",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "1.29",
+      "familyShareable" : false,
+      "internalID" : "refresh_3_shared_test",
+      "localizations" : [
+        {
+          "description" : "Add 3 permanent refreshes to your shared pool",
+          "displayName" : "3 Shared Refreshes",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "refresh_3_shared",
+      "referenceName" : "3 Shared Refreshes",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "2.79",
+      "familyShareable" : false,
+      "internalID" : "refresh_6_shared_test",
+      "localizations" : [
+        {
+          "description" : "Add 6 permanent refreshes to your shared pool",
+          "displayName" : "6 Shared Refreshes",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "refresh_6_shared",
+      "referenceName" : "6 Shared Refreshes",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "refresh_10_shared_test",
+      "localizations" : [
+        {
+          "description" : "Add 10 permanent refreshes to your shared pool",
+          "displayName" : "10 Shared Refreshes",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "refresh_10_shared",
+      "referenceName" : "10 Shared Refreshes",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6499520827",
+    "_developerTeamID" : "YOUR_TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 749203200.0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

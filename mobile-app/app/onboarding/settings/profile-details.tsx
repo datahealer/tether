@@ -127,7 +127,7 @@ export default function ProfileDetailsScreen() {
   }
 };
   // Remove photo
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
     Alert.alert(
       'Remove Photo',
       'Are you sure you want to remove your profile photo?',
@@ -136,9 +136,48 @@ export default function ProfileDetailsScreen() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setProfilePhoto(null);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onPress: async () => {
+            try {
+              // Optimistically update UI
+              const previousPhoto = profilePhoto;
+              setProfilePhoto(null);
+              setUploadStatus('uploading');
+              
+              // Update backend
+              const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
+              const response = await authenticatedFetch(`${API_URL}/api/profile`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                  name, // Required field
+                  profilePicture: null,
+                }),
+              });
+
+              if (!response.ok) {
+                // Revert on error
+                setProfilePhoto(previousPhoto);
+                throw new Error('Failed to remove photo');
+              }
+
+              const data = await response.json();
+              
+              // Update auth context
+              await signIn({
+                ...user!,
+                avatar: undefined,
+                onboardingData: {
+                  ...user!.onboardingData,
+                },
+              });
+              
+              setUploadStatus('success');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setTimeout(() => setUploadStatus('idle'), 2000);
+            } catch (error) {
+              console.error('Error removing photo:', error);
+              Alert.alert('Error', 'Failed to remove photo. Please try again.');
+              setUploadStatus('idle');
+            }
           },
         },
       ]

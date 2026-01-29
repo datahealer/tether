@@ -172,9 +172,11 @@ export class TetherDropService {
       }
     }
     
-    // Update Last_Tether_Drop timestamp
+    // Update Last_Tether_Drop timestamp and reset cycle refresh counter
     couple.lastTetherDrop = now;
     couple.sharedData.lastTetherDate = now;
+    couple.sharedData.refreshesUsedThisCycle = 0; // Reset for new cycle
+    couple.sharedData.lastRefreshCycleReset = now;
     await couple.save();
     
     console.log(`[TetherDropService] 🎉 Dropped ${tetherCount} tethers, expires at ${expiresAt.toISOString()}`);
@@ -420,7 +422,15 @@ export class TetherDropService {
     if (tether.defaultRefreshes > 0) {
       // Use per-cycle refresh
       tether.defaultRefreshes--;
-      console.log(`[TetherDropService] Used cycle refresh. Remaining: ${tether.defaultRefreshes}`);
+      
+      // Increment couple's refresh counter
+      if (!couple.sharedData.refreshesUsedThisCycle) {
+        couple.sharedData.refreshesUsedThisCycle = 0;
+      }
+      couple.sharedData.refreshesUsedThisCycle += 1;
+      await couple.save();
+      
+      console.log(`[TetherDropService] Used cycle refresh. Remaining on tether: ${tether.defaultRefreshes}, Total used this cycle: ${couple.sharedData.refreshesUsedThisCycle}`);
     } else if (couple.sharedData.permanentRefreshBalance > 0) {
       // Use permanent refresh
       couple.sharedData.permanentRefreshBalance--;
