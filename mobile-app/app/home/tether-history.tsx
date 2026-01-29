@@ -17,6 +17,7 @@ import { getTetherHistory, addReaction, type TetherHistory } from '@/services/te
 import { useOnboarding } from '@/context/onboarding_context';
 import { useTetherStats } from '@/hooks/useTetherStats';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
+import TetherReactions from '@/components/tether/TetherReactions';
 
 interface TetherAnswer {
   questionId: string;
@@ -46,8 +47,6 @@ const categoryGradients: Record<string, readonly [string, string]> = {
   'Erotic': ['#3498DB', '#2980B9'],
   'Gratitude': ['#1ABC9C', '#16A085'],
 };
-
-const emojis = ['❤️', '😂', '🔥', '👏'];
 
 export default function TetherHistoryScreen() {
   const router = useRouter();
@@ -104,8 +103,6 @@ export default function TetherHistoryScreen() {
   };
 
   const handleEmojiPress = async (questionId: string, emoji: string) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
     try {
       const result = await addReaction(questionId, emoji);
       
@@ -212,38 +209,13 @@ export default function TetherHistoryScreen() {
                 </LinearGradient>
               </DebouncedButton>
 
-              {/* Emoji Reactions */}
-              <View style={styles.emojiContainer}>
-                {emojis.map((emoji, emojiIndex) => {
-                  // Check if current user or partner reacted with this emoji
-                  const userReacted = answer.reactions?.some(
-                    r => r.userId === user?.id && r.emoji === emoji
-                  );
-                  const partnerReacted = answer.reactions?.some(
-                    r => r.userId !== user?.id && r.emoji === emoji
-                  );
-                  const isSelected = userReacted;
-
-                  return (
-                    <DebouncedButton
-                      key={emojiIndex}
-                      style={[
-                        styles.emojiButton,
-                        isSelected && styles.emojiButtonSelected,
-                      ]}
-                      onPress={() => handleEmojiPress(answer.questionId, emoji)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.emojiText}>{emoji}</Text>
-                      {partnerReacted && (
-                        <View style={styles.partnerReactionBadge}>
-                          <Text style={styles.partnerReactionText}>+1</Text>
-                        </View>
-                      )}
-                    </DebouncedButton>
-                  );
-                })}
-              </View>
+              {/* Enhanced Reactions Component */}
+              <TetherReactions
+                reactions={answer.reactions || []}
+                currentUserId={user?.id || ''}
+                partnerName={partnerName}
+                onReactionPress={(emoji) => handleEmojiPress(answer.questionId, emoji)}
+              />
 
               {/* Date Separator */}
               {index < tetherHistory.length - 1 && (
@@ -397,52 +369,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.bold,
     color: Colors.black,
     lineHeight: 24,
-  },
-  emojiContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  emojiButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  emojiButtonSelected: {
-    backgroundColor: Colors.veryLightOrange,
-    transform: [{ scale: 1.1 }],
-    shadowOpacity: 0.2,
-  },
-  emojiText: {
-    fontSize: 28,
-  },
-  partnerReactionBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  partnerReactionText: {
-    fontSize: 12,
   },
   dateSeparator: {
     alignItems: 'center',

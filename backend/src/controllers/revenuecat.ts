@@ -419,11 +419,40 @@ export const purchaseRefreshes = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Add permanent refreshes
+    // Add permanent refreshes to user entitlement
     entitlement.refreshesPermanent += refreshCount;
     await entitlement.save();
 
-    console.log(`✅ Added ${refreshCount} permanent refreshes. New total: ${entitlement.refreshesPermanent}`);
+    console.log(`✅ Added ${refreshCount} permanent refreshes to user. New total: ${entitlement.refreshesPermanent}`);
+
+    // Also update couple's shared permanent refresh balance
+    if (user.coupleId) {
+      const Couple = (await import('../models/Couple')).default;
+      const couple = await Couple.findById(user.coupleId);
+      
+      if (couple) {
+        // Initialize sharedData if it doesn't exist
+        if (!couple.sharedData) {
+          couple.sharedData = {
+            currentStreak: 0,
+            totalTethersCompleted: 0,
+            milestoneRecords: [],
+            permanentRefreshBalance: 0,
+            refreshesUsedThisCycle: 0,
+          };
+        }
+        
+        // Add permanent refreshes to couple's shared balance
+        couple.sharedData.permanentRefreshBalance = (couple.sharedData.permanentRefreshBalance || 0) + refreshCount;
+        await couple.save();
+        
+        console.log(`✅ Added ${refreshCount} permanent refreshes to couple. New total: ${couple.sharedData.permanentRefreshBalance}`);
+      } else {
+        console.warn('⚠️ User has coupleId but couple not found:', user.coupleId);
+      }
+    } else {
+      console.warn('⚠️ User not in a couple, only user entitlement updated');
+    }
 
     // Log the purchase in Purchase model
     const Purchase = (await import('../models/Purchase')).default;
@@ -443,12 +472,49 @@ export const purchaseRefreshes = async (req: Request, res: Response): Promise<vo
       },
     });
 
+    // Fetch updated couple data for response
+    let couplePermanentBalance = 0;
+    if (user.coupleId) {
+      const Couple = (await import('../models/Couple')).default;
+      const couple = await Couple.findById(user.coupleId);
+      couplePermanentBalance = couple?.sharedData?.permanentRefreshBalance || 0;
+
+      // Send real-time notification to partner
+      try {
+        const notificationService = (await import('../services/notification/notification.service')).default;
+        const { NotificationType } = await import('../models/Notification');
+        
+        await notificationService.sendToCouple(
+          user.coupleId.toString(),
+          NotificationType.REFRESH_PURCHASED,
+          (partnerName: string) => ({
+            title: '🎉 New Refreshes Available!',
+            body: `${user.name || 'Your partner'} just unlocked ${refreshCount} permanent refreshes for you both!`,
+            data: {
+              type: NotificationType.REFRESH_PURCHASED,
+              route: '/home/category-packs',
+              refreshCount,
+              permanentRefreshBalance: couplePermanentBalance,
+            },
+          }),
+          user._id.toString() // Exclude the purchaser
+        );
+        
+        console.log(`✅ Sent refresh purchase notification to partner`);
+      } catch (notifError) {
+        console.error('⚠️ Failed to send partner notification:', notifError);
+        // Don't fail the purchase if notification fails
+      }
+    }
+
     res.json({
       success: true,
       message: `Successfully added ${refreshCount} permanent refreshes`,
       refreshes: {
+        userPermanent: entitlement.refreshesPermanent,
+        couplePermanentBalance: couplePermanentBalance,
         default: entitlement.refreshesDefault,
-        permanent: entitlement.refreshesPermanent,
+        permanent: entitlement.refreshesPermanent, // Keep for backward compatibility
         total: entitlement.refreshesDefault + entitlement.refreshesPermanent,
       },
     });

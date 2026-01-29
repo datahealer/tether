@@ -198,6 +198,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         router.push('/home/tether-history');
         break;
 
+      case 'REFRESH_PURCHASED':
+        console.log('➡️ Partner purchased refreshes - navigating to category packs');
+        // Navigate to category packs so partner can see the new refreshes
+        router.push('/home/category-packs');
+        break;
+
       default:
         console.log('➡️ Unknown notification type, navigating to category packs');
         router.push('/home/category-packs');

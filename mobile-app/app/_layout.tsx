@@ -4,14 +4,13 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/auth_context';
 import { OnboardingProvider } from '@/context/onboarding_context';
 import { NotificationProvider } from '@/context/notification_context';
 import { TetherStatsProvider } from '@/context/tether_stats_context';
-import SplashScreenComponent from '../components/splash';
 import { NavigationHandler } from '../components/NavigationHandler';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -29,7 +28,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [showSplash, setShowSplash] = useState(true);
   
   const [loaded] = useFonts({
     // Existing fonts
@@ -39,28 +37,20 @@ export default function RootLayout() {
     'InterTight-Regular' : require('../assets/fonts/InterTight-Regular.ttf'),
     'InterTight-Medium': require('../assets/fonts/InterTight-Medium.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    // 'InterTight-Bold': require('../assets/fonts/InterTight-Bold.ttf'),
     
     // SF Pro Display fonts (Input fields, Body text)
     'SFProDisplay-Regular': require('../assets/fonts/SF-Pro-Display-Regular.ttf'),
     'SFProDisplay-Medium': require('../assets/fonts/SFProDisplay-Medium.ttf'),
-    
   });
 
   useEffect(() => {
     if (loaded) {
-      // Show splash for 2 seconds
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-        SplashScreen.hideAsync();
-      }, 2000);
-
-      return () => clearTimeout(timer);
+      SplashScreen.hideAsync();
     }
   }, [loaded]);
 
-  if (!loaded || showSplash) {
-    return <SplashScreenComponent />;
+  if (!loaded) {
+    return null;
   }
 
   return (

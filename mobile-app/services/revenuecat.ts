@@ -370,15 +370,59 @@ export const purchaseRefreshBundle = async (refreshCount: 3 | 6 | 10) => {
     // Make the purchase
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     
-    console.log('✅ Refresh bundle purchase successful');
+    console.log('✅ Refresh bundle purchase successful from RevenueCat');
+    console.log('📞 Calling backend to update permanent refresh balance...');
     
-    // Return success - backend webhook will update the permanent refresh balance
-    return {
-      success: true,
-      refreshCount,
-      productId,
-      customerInfo,
-    };
+    // Call backend to add permanent refreshes
+    try {
+      const API_URL = process.env.EXPO_PUBLIC_API_URL;
+      const token = await import('@react-native-async-storage/async-storage').then(m => m.default.getItem('accessToken'));
+      
+      const response = await fetch(`${API_URL}/api/revenuecat/purchase-refreshes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId,
+          refreshCount,
+          transactionId: customerInfo.originalAppUserId,
+          price: packageToPurchase.product.price,
+          currency: packageToPurchase.product.currencyCode,
+          store: Platform.OS === 'ios' ? 'app_store' : 'play_store',
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('❌ Backend failed to update refreshes:', error);
+        throw new Error(error.error || 'Failed to update refresh balance');
+      }
+      
+      const data = await response.json();
+      console.log('✅ Backend updated permanent refreshes:', data);
+      
+      return {
+        success: true,
+        refreshCount,
+        productId,
+        customerInfo,
+        refreshData: data.refreshes,
+      };
+    } catch (backendError: any) {
+      console.error('❌ Backend update failed:', backendError);
+      // Purchase succeeded in RevenueCat but backend failed
+      // Return partial success - user got the purchase but UI might not update immediately
+      return {
+        success: true,
+        refreshCount,
+        productId,
+        customerInfo,
+        backendError: backendError.message,
+        message: 'Purchase successful, but refresh count may take a moment to update',
+      };
+    }
   } catch (error: any) {
     // Handle user cancellation gracefully
     if (error.userCancelled) {
