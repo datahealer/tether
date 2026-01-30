@@ -1,1 +1,11 @@
 @import "tailwindcss";
+@layer base {
+  body {
+    font-family: 'Inter Tight', sans-serif;
+  }
+}
+@layer base {
+  .font-playball {
+    font-family: 'Playball', cursive;
+  }
+}

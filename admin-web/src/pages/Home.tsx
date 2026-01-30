@@ -1,6 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 import Header from "../components/homepage/Header";
 import tetherlineone from "../assets/home/tetherlineone.png";
+import tetherlinetwo from "../assets/home/tetherlinetwo.png";
+import tetherlinethree from "../assets/home/tetherlinethree.png";
+import tetherlinefour from "../assets/home/tetherlinefour.png";
 import Stars from "../assets/home/stars.svg";
 import Applestore from "../assets/home/applestore.png";
 import Googlestore from "../assets/home/googleplay.png";
@@ -61,12 +64,12 @@ export default function HeaderAndHero() {
 
   return (
     <>
-      <div className="relative pb-24 md:pb-40 bg-white">
+      <div className="relative bg-white">
         <Header />
 
         {/* HERO SECTION */}
         <section
-          className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 sm:px-8 overflow-hidden"
+          className="relative pt-20 md:pt-20 pb-16 md:pb-24 px-5 sm:px-8 overflow-hidden"
           style={{
             background: `linear-gradient(
               to bottom,
@@ -92,18 +95,18 @@ export default function HeaderAndHero() {
             {/* Rating + Heading + Subtitle + Buttons ... (unchanged) */}
             <div className="flex items-center gap-2.5 mb-6 md:mb-8">
               <img src={Stars} alt="4.8 star rating" className="h-5 md:h-6" />
-              <span className="text-sm md:text-base font-medium text-gray-800">
+              <span className="text-sm md:text-base font-medium text-black">
                 <span className="text-[#F57123] font-semibold">4.8</span> • 1k+ Users
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 mb-6 md:mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl  leading-tight text-black mb-6 md:mb-8">
               The app that’s{" "}
-              <span className="text-[#FF7E3D] italic font-semibold">pulling</span>
-              <br className="sm:hidden" /> couples closer together.
+              <span className="text-[#FF7E3D] font-normal   font-playball ">pulling</span>
+              <br className="" /> couples closer together.
             </h1>
 
-            <p className="text-lg md:text-xl text-gray-800 max-w-3xl mb-10 md:mb-12 leading-relaxed">
+            <p className="text-lg md:text-xl text-black max-w-3xl mb-10 md:mb-12 leading-relaxed">
               Some questions are simply easier to answer than to ask. Tether creates a shared
               moment that will keep you close when life tries its best to pull you apart.
             </p>
@@ -123,18 +126,18 @@ export default function HeaderAndHero() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 text-center relative z-10 max-w-5xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 text-center relative z-10 mx-auto px-4">
             {[
-              ["Set a Rhythm", "Choose how often questions appear in your week."],
-              ["10+ Categories", "Free users start with two categories."],
-              ["1k+ Questions", "Updated regularly for different moments."],
-              ["Draw Another", "Skip and redraw together anytime."],
+              ["Set a Rhythm", "Designed so you and your partner stay in control, choosing how often questions show up in your week."],
+              ["10+ Categories", "Free users start with two categories matched to them, with more to explore as your relationship evolves."],
+              ["1k+ Questions", "Questions are updated regularly and shaped around different stages, moods and moments in your relationship."],
+              ["Draw Another", "Shared refreshes let you skip a question together and draw a new one when the timing isn’t right."],
             ].map(([title, desc], i) => (
               <div key={i} className="px-2">
                 <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 md:mb-3">
                   {title}
                 </h3>
-                <p className="text-sm md:text-base text-gray-800 leading-snug">{desc}</p>
+                <p className="text-sm md:text-base text-black leading-snug">{desc}</p>
               </div>
             ))}
           </div>
@@ -222,6 +225,16 @@ export default function HeaderAndHero() {
               </button>
             </div>
           </div>
+          <div
+            className="absolute inset-0 opacity-30 md:opacity-40 pointer-events-none"
+            style={{
+              backgroundImage: `url(${tetherlinetwo})`,
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "contain",
+              backgroundPosition: "center center",
+            }}
+          />
+
           <div className="max-w-5xl mx-auto text-center">
             <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
       
@@ -248,8 +261,19 @@ export default function HeaderAndHero() {
           </div>
           
         </section>
-        <section className="relative py-20 md:py-28 bg-gradient-to-b from-[#fffaf5] to-[#ffe8d8] overflow-hidden">
-  <div className="max-w-6xl mx-auto px-5 sm:px-8 relative min-h-[700px] md:min-h-[900px]">
+        
+        <section className="relative py-20 md:py-28 overflow-hidden"
+           style={{
+            background: `linear-gradient(
+              to bottom,
+              #fff3eb 0%,
+              #fff3eb 30%,
+              #ffd2b8 60%,
+              #FF7E3D 100%
+            )`,
+          }}>
+
+  <div className="max-w-6xl mx-auto px-5 sm:px-8 relative min-h-[500px] md:min-h-[500px]">
 
     {/* 1 CARD – TOP CENTER */}
     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg md:max-w-xl z-10">
@@ -261,7 +285,7 @@ export default function HeaderAndHero() {
     </div>
 
     {/* 1 CARD – LEFT TOP */}
-    <div className="absolute top-24 md:top-32 left-4 md:left-8 w-64 md:w-80 z-10">
+    <div className="absolute top-24 md:top-34 left-6 md:left-0 w-64 md:w-80 z-10">
       <div className="bg-[#FF7E3D]/90 text-white rounded-2xl p-5 shadow-xl transform -rotate-4 hover:rotate-0 transition">
         <p className="text-sm md:text-base font-medium leading-relaxed">
           I need you to stay with me when I am overwhelmed, not wait until I have calmed myself down.
@@ -270,7 +294,7 @@ export default function HeaderAndHero() {
     </div>
 
     {/* 1 CARD – RIGHT TOP */}
-    <div className="absolute top-28 md:top-40 right-4 md:right-12 w-64 md:w-80 z-10">
+    <div className="absolute top-28 md:top-34 right-0 md:right-0 w-64 md:w-80 z-10">
       <div className="bg-[#FF7E3D]/90 text-white rounded-2xl p-5 shadow-xl transform rotate-5 hover:rotate-0 transition">
         <p className="text-sm md:text-base font-medium leading-relaxed">
           Buy me a set of handcuffs... I want you to step in with the kids without me feeling guilty about it.
@@ -281,7 +305,7 @@ export default function HeaderAndHero() {
     {/* CENTER TEXT BOX – middle of the section */}
     <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
       <div className="px-8 py-10 md:py-12 max-w-lg md:max-w-2xl text-center mx-4">
-        <p className="text-2xl md:text-3xl font-bold text-gray-800 leading-snug">
+        <p className="text-2xl md:text-3xl font-bold text-black leading-snug">
           You both get space to think and your answers stay hidden until you<br className="hidden sm:block" />
           <span className="text-[#FF7E3D]">both meet in the middle.</span>
         </p>
@@ -289,7 +313,7 @@ export default function HeaderAndHero() {
     </div>
 
     {/* 1 CARD – LEFT BOTTOM */}
-    <div className="absolute bottom-24 md:bottom-32 left-6 md:left-10 w-72 md:w-80 z-10">
+    <div className="absolute bottom-24 md:bottom-30 left-6 md:left-10 w-72 md:w-80 z-10">
       <div className="bg-[#FF7E3D]/90 text-white rounded-2xl p-5 shadow-xl transform rotate-[-3deg] hover:rotate-0 transition">
         <p className="text-sm md:text-base font-medium leading-relaxed">
           Leaving your location on when you go out with your friends
@@ -298,7 +322,7 @@ export default function HeaderAndHero() {
     </div>
 
     {/* 1 CARD – RIGHT BOTTOM */}
-    <div className="absolute bottom-20 md:bottom-28 right-6 md:right-12 w-72 md:w-80 z-10">
+    <div className="absolute bottom-20 md:bottom-30 right-6 md:right-12 w-72 md:w-80 z-10">
       <div className="bg-[#FF7E3D]/90 text-white rounded-2xl p-5 shadow-xl transform rotate-4 hover:rotate-0 transition">
         <p className="text-sm md:text-base font-medium leading-relaxed">
           I really want us to start planning date nights again when I feel at my worst
@@ -314,9 +338,19 @@ export default function HeaderAndHero() {
         </p>
       </div>
     </div>
-
+           
   </div>
+  
 </section>
+  <div
+            className="absolute bottom-0 inset-0 opacity-30 md:opacity-40 pointer-events-none"
+            style={{
+              backgroundImage: `url(${tetherlinethree})`,
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "contain",
+              backgroundPosition: "center center",
+            }}
+          />
 <section className="relative py-16 md:py-24 px-5 sm:px-8 lg:px-12 bg-gradient-to-b from-[#fffaf5] via-[#ffe8d8] to-[#fff3eb] overflow-hidden">
   <div className="max-w-4xl mx-auto">
     {/* Title */}
@@ -414,9 +448,18 @@ border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3
 
   </div>
 </section>
+
 <footer className="relative bg-gradient-to-b from-[#fff3eb] to-[#FF7E3D] pt-10 pb-12 px-5 sm:px-8 lg:px-12 overflow-hidden">
 
-
+   <div
+            className="absolute bottom-100 inset-0 opacity-30 md:opacity-40 pointer-events-none"
+            style={{
+              backgroundImage: `url(${tetherlinefour})`,
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "contain",
+              backgroundPosition: "center center",
+            }}
+          />
 
   <div className="relative max-w-6xl mx-auto z-10 text-center">
 
@@ -458,7 +501,7 @@ border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3
       {/* Site */}
       <div>
         <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Site</h4>
-        <ul className="space-y-3 text-gray-800">
+        <ul className="space-y-3 text-black">
           <li><a href="#" className="hover:text-white transition text-white">Home</a></li>
           <li><a href="#" className="hover:text-white transition text-white">About</a></li>
           <li><a href="#" className="hover:text-white transition text-white">FAQs</a></li>
@@ -469,7 +512,7 @@ border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3
       {/* Support */}
       <div>
         <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Support</h4>
-        <ul className="space-y-3 text-gray-800">
+        <ul className="space-y-3 text-black">
           <li><a href="#" className="hover:text-white transition text-white">Contact Us</a></li>
           <li><a href="#" className="hover:text-white transition text-white">Terms of Service</a></li>
           <li><a href="#" className="hover:text-white transition text-white">Privacy Policy</a></li>
@@ -479,7 +522,7 @@ border-l-[5px] border-[#FF7E3D] font-semibold   text-gray-900 hover:text-[#FF7E3
       {/* Social */}
       <div>
         <h4 className="text-lg font-semibold text-gray-900 mb-4 text-white">Social</h4>
-        <ul className="space-y-3 text-gray-800">
+        <ul className="space-y-3 text-black">
           <li><a href="#" className="hover:text-white transition text-white">Instagram</a></li>
           <li><a href="#" className="hover:text-white transition text-white">Facebook</a></li>
         </ul>
