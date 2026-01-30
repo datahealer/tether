@@ -109,15 +109,16 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     console.log('📝 Update profile request:', { userId, name, dateOfBirth, gender, profilePicture });
 
-    // Validate required fields
-    if (!name || name.trim().length === 0) {
-      return res.status(400).json({ error: 'Name is required' });
-    }
-
     // Build update object
-    const updateData: any = {
-      name: name.trim(),
-    };
+    const updateData: any = {};
+
+    // Only validate and update name if provided
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Name cannot be empty' });
+      }
+      updateData.name = name.trim();
+    }
 
     if (dateOfBirth) {
       updateData['onboardingData.dateOfBirth'] = dateOfBirth;
@@ -127,7 +128,8 @@ export const updateProfile = async (req: Request, res: Response) => {
       updateData['onboardingData.gender'] = gender;
     }
 
-    if (profilePicture) {
+    // Handle profile picture (allow null to remove)
+    if (profilePicture !== undefined) {
       updateData.avatar = profilePicture;
     }
 

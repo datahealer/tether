@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../the
 import { useTetherStats } from '@/hooks/useTetherStats';
 import { useNavigationDebounce } from '@/hooks/useNavigationDebounce';
 import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
-import { purchaseRefreshBundle } from '@/services/revenuecat';
+import { purchaseRefreshBundle, initializeRevenueCat } from '@/services/revenuecat';
+import { useAuth } from '@/context/auth_context';
 
 interface PricingOption {
   id: string;
@@ -45,10 +46,31 @@ const pricingOptions: PricingOption[] = [
 
 export default function DrawLockedUpsellScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedOption, setSelectedOption] = useState<string>('6');
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRevenueCatReady, setIsRevenueCatReady] = useState(false);
   const tetherStats = useTetherStats();
   const { push: debouncedPush} = useNavigationDebounce();
+
+  // Initialize RevenueCat when screen loads
+  useEffect(() => {
+    const setupRevenueCat = async () => {
+      if (user?.id) {
+        console.log('🔧 Initializing RevenueCat for refresh purchases...');
+        const initialized = await initializeRevenueCat(user.id);
+        setIsRevenueCatReady(initialized);
+        
+        if (!initialized) {
+          console.warn('⚠️ RevenueCat initialization failed - purchases may not work');
+        } else {
+          console.log('✅ RevenueCat ready for refresh purchases');
+        }
+      }
+    };
+    
+    setupRevenueCat();
+  }, [user?.id]);
 
   const handleSelectOption = async (optionId: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -57,6 +79,16 @@ export default function DrawLockedUpsellScreen() {
 
   const handlePurchase = async () => {
     if (isPurchasing) return;
+    
+    // Check if RevenueCat is initialized
+    if (!isRevenueCatReady) {
+      Alert.alert(
+        'Not Ready',
+        'Payment system is still loading. Please wait a moment and try again.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsPurchasing(true);
@@ -69,16 +101,27 @@ export default function DrawLockedUpsellScreen() {
       
       if (result.success) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Show success message
         Alert.alert(
           'Purchase Successful! 🎉',
           `You now have ${refreshCount} additional permanent refreshes! These never expire and are shared with your partner.`,
           [
             {
               text: 'Start Using Them!',
-              onPress: () => router.back(),
+              onPress: () => {
+                // Navigate to category-packs screen to see the new refreshes
+                router.push('/home/category-packs');
+              },
             },
           ]
         );
+        
+        // Reload the tether stats to update UI
+        if (tetherStats?.refresh) {
+          console.log('🔄 Reloading tether stats after purchase...');
+          await tetherStats.refresh();
+        }
       } else if (result.cancelled) {
         console.log('ℹ️ User cancelled purchase');
         // No alert needed for cancellation

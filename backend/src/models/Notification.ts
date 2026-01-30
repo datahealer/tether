@@ -12,6 +12,7 @@ export enum NotificationType {
   PARTNER_REFRESHED='partner_refreshed',
   TRIAL_EXPIRED = 'trial_expired',
   REACTION_ADDED = 'reaction_added',
+  REFRESH_PURCHASED = 'refresh_purchased',
 }
 
 export enum NotificationStatus {

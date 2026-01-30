@@ -550,7 +550,6 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '../../theme/constants';
 import { useAuth } from '@/context/auth_context';
@@ -572,7 +571,6 @@ export default function WaitingPartnerScreen() {
   const [partnerName, setPartnerName] = useState('Partner');
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isRevealed, setIsRevealed] = useState(false);
-  const [currentBlur, setCurrentBlur] = useState(100);
   
   // Animation values
   const lockOpacity = useRef(new Animated.Value(1)).current;
@@ -711,21 +709,6 @@ export default function WaitingPartnerScreen() {
         ]),
       ]).start();
 
-      // Gradually reduce blur using state updates (smoother than Animated.Value for BlurView)
-      const blurSteps = 20;
-      const blurInterval = 1200 / blurSteps;
-      let step = 0;
-      
-      const blurTimer = setInterval(() => {
-        step++;
-        const newBlur = Math.max(0, 100 - (step * (100 / blurSteps)));
-        setCurrentBlur(newBlur);
-        
-        if (step >= blurSteps) {
-          clearInterval(blurTimer);
-        }
-      }, blurInterval);
-
       // Navigate after animation completes
       const navTimeout = setTimeout(() => {
         if (router && router.replace) {
@@ -806,20 +789,14 @@ export default function WaitingPartnerScreen() {
                   { transform: [{ scale: revealScale }] }
                 ]}
               >
-                {/* Answer content */}
+                {/* Answer content - only visible when revealed */}
                 <View style={styles.answerContentWrapper}>
                   <Text style={styles.partnerAnswerText}>{partnerAnswer}</Text>
                 </View>
                 
-                {/* Dynamic blur overlay */}
-                {currentBlur > 0 && (
-                  <View style={styles.blurOverlay}>
-                    <BlurView 
-                      intensity={currentBlur} 
-                      tint="light" 
-                      style={StyleSheet.absoluteFill}
-                    />
-                  </View>
+                {/* Solid overlay that completely hides content until revealed */}
+                {!isRevealed && (
+                  <View style={styles.solidOverlay} />
                 )}
 
                 {/* Lock overlay */}
@@ -1026,12 +1003,14 @@ const styles = StyleSheet.create({
     color: Colors.black,
     lineHeight: 24,
   },
-  blurOverlay: {
+  solidOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: Colors.white,
+    opacity: 1,
   },
   lockOverlay: {
     position: 'absolute',
@@ -1041,7 +1020,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 244, 226, 0.3)',
+    backgroundColor: 'rgba(255, 244, 226, 0.95)',
   },
   lockText: {
     fontFamily: 'InterTight-SemiBold',

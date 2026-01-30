@@ -635,8 +635,12 @@ static async updateCategoryAccessForTierChange(
 
     console.log(`\n🎉 Successfully dropped ${droppedCount} tethers`);
 
-    // Update lastTetherDrop
-    await Couple.findByIdAndUpdate(coupleId, { lastTetherDrop: new Date() });
+    // Update lastTetherDrop and reset cycle refresh counter
+    await Couple.findByIdAndUpdate(coupleId, {
+      lastTetherDrop: new Date(),
+      'sharedData.refreshesUsedThisCycle': 0,
+      'sharedData.lastRefreshCycleReset': new Date(),
+    });
   }
 
   /**
@@ -926,11 +930,22 @@ static async skipQuestion(
     }
 
     // Use cycle refresh first, then permanent if needed
-    if (cycleRefreshesRemaining === 0 && permanentRefreshBalance > 0) {
+    if (cycleRefreshesRemaining > 0) {
+      // Using cycle refresh - increment counter
+      if (!couple.sharedData.refreshesUsedThisCycle) {
+        couple.sharedData.refreshesUsedThisCycle = 0;
+      }
+      couple.sharedData.refreshesUsedThisCycle += 1;
+      await couple.save({ session });
+      console.log(`[QuestionService] Used cycle refresh. Total used this cycle: ${couple.sharedData.refreshesUsedThisCycle}`);
+    } else if (permanentRefreshBalance > 0) {
       // Decrement permanent refresh balance
       couple.sharedData.permanentRefreshBalance -= 1;
       await couple.save({ session });
       usedPermanent = true;
+      console.log(`[QuestionService] Used permanent refresh. Balance: ${couple.sharedData.permanentRefreshBalance}`);
+    } else {
+      throw new Error('No refreshes remaining');
     }
 
     // Mark as skipped
