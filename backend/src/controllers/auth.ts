@@ -281,11 +281,54 @@ import {
 import { createOrUpdateUser } from '../services/user';
 import { Provider, Platform } from '../types/enums';
 import User from '../models/User';
+import Couple from '../models/Couple';
 
 // ✅ Helper function to safely get userId from request
 const getUserId = (req: Request): string | undefined => {
   const user = req.user as any;
   return user?.userId || user?.id || user?._id?.toString();
+};
+
+// ✅ Helper function to build user response with solo mode data
+const buildUserResponse = async (user: any) => {
+  const userResponse: any = {
+    id: user._id,
+    email: user.email,
+    name: user.name,
+    provider: user.provider,
+    avatar: user.avatar,
+    onboarded: user.onboarded,
+    subscribed: user.subscribed,
+    coupleId: user.coupleId,
+    onboardingData: user.onboardingData,
+  };
+
+  // If user has a couple, fetch solo mode details
+  if (user.coupleId) {
+    const couple = await Couple.findById(user.coupleId);
+    if (couple) {
+      userResponse.isSoloMode = couple.isSoloMode || false;
+      
+      // Check if this user is in solo mode and if a real partner has joined
+      if (couple.isSoloMode && couple.soloUserId) {
+        const soloUserId = couple.soloUserId.toString();
+        const currentUserId = user._id.toString();
+        
+        // User is the solo mode user
+        if (soloUserId === currentUserId) {
+          userResponse.linkedToRealPartner = false; // Still in solo mode
+        } else {
+          // This user joined a solo mode couple as the real partner
+          userResponse.linkedToRealPartner = true;
+        }
+      } else if (!couple.isSoloMode) {
+        // Real couple (both users are real)
+        userResponse.linkedToRealPartner = true;
+      }
+    }
+  }
+
+  return userResponse;
 };
 
 /**
@@ -347,23 +390,16 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
+    // Build user response with solo mode data
+    const userResponse = await buildUserResponse(user);
+
     console.log('🔑 Google Login - Access Token:', newAccessToken);
 
     res.status(200).json({
       success: true,
       accessToken: newAccessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        provider: user.provider,
-        avatar: user.avatar,
-        onboarded: user.onboarded,
-        subscribed: user.subscribed,
-        coupleId: user.coupleId,
-        onboardingData: user.onboardingData,
-      },
+      user: userResponse,
     });
   } catch (error: any) {
     console.error('❌ Google auth error:', error);
@@ -400,23 +436,16 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
         const { accessToken, refreshToken } = generateTokenPair(existingUser._id.toString());
         await existingUser.addRefreshToken(refreshToken);
 
+        // Build user response with solo mode data
+        const userResponse = await buildUserResponse(existingUser);
+
         console.log('🔑 Apple Login (Existing User) - Access Token:', accessToken);
 
         res.status(200).json({
           success: true,
           accessToken,
           refreshToken,
-          user: {
-            id: existingUser._id,
-            email: existingUser.email,
-            name: existingUser.name,
-            provider: existingUser.provider || 'apple',
-            avatar: existingUser.avatar,
-            onboarded: existingUser.onboarded,
-            subscribed: existingUser.subscribed,
-            coupleId: existingUser.coupleId,
-            onboardingData: existingUser.onboardingData,
-          },
+          user: userResponse,
         });
         return;
       } else {
@@ -449,23 +478,16 @@ export const appleAuth = async (req: Request, res: Response): Promise<void> => {
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
+    // Build user response with solo mode data
+    const userResponse = await buildUserResponse(user);
+
     console.log('🔑 Apple Login - Access Token:', accessToken);
 
     res.status(200).json({
       success: true,
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        provider: user.provider || 'email',
-        avatar: user.avatar,
-        onboarded: user.onboarded,
-        subscribed: user.subscribed,
-        coupleId: user.coupleId,
-        onboardingData: user.onboardingData,
-      },
+      user: userResponse,
     });
   } catch (error: any) {
     console.error('Apple auth error:', error);
@@ -526,22 +548,16 @@ export const emailSignup = async (req: Request, res: Response): Promise<void> =>
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
+    // Build user response with solo mode data
+    const userResponse = await buildUserResponse(user);
+
     console.log('✅ Email signup successful:', email);
 
     res.status(201).json({
       success: true,
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        provider: user.provider,
-        avatar: user.avatar,
-        onboarded: user.onboarded,
-        subscribed: user.subscribed,
-        onboardingData: user.onboardingData,
-      },
+      user: userResponse,
     });
   } catch (error: any) {
     console.error('❌ Email signup error:', error);
@@ -595,6 +611,9 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
     // Store refresh token
     await user.addRefreshToken(refreshToken);
 
+    // Build user response with solo mode data
+    const userResponse = await buildUserResponse(user);
+
     console.log('✅ Email login successful:', email);
     console.log('🔑 Login - Access Token:', accessToken);
 
@@ -602,17 +621,7 @@ export const emailLogin = async (req: Request, res: Response): Promise<void> => 
       success: true,
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        provider: user.provider,
-        avatar: user.avatar,
-        onboarded: user.onboarded,
-        subscribed: user.subscribed,
-        coupleId: user.coupleId,
-        onboardingData: user.onboardingData,
-      },
+      user: userResponse,
     });
   } catch (error: any) {
     console.error('❌ Email login error:', error);
@@ -659,6 +668,9 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     await user.removeRefreshToken(refreshToken);
     await user.addRefreshToken(newRefreshToken);
 
+    // Build user response with solo mode data
+    const userResponse = await buildUserResponse(user);
+
     console.log('✅ Token refreshed for user:', user.email);
     console.log('🔑 Refreshed - Access Token:', newAccessToken);
 
@@ -666,15 +678,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       success: true,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        onboarded: user.onboarded,
-        subscribed: user.subscribed,
-        coupleId: user.coupleId,
-        onboardingData: user.onboardingData,
-      },
+      user: userResponse,
     });
   } catch (error: any) {
     console.error('❌ Token refresh error:', error);
@@ -697,6 +701,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+    
 
     const user = await User.findById(userId).select('+refreshTokens');
     

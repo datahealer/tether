@@ -472,7 +472,8 @@ export default function CategoryQuestionScreen() {
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState<TetherQuestion | null>(null);
   const [response, setResponse] = useState('');
-  const [refreshesRemaining, setRefreshesRemaining] = useState(1);
+  const [cycleRefreshes, setCycleRefreshes] = useState(0);
+  const [permanentRefreshes, setPermanentRefreshes] = useState(0);
   const [stats, setStats] = useState<TetherStats | null>(null);
   const [timeLeft] = useState('6 h'); // TODO: Calculate real time left
   const [refreshing, setRefreshing] = useState(false);
@@ -540,6 +541,13 @@ export default function CategoryQuestionScreen() {
       }
 
       setStats(data.stats);
+      
+      // Update refresh counts from backend
+      if (data.refreshes) {
+        console.log('📊 Refresh data from backend:', data.refreshes);
+        setCycleRefreshes(data.refreshes.cycleRefreshesRemaining || 0);
+        setPermanentRefreshes(data.refreshes.permanentRefreshBalance || 0);
+      }
     } catch (error) {
       console.error('Error loading tethers:', error);
       Alert.alert('Error', 'Failed to load questions. Please try again.');
@@ -570,8 +578,14 @@ export default function CategoryQuestionScreen() {
       if (result.newQuestion) {
         setCurrentQuestion(result.newQuestion);
         setResponse('');
-        setRefreshesRemaining(result.cycleRefreshesRemaining + result.permanentRefreshesRemaining);
-        Alert.alert('New Question!', result.message || 'Here\'s a fresh question!');
+        setCycleRefreshes(result.cycleRefreshesRemaining || 0);
+        setPermanentRefreshes(result.permanentRefreshesRemaining || 0);
+        
+        const usedType = result.usedPermanent ? 'permanent' : 'cycle';
+        Alert.alert(
+          'New Question!',
+          result.message || `Here's a fresh question! Used 1 ${usedType} refresh.`
+        );
       } else {
         Alert.alert('No More Refreshes', result.message);
         if (result.cycleRefreshesRemaining === 0 && result.permanentRefreshesRemaining === 0) {
@@ -821,18 +835,84 @@ export default function CategoryQuestionScreen() {
               onResponseChange={setResponse}
               onDrawAnother={handleDrawAnother}
               isSkipping={isSkipping}
-              refreshesRemaining={refreshesRemaining}
+              refreshesRemaining={cycleRefreshes + permanentRefreshes}
               disabled={alreadyAnswered}
             />
           )}
 
-          <View style={styles.infoBanner}>
-            <Text style={styles.infoBannerText}>
-              You have{' '}
-              <Text style={styles.infoBannerHighlight}>{refreshesRemaining}</Text>{' '}
-              refresh{refreshesRemaining === 1 ? '' : 'es'} remaining today.
-            </Text>
-          </View>
+          {/* Refresh Info or Purchase Options */}
+          {cycleRefreshes + permanentRefreshes > 0 ? (
+            <View style={styles.infoBanner}>
+              <Text style={styles.infoBannerText}>
+                {cycleRefreshes > 0 && permanentRefreshes > 0 ? (
+                  <>
+                    You have <Text style={styles.infoBannerHighlight}>{cycleRefreshes}</Text> cycle +{' '}
+                    <Text style={styles.infoBannerHighlight}>{permanentRefreshes}</Text> permanent ={' '}
+                    <Text style={styles.infoBannerHighlight}>{cycleRefreshes + permanentRefreshes}</Text>{' '}
+                    total refreshes
+                  </>
+                ) : (
+                  <>
+                    You have <Text style={styles.infoBannerHighlight}>{cycleRefreshes + permanentRefreshes}</Text>{' '}
+                    {cycleRefreshes > 0 ? 'cycle' : 'permanent'} refresh{cycleRefreshes + permanentRefreshes === 1 ? '' : 'es'} remaining
+                  </>
+                )}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.purchaseSection}>
+              <View style={styles.purchaseHeader}>
+                <Ionicons name="lock-closed" size={24} color={Colors.darkOrange} />
+                <Text style={styles.purchaseHeaderText}>0 Shared refreshes remaining</Text>
+              </View>
+              
+              <Text style={styles.purchaseSubtitle}>Buy more to draw new questions</Text>
+              
+              <View style={styles.pricingOptions}>
+                <DebouncedButton
+                  style={styles.pricingOption}
+                  onPress={() => router.push('/home/draw-locked-upsell')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.pricingText}>3 x Shared question refreshes</Text>
+                  <View style={styles.priceTag}>
+                    <Text style={styles.priceText}>$1.29</Text>
+                  </View>
+                </DebouncedButton>
+                
+                <DebouncedButton
+                  style={[styles.pricingOption, styles.pricingOptionPopular]}
+                  onPress={() => router.push('/home/draw-locked-upsell')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.popularBadge}>
+                    <Text style={styles.popularText}>Most Popular</Text>
+                  </View>
+                  <Text style={styles.pricingText}>6 x Shared question refreshes</Text>
+                  <View style={styles.priceTag}>
+                    <Text style={styles.priceText}>$2.79</Text>
+                  </View>
+                </DebouncedButton>
+                
+                <DebouncedButton
+                  style={styles.pricingOption}
+                  onPress={() => router.push('/home/draw-locked-upsell')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.pricingText}>10 x Shared question refreshes</Text>
+                  <View style={styles.priceTag}>
+                    <Text style={styles.priceText}>$3.99</Text>
+                  </View>
+                </DebouncedButton>
+              </View>
+              
+              <View style={styles.purchaseInfo}>
+                <Text style={styles.purchaseInfoText}>
+                  <Text style={styles.purchaseInfoHighlight}>Refreshes</Text> are shared between you both
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
@@ -944,6 +1024,107 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   infoBannerHighlight: {
+    fontFamily: 'InterTight-Bold',
+    fontWeight: FontWeights.bold,
+    color: Colors.darkOrange,
+  },
+  purchaseSection: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.darkOrange,
+  },
+  purchaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  purchaseHeaderText: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.bold,
+    color: Colors.darkOrange,
+  },
+  purchaseSubtitle: {
+    fontFamily: 'InterTight-Regular',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.regular,
+    color: Colors.inputText,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  pricingOptions: {
+    gap: Spacing.md,
+  },
+  pricingOption: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 2,
+    borderColor: Colors.mediumGrey,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  pricingOptionPopular: {
+    borderColor: Colors.darkOrange,
+    backgroundColor: Colors.veryLightOrange,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -10,
+    left: '50%',
+    marginLeft: -50,
+    backgroundColor: Colors.darkOrange,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  popularText: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: 10,
+    fontWeight: FontWeights.bold,
+    color: Colors.white,
+  },
+  pricingText: {
+    fontFamily: 'InterTight-Medium',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.black,
+    flex: 1,
+  },
+  priceTag: {
+    backgroundColor: Colors.darkOrange,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  priceText: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.bold,
+    color: Colors.white,
+  },
+  purchaseInfo: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    backgroundColor: Colors.veryLightOrange,
+    borderRadius: BorderRadius.md,
+  },
+  purchaseInfoText: {
+    fontFamily: 'InterTight-Regular',
+    fontSize: FontSizes.small,
+    fontWeight: FontWeights.regular,
+    color: Colors.black,
+    textAlign: 'center',
+  },
+  purchaseInfoHighlight: {
     fontFamily: 'InterTight-Bold',
     fontWeight: FontWeights.bold,
     color: Colors.darkOrange,

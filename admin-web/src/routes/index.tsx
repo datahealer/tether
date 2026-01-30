@@ -6,6 +6,9 @@ import { Dashboard } from '../pages/Dashboard';
 import { CategoryDashboard } from '../pages/CategoryDashboard';
 import { ForgotPassword } from '../pages/ForgotPasword';
 import { Profile } from '../pages/Profile';
+import { Users } from '../pages/Users';
+import { Stats } from '../pages/Stats';
+import { Unlocks } from '../pages/Unlocks';
 import Home from '../pages/Home'
 
 // Root index - Home page
@@ -96,6 +99,39 @@ export const categoryDashboardRoute = createRoute({
   },
 });
 
+export const usersRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/users',
+  component: Users,
+  beforeLoad: ({ context }) => {
+    if (!context.auth?.isAuthenticated) {
+      throw redirect({ to: '/admin/login' });
+    }
+  },
+});
+
+export const statsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/stats',
+  component: Stats,
+  beforeLoad: ({ context }) => {
+    if (!context.auth?.isAuthenticated) {
+      throw redirect({ to: '/admin/login' });
+    }
+  },
+});
+
+export const unlocksRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/unlocks',
+  component: Unlocks,
+  beforeLoad: ({ context }) => {
+    if (!context.auth?.isAuthenticated) {
+      throw redirect({ to: '/admin/login' });
+    }
+  },
+});
+
 // Build the route tree
 export const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -107,6 +143,9 @@ export const routeTree = rootRoute.addChildren([
     forgotPasswordRoute,
     profileRoute,
     categoryDashboardRoute,
+    usersRoute,
+    statsRoute,
+    unlocksRoute,
   ]),
 ]);
 

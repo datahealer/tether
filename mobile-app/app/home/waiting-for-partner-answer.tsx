@@ -514,7 +514,7 @@ export default function WaitingForPartnerAnswerScreen() {
         <View style={styles.container}>
           {/* Main Title */}
           <Text style={styles.title}>
-            Still waiting for {partnerName} to{'\n'}answer the latest tether...
+            Still waiting for {partnerName} to answer the latest tether...
           </Text>
 
           {/* Subtitle */}
@@ -530,8 +530,7 @@ export default function WaitingForPartnerAnswerScreen() {
               </View>
               {timeRemaining && (
                 <View style={styles.timeContainer}>
-                  <Text style={styles.timeLabel}>Time Left</Text>
-                  <Text style={styles.timeValue}>{timeRemaining}</Text>
+                  <Text style={styles.timeValue}>Time Left {timeRemaining}</Text>
                 </View>
               )}
             </View>
@@ -544,7 +543,6 @@ export default function WaitingForPartnerAnswerScreen() {
                 <Text style={styles.answerLabelText}>{partnerName}'s Answer</Text>
               </View>
               <View style={styles.lockedAnswerBox}>
-                <Ionicons name="lock-closed" size={24} color={Colors.inputText} />
                 <Text style={styles.lockedAnswerText}>Waiting for their response...</Text>
               </View>
             </View>
@@ -552,34 +550,15 @@ export default function WaitingForPartnerAnswerScreen() {
 
           {/* Your Answer Card (Bottom) */}
           <View style={styles.yourAnswerCard}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{categoryName}</Text>
+            <View style={styles.yourAnswerHeader}>
+              <View style={styles.categoryBadgeYourAnswer}>
+                <Text style={styles.categoryTextYourAnswer}>{categoryName}</Text>
+              </View>
+              <Text style={styles.yourAnswerBadge}>Your Answer</Text>
             </View>
 
-            <View style={styles.answerSection}>
-              <View style={styles.answerLabel}>
-                <Text style={styles.answerLabelText}>Your Answer</Text>
-              </View>
-              <Text style={styles.yourAnswerText}>{userAnswer}</Text>
-            </View>
+            <Text style={styles.yourAnswerText}>{userAnswer}</Text>
           </View>
-
-          {/* Date Display */}
-          {/* <Text style={styles.dateText}>Wednesday, 12th January 2025</Text> */}
-
-          {/* Upcoming Cards Preview */}
-          {/* <View style={styles.upcomingSection}>
-            <View style={styles.upcomingCard}>
-              <View style={styles.upcomingContent}>
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryText}>Add Some Spice</Text>
-                </View>
-                <View style={styles.completedBadge}>
-                  <Text style={styles.completedText}>Completed</Text>
-                </View>
-              </View>
-            </View>
-          </View> */}
 
           {/* Bottom Spacer */}
           <View style={styles.bottomSpacer} />
@@ -599,155 +578,135 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'InterTight-Bold',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: FontWeights.bold,
     color: Colors.black,
-    textAlign: 'center',
-    marginBottom: Spacing.xs,
+    textAlign: 'left',
+    marginBottom: 8,
     marginTop: Spacing.lg,
-    lineHeight: 32,
+    lineHeight: 34,
   },
   subtitle: {
     fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.description,
+    fontSize: 16,
     fontWeight: FontWeights.regular,
     color: Colors.inputText,
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
+    textAlign: 'left',
+    marginBottom: 24,
   },
   questionCard: {
     backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#FF8C42',
   },
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: 20,
   },
   categoryBadge: {
-    backgroundColor: Colors.veryLightOrange,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.white,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   categoryText: {
     fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.small,
+    fontSize: 13,
     fontWeight: FontWeights.semibold,
     color: Colors.black,
   },
   timeContainer: {
     alignItems: 'flex-end',
   },
-  timeLabel: {
-    fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.regular,
-    color: Colors.inputText,
-  },
   timeValue: {
-    fontFamily: 'InterTight-Bold',
-    fontSize: FontSizes.medium,
-    fontWeight: FontWeights.bold,
-    color: Colors.darkOrange,
+    fontFamily: 'InterTight-Regular',
+    fontSize: 14,
+    fontWeight: FontWeights.regular,
+    color: Colors.black,
   },
   questionText: {
     fontFamily: 'InterTight-Bold',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: FontWeights.bold,
     color: Colors.black,
     textAlign: 'center',
-    marginBottom: Spacing.xl,
-    lineHeight: 30,
+    marginBottom: 24,
+    lineHeight: 32,
   },
   answerSection: {
     marginBottom: 0,
   },
   answerLabel: {
-    backgroundColor: Colors.veryLightOrange,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 0,
     alignSelf: 'flex-start',
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   answerLabelText: {
     fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.small,
+    fontSize: 14,
     fontWeight: FontWeights.semibold,
     color: Colors.black,
-    padding:Spacing.sm
   },
   lockedAnswerBox: {
-    backgroundColor: Colors.mediumGrey,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    justifyContent: 'center',
-    minHeight: 80,
+    gap: 0,
+    justifyContent: 'flex-start',
+    minHeight: 'auto',
   },
   lockedAnswerText: {
-    fontFamily: 'InterTight-Medium',
-    fontSize: FontSizes.medium,
-    fontWeight: FontWeights.medium,
-    color: Colors.inputText,
+    fontFamily: 'InterTight-Regular',
+    fontSize: 16,
+    fontWeight: FontWeights.regular,
+    color: '#999999',
   },
   yourAnswerCard: {
-    backgroundColor: Colors.lightOrange,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    backgroundColor: '#FFB088',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: Spacing.md,
   },
-  yourAnswerText: {
-    fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.heading,
-    fontWeight: FontWeights.bold,
-    color: Colors.black,
-    lineHeight: 36,
-  },
-  dateText: {
-    fontFamily: 'InterTight-Regular',
-    fontSize: FontSizes.medium,
-    fontWeight: FontWeights.regular,
-    color: Colors.inputText,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-  },
-  upcomingSection: {
-    marginTop: Spacing.sm,
-  },
-  upcomingCard: {
-    backgroundColor: Colors.lightOrange,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    opacity: 0.6,
-  },
-  upcomingContent: {
+  yourAnswerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  completedBadge: {
+  categoryBadgeYourAnswer: {
     backgroundColor: Colors.white,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  completedText: {
+  categoryTextYourAnswer: {
     fontFamily: 'InterTight-SemiBold',
-    fontSize: FontSizes.small,
+    fontSize: 13,
     fontWeight: FontWeights.semibold,
     color: Colors.black,
+  },
+  yourAnswerBadge: {
+    fontFamily: 'InterTight-Regular',
+    fontSize: 14,
+    fontWeight: FontWeights.regular,
+    color: Colors.black,
+  },
+  yourAnswerText: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: 24,
+    fontWeight: FontWeights.bold,
+    color: Colors.black,
+    lineHeight: 32,
   },
   bottomSpacer: {
     height: 40,

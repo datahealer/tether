@@ -174,7 +174,7 @@ class FCMProvider {
         if (!fs.existsSync(resolvedPath)) {
           throw new Error(
             `Firebase service account file not found at: ${resolvedPath}\n` +
-              `Check that the file exists and FIREBASE_SERVICE_ACCOUNT_PATH is correct.`
+              'Check that the file exists and FIREBASE_SERVICE_ACCOUNT_PATH is correct.'
           );
         }
 

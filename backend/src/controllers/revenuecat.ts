@@ -374,3 +374,88 @@ export const getSubscriptionHistory = async (req: Request, res: Response): Promi
     });
   }
 };
+
+/**
+ * POST /api/revenuecat/purchase-refreshes
+ * Purchase permanent refresh bundle (non-consumable)
+ */
+export const purchaseRefreshes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { productId, transactionId, refreshCount, price, currency, store } = req.body;
+
+    if (!productId || !refreshCount || !store) {
+      res.status(400).json({ 
+        error: 'Missing required fields: productId, refreshCount, store' 
+      });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    console.log('🔄 Processing refresh bundle purchase:', { 
+      userId, 
+      productId, 
+      refreshCount,
+      price,
+      store 
+    });
+
+    // Get or create UserEntitlement
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const entitlement = await UserEntitlement.findOne({ userId: user._id });
+
+    if (!entitlement) {
+      res.status(404).json({ error: 'User entitlement not found' });
+      return;
+    }
+
+    // Add permanent refreshes
+    entitlement.refreshesPermanent += refreshCount;
+    await entitlement.save();
+
+    console.log(`✅ Added ${refreshCount} permanent refreshes. New total: ${entitlement.refreshesPermanent}`);
+
+    // Log the purchase in Purchase model
+    const Purchase = (await import('../models/Purchase')).default;
+    await Purchase.create({
+      userId: user._id,
+      planType: 'refresh_bundle',
+      amount: price || 0,
+      currency: currency || 'USD',
+      status: 'completed',
+      startDate: new Date(),
+      purchaseToken: transactionId || `refresh_${Date.now()}`,
+      revenueCatProductId: productId,
+      revenueCatStore: store.toLowerCase(),
+      metadata: {
+        refreshCount,
+        type: 'permanent_refresh',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully added ${refreshCount} permanent refreshes`,
+      refreshes: {
+        default: entitlement.refreshesDefault,
+        permanent: entitlement.refreshesPermanent,
+        total: entitlement.refreshesDefault + entitlement.refreshesPermanent,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Purchase refreshes error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to purchase refreshes',
+    });
+  }
+};

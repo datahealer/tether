@@ -20,7 +20,6 @@ export interface IOnboardingData {
   livingType: LivingType[];
   hasKids: boolean;
   goals: GoalTag[];
-  emotionalNeeds: EmotionalNeed[];
   rhythmPreference: Rhythm;
 }
 
@@ -90,6 +89,7 @@ export interface ITetherAnswer {
 export interface ITether extends Document {
   
   coupleId: Types.ObjectId;
+  categoryId: CategoryId;
   questionId: string;
   question: IQuestion;
   status: TetherStatus;
@@ -99,6 +99,8 @@ export interface ITether extends Document {
   skippedBy?: Types.ObjectId[];
   refreshed: boolean;
   firstResponderUserId?: Types.ObjectId;
+  defaultRefreshes: number; // Per-cycle refresh pool (1 for free, 3 for premium)
+  clearedBy?: 'first_answer' | 'expiry' | 'cycle_end'; // Why this tether was cleared
   createdAt: Date;
 }
 

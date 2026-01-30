@@ -1,55 +1,51 @@
 import cron from 'node-cron';
 import Couple from '../models/Couple';
 import { QuestionServiceEngine } from './questionService';
+import { TetherDropService } from './tetherDropService';
 import { sendGentleReminder } from '../utils/milestoneHelpers';
 import { CoupleQuestionState } from '../models/CoupleQuestionState';
 import { QuestionState } from '../types/enums';
+import { SoloQuestionExpiryService } from './soloQuestionExpiry.service';
+import { VirtualPartnerService } from './virtualPartner.service';
 
 /**
  * Scheduled job to drop tethers based on couples' rhythms
  * Runs every hour
+ * Uses interval-based timing: 24h (daily), 72h (twice weekly), 168h (weekly)
  */
 export const scheduleTetherDropJob = () => {
   cron.schedule('0 * * * *', async () => {
-    console.log('Running tether drop job...');
+    console.log('[ScheduledJobs] Running tether drop job...');
     
     try {
-      const activeCouples = await Couple.find({ status: 'active' });
-      
-      for (const couple of activeCouples) {
-        try {
-          await QuestionServiceEngine.dropTethersForCouple(couple._id);
-        } catch (error) {
-          console.error(`Error dropping tethers for couple ${couple._id}:`, error);
-        }
-      }
-      
-      console.log(`Tether drop job completed for ${activeCouples.length} couples`);
+      await TetherDropService.processAllCouples();
+      console.log('[ScheduledJobs] Tether drop job completed');
     } catch (error) {
-      console.error('Error in tether drop job:', error);
+      console.error('[ScheduledJobs] Error in tether drop job:', error);
     }
   });
   
-  console.log('Tether drop job scheduled (runs every hour)');
+  console.log('[ScheduledJobs] Tether drop job scheduled (runs every hour)');
 };
 
 /**
  * Scheduled job to handle expired questions
  * Runs every hour
+ * Transitions unanswered/partially-answered tethers to 14-day cooldown
  */
 export const scheduleExpiryHandlerJob = () => {
   cron.schedule('0 * * * *', async () => {
-    console.log('Running expiry handler job...');
+    console.log('[ScheduledJobs] Running expiry handler job...');
     
     try {
-      await QuestionServiceEngine.handleExpiredQuestions();
-      console.log('Expiry handler job completed');
+      await TetherDropService.handleExpiredTethers();
+      console.log('[ScheduledJobs] Expiry handler job completed');
     } catch (error) {
-      console.error('Error in expiry handler job:', error);
+      console.error('[ScheduledJobs] Error in expiry handler job:', error);
     }
   });
   
-  console.log('Expiry handler job scheduled (runs every hour)');
+  console.log('[ScheduledJobs] Expiry handler job scheduled (runs every hour)');
 };
 
 /**
@@ -207,6 +203,44 @@ export const scheduleTrialExpiryJob = () => {
 };
 
 /**
+ * Scheduled job to expire solo mode questions (24 hour expiry)
+ * Runs every hour
+ */
+export const scheduleSoloQuestionExpiryJob = () => {
+  cron.schedule('0 * * * *', async () => {
+    console.log('[ScheduledJobs] Running solo question expiry job...');
+    
+    try {
+      await SoloQuestionExpiryService.expireSoloQuestions();
+      console.log('[ScheduledJobs] Solo question expiry job completed');
+    } catch (error) {
+      console.error('[ScheduledJobs] Error in solo question expiry job:', error);
+    }
+  });
+  
+  console.log('[ScheduledJobs] Solo question expiry job scheduled (runs every hour)');
+};
+
+/**
+ * Scheduled job to cleanup orphaned virtual partners
+ * Runs once daily at 2 AM
+ */
+export const scheduleVirtualPartnerCleanupJob = () => {
+  cron.schedule('0 2 * * *', async () => {
+    console.log('[ScheduledJobs] Running virtual partner cleanup job...');
+    
+    try {
+      await VirtualPartnerService.cleanupOrphanedVirtualPartners();
+      console.log('[ScheduledJobs] Virtual partner cleanup job completed');
+    } catch (error) {
+      console.error('[ScheduledJobs] Error in virtual partner cleanup job:', error);
+    }
+  });
+  
+  console.log('[ScheduledJobs] Virtual partner cleanup job scheduled (runs daily at 2 AM)');
+};
+
+/**
  * Initialize all scheduled jobs
  */
 export const initializeScheduledJobs = () => {
@@ -217,6 +251,8 @@ export const initializeScheduledJobs = () => {
   scheduleReminderJob();
   scheduleUnlockExpiryJob();
   scheduleTrialExpiryJob();
+  scheduleSoloQuestionExpiryJob(); // 🆕 Solo mode
+  scheduleVirtualPartnerCleanupJob(); // 🆕 Solo mode
   
   console.log('All scheduled jobs initialized');
 };

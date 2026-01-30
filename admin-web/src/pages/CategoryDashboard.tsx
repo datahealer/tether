@@ -97,13 +97,45 @@ const confirmDeleteCategory = async () => {
        >
          Questions
        </Link>
+       {/* <Link
+         to="/admin/dashboard"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Questions
+       </Link> */}
        <Link
          to="/admin/categories"
          activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
          inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
-         className="text-2xl cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+         className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
        >
          Categories
+       </Link>
+       <Link
+         to="/admin/users"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Users
+       </Link>
+       <Link
+         to="/admin/stats"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Stats
+       </Link>
+       <Link
+         to="/admin/unlocks"
+         activeProps={{ className: 'text-[#FF7E3D] border-b-2 border-[#FF7E3D] pb-2' }}
+         inactiveProps={{ className: 'text-[#1F2935]/70 hover:text-[#1F2935]' }}
+         className="text-lg cursor-pointer font-semibold transition-colors border-[#1F2935] border rounded-xl p-3 text-[#1F2935]/70"
+       >
+         Unlocks
        </Link>
      </div>
       <div className="flex items-center justify-between">

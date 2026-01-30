@@ -4,6 +4,7 @@ import { TetherStatus } from '../types/enums';
 
 const tetherSchema = new Schema<ITether>({
   coupleId: { type: Schema.Types.ObjectId, ref: 'Couple', required: true },
+  categoryId: { type: String, required: true },
   questionId: { type: String, required: true },
   question: { type: Schema.Types.Mixed, required: true }, // embedded full question
   status: {
@@ -21,6 +22,8 @@ const tetherSchema = new Schema<ITether>({
   skippedBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   refreshed: { type: Boolean, default: false },
   firstResponderUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+  defaultRefreshes: { type: Number, required: true, min: 0 }, // Per-cycle refresh pool
+  clearedBy: { type: String, enum: ['first_answer', 'expiry', 'cycle_end'] },
 }, {
   timestamps: true,
  
@@ -29,6 +32,7 @@ const tetherSchema = new Schema<ITether>({
 // Performance indexes for common queries
 tetherSchema.index({ coupleId: 1, droppedAt: -1 });
 tetherSchema.index({ coupleId: 1, status: 1 }); // For filtering active tethers by couple
+tetherSchema.index({ coupleId: 1, categoryId: 1, status: 1 }); // For finding active tethers per category
 tetherSchema.index({ expiresAt: 1 });
 tetherSchema.index({ status: 1, expiresAt: 1 }); // For finding expired tethers
 tetherSchema.index({ questionId: 1 }); // For question lookups

@@ -11,12 +11,109 @@ import {
   initializeCoupleCategories,
   getTetherHistory,
   addReaction,
+  getActiveTethersV2,
+  submitAnswerV2,
+  refreshQuestionV2,
+  forceDropTethers,
 } from '../controllers/tether';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// ============================================
+// V2 ROUTES FIRST (More specific paths must come before generic ones)
+// ============================================
+
+/**
+ * @swagger
+ * /api/tethers/v2/active:
+ *   get:
+ *     summary: Get active tethers from current cycle (NEW)
+ *     description: Returns live tethers with refresh pool info (per-cycle + permanent)
+ *     tags: [Tethers V2]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Active tethers with refresh info
+ */
+router.get('/v2/active', getActiveTethersV2);
+
+/**
+ * @swagger
+ * /api/tethers/v2/answer:
+ *   post:
+ *     summary: Submit answer with first-answer locking (NEW)
+ *     description: First answer locks all other tethers in cycle
+ *     tags: [Tethers V2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tetherId
+ *               - answer
+ *             properties:
+ *               tetherId:
+ *                 type: string
+ *               answer:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Answer submitted successfully
+ */
+router.post('/v2/answer', submitAnswerV2);
+
+/**
+ * @swagger
+ * /api/tethers/v2/refresh:
+ *   post:
+ *     summary: Refresh question with dual-pool logic (NEW)
+ *     description: Uses per-cycle refreshes first, then permanent pool
+ *     tags: [Tethers V2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tetherId
+ *             properties:
+ *               tetherId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Question refreshed successfully
+ */
+router.post('/v2/refresh', refreshQuestionV2);
+
+/**
+ * @swagger
+ * /api/tethers/v2/force-drop:
+ *   post:
+ *     summary: Force drop new tethers (testing/admin)
+ *     description: Bypasses rhythm interval check
+ *     tags: [Tethers V2]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Tethers dropped successfully
+ */
+router.post('/v2/force-drop', forceDropTethers);
+
+// ============================================
+// V1 ROUTES (Original endpoints)
+// ============================================
 
 /**
  * @swagger

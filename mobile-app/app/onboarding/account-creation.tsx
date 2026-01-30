@@ -509,9 +509,10 @@ export default function AccountCreationScreen() {
 
   return (
     <OnboardingLayout 
-      progress={0.14} 
+      // progress={0.14} 
       showBackButton={true}
       showLogoutAvatar={true}
+      showTetherLine={true}
       // rightButton={
       //   !user ? (
       //     <DebouncedButton onPress={handleSkip}>

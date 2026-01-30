@@ -11,6 +11,8 @@ export interface ICouple extends Document {
   user1Id: mongoose.Types.ObjectId;
   user2Id: mongoose.Types.ObjectId;
   status: 'active' | 'paused' | 'ended';
+  isSoloMode: boolean; // 🆕 Solo mode flag
+  soloUserId?: mongoose.Types.ObjectId; // 🆕 The actual user in solo mode
   rhythm: Rhythm;
   lastTetherDrop?: Date;
   createdAt: Date;
@@ -21,6 +23,8 @@ export interface ICouple extends Document {
     lastTetherDate?: Date;
     milestoneRecords: IMilestoneRecord[];
     permanentRefreshBalance: number; // Never-expiring refresh purchases
+    refreshesUsedThisCycle: number; // How many default refreshes used this cycle
+    lastRefreshCycleReset?: Date; // When default refreshes were last reset
   };
 }
 
@@ -32,6 +36,15 @@ const CoupleSchema: Schema = new Schema(
       type: String, 
       enum: ['active', 'paused', 'ended'], 
       default: 'active' 
+    },
+    isSoloMode: {
+      type: Boolean,
+      default: false,
+      index: true, // For querying solo couples
+    },
+    soloUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     rhythm: {
       type: String,
@@ -53,6 +66,8 @@ const CoupleSchema: Schema = new Schema(
         },
       ],
       permanentRefreshBalance: { type: Number, default: 0, min: 0 },
+      refreshesUsedThisCycle: { type: Number, default: 0, min: 0 },
+      lastRefreshCycleReset: { type: Date },
     },
   },
   {
@@ -66,5 +81,6 @@ CoupleSchema.index({ user2Id: 1, status: 1 });
 CoupleSchema.index({ user1Id: 1, user2Id: 1 }); // Compound index for couple lookups
 CoupleSchema.index({ lastTetherDrop: 1 });
 CoupleSchema.index({ status: 1, lastTetherDrop: 1 }); // For active couples needing tether drops
+CoupleSchema.index({ isSoloMode: 1, status: 1 }); // For solo mode queries
 
 export default mongoose.model<ICouple>('Couple', CoupleSchema);

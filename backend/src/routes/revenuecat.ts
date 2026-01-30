@@ -10,6 +10,7 @@ import {
   grantEntitlement,
   revokeEntitlement,
   getSubscriptionHistory,
+  purchaseRefreshes,
 } from '../controllers/revenuecat';
 import { getRevenueCatService } from '../services/revenuecat/revenuecat.service';
 import { authMiddleware } from '../middleware/auth';
@@ -395,5 +396,71 @@ router.post('/entitlement/revoke', authMiddleware, revokeEntitlement);
  *         description: Unauthorized
  */
 router.get('/subscription/history', authMiddleware, getSubscriptionHistory);
+
+/**
+ * @swagger
+ * /api/revenuecat/purchase-refreshes:
+ *   post:
+ *     summary: Purchase permanent refresh bundle
+ *     description: Add permanent refreshes to user's account (non-consumable purchase)
+ *     tags: [RevenueCat]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - refreshCount
+ *               - store
+ *             properties:
+ *               productId:
+ *                 type: string
+ *                 description: RevenueCat product ID (e.g., "refresh_3", "refresh_6", "refresh_10")
+ *               transactionId:
+ *                 type: string
+ *                 description: Store transaction ID
+ *               refreshCount:
+ *                 type: number
+ *                 description: Number of permanent refreshes to add (3, 6, or 10)
+ *               price:
+ *                 type: number
+ *                 description: Purchase price
+ *               currency:
+ *                 type: string
+ *                 default: USD
+ *               store:
+ *                 type: string
+ *                 enum: [ios, android, app_store, play_store]
+ *     responses:
+ *       200:
+ *         description: Refreshes purchased successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 refreshes:
+ *                   type: object
+ *                   properties:
+ *                     default:
+ *                       type: number
+ *                     permanent:
+ *                       type: number
+ *                     total:
+ *                       type: number
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/purchase-refreshes', authMiddleware, purchaseRefreshes);
 
 export default router;

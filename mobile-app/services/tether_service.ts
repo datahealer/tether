@@ -86,7 +86,7 @@ export async function getActiveTethers(): Promise<{
   refreshes: RefreshInfo;
 }> {
   try {
-    const response = await authenticatedFetch(`${API_URL}/api/tethers/active`, {
+    const response = await authenticatedFetch(`${API_URL}/api/tethers/v2/active`, {
       method: 'GET',
     });
 
@@ -111,6 +111,51 @@ export async function getActiveTethers(): Promise<{
 /**
  * Submit an answer to a tether
  */
+// export async function submitAnswer(
+//   questionId: string,
+//   answer: string
+// ): Promise<{
+//   state: string;
+//   partnerAnswer?: string;
+//   milestones?: MilestoneData[];
+//   notification?: string;
+// }> {
+//   try {
+//     const response = await authenticatedFetch(`${API_URL}/api/tethers/v2/answer`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({ questionId, answer }),
+//     });
+
+//     if (!response.ok) {
+//       const errorText = await response.text();
+//       console.error('API Error:', response.status, errorText);
+//       try {
+//         const errorData = JSON.parse(errorText);
+        
+//         // Create error object with response data for special handling
+//         const error: any = new Error(errorData.message || 'Failed to submit answer');
+//         error.response = {
+//           status: response.status,
+//           data: errorData,
+//         };
+//         throw error;
+//       } catch (parseError: any) {
+//         // If we already threw above, re-throw it
+//         if (parseError.response) throw parseError;
+//         // Otherwise generic error
+//         throw new Error(`Server error: ${response.status}`);
+//       }
+//     }
+
+//     return await response.json();
+//   } catch (error) {
+//     console.error('Error submitting answer:', error);
+//     throw error;
+//   }
+// }
 export async function submitAnswer(
   questionId: string,
   answer: string
@@ -121,12 +166,12 @@ export async function submitAnswer(
   notification?: string;
 }> {
   try {
-    const response = await authenticatedFetch(`${API_URL}/api/tethers/answer`, {
+    const response = await authenticatedFetch(`${API_URL}/api/tethers/v2/answer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ questionId, answer }),
+      body: JSON.stringify({ questionId, answer }), // ✅ Uses questionId
     });
 
     if (!response.ok) {
@@ -135,7 +180,6 @@ export async function submitAnswer(
       try {
         const errorData = JSON.parse(errorText);
         
-        // Create error object with response data for special handling
         const error: any = new Error(errorData.message || 'Failed to submit answer');
         error.response = {
           status: response.status,
@@ -143,9 +187,7 @@ export async function submitAnswer(
         };
         throw error;
       } catch (parseError: any) {
-        // If we already threw above, re-throw it
         if (parseError.response) throw parseError;
-        // Otherwise generic error
         throw new Error(`Server error: ${response.status}`);
       }
     }
@@ -161,6 +203,52 @@ export async function submitAnswer(
  * Skip/refresh a tether ("Draw Another" in UI)
  * Uses cycle refreshes first (FREE: 1, PREMIUM: 3), then permanent refresh balance
  */
+// export async function skipTether(
+//   questionId: string
+// ): Promise<{
+//   newQuestion?: TetherQuestion;
+//   message: string;
+//   cycleRefreshesRemaining: number;
+//   permanentRefreshesRemaining: number;
+//   usedPermanent: boolean;
+// }> {
+//   try {
+//     const response = await authenticatedFetch(`${API_URL}/api/tethers/v2/refresh`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({ questionId }),
+//     });
+
+//     if (!response.ok) {
+//       const errorText = await response.text();
+//       console.error('API Error:', response.status, errorText);
+//       try {
+//         const errorData = JSON.parse(errorText);
+        
+//         // Create error object with response data for special handling
+//         const error: any = new Error(errorData.message || 'Failed to skip tether');
+//         error.response = {
+//           status: response.status,
+//           data: errorData,
+//         };
+//         throw error;
+//       } catch (parseError: any) {
+//         // If we already threw above, re-throw it
+//         if (parseError.response) throw parseError;
+//         // Otherwise generic error
+//         throw new Error(`Server error: ${response.status}`);
+//       }
+//     }
+
+//     return await response.json();
+//   } catch (error) {
+//     console.error('Error skipping tether:', error);
+//     throw error;
+//   }
+// }
+ 
 export async function skipTether(
   questionId: string
 ): Promise<{
@@ -171,12 +259,12 @@ export async function skipTether(
   usedPermanent: boolean;
 }> {
   try {
-    const response = await authenticatedFetch(`${API_URL}/api/tethers/skip`, {
+    const response = await authenticatedFetch(`${API_URL}/api/tethers/v2/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ questionId }),
+      body: JSON.stringify({ questionId }), // ✅ Uses questionId
     });
 
     if (!response.ok) {
@@ -185,7 +273,6 @@ export async function skipTether(
       try {
         const errorData = JSON.parse(errorText);
         
-        // Create error object with response data for special handling
         const error: any = new Error(errorData.message || 'Failed to skip tether');
         error.response = {
           status: response.status,
@@ -193,9 +280,7 @@ export async function skipTether(
         };
         throw error;
       } catch (parseError: any) {
-        // If we already threw above, re-throw it
         if (parseError.response) throw parseError;
-        // Otherwise generic error
         throw new Error(`Server error: ${response.status}`);
       }
     }

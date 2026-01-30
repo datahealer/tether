@@ -284,22 +284,44 @@ class RevenueCatService {
       const tier = planType === 'trial' ? Tier.TRIAL : Tier.PREMIUM;
       console.log('🎯 Setting tier to:', tier);
 
-      // Update or create UserEntitlement
-      const entitlement = await UserEntitlement.findOneAndUpdate(
-        { userId: user._id },
-        {
-          userId: user._id,
-          tier,
-          ...(planType === 'trial' && { 
-            trialEnd: expiresAt,
-            refreshesDefault: 3, // Trial gets 3 refreshes
-          }),
-          ...(planType !== 'trial' && { 
-            premiumEnd: expiresAt,
-            refreshesDefault: 999, // Premium gets unlimited refreshes
-          }),
-        },
-        { upsert: true, new: true }
+      // 🔄 ONE PLAN PER COUPLE: Get partner if user is in a couple
+      let partnerIds = [user._id];
+      if (user.coupleId) {
+        const Couple = (await import('../../models/Couple')).default;
+        const couple = await Couple.findById(user.coupleId).select('user1Id user2Id');
+        if (couple) {
+          partnerIds = [couple.user1Id, couple.user2Id];
+          console.log('👥 Applying subscription to both partners in couple');
+        }
+      }
+
+      // Update or create UserEntitlement for BOTH partners
+      await Promise.all(
+        partnerIds.map(async (partnerId) => {
+          const isOriginalUser = partnerId.toString() === user._id.toString();
+          
+          await UserEntitlement.findOneAndUpdate(
+            { userId: partnerId },
+            {
+              userId: partnerId,
+              tier,
+              ...(planType === 'trial' && { 
+                trialEnd: expiresAt,
+                refreshesDefault: 3,
+              }),
+              ...(planType !== 'trial' && { 
+                premiumEnd: expiresAt,
+                refreshesDefault: 3, // Premium gets 3 refreshes per cycle
+              }),
+            },
+            { upsert: true, new: true }
+          );
+          
+          // Update subscribed flag for both partners
+          await User.findByIdAndUpdate(partnerId, { subscribed: true });
+          
+          console.log(`✅ ${isOriginalUser ? 'Subscriber' : 'Partner'} tier updated to ${tier}:`, partnerId);
+        })
       );
 
       console.log('✅ Subscription activated:', {
@@ -308,7 +330,7 @@ class RevenueCatService {
         tier,
         planType,
         expiresAt,
-        entitlementId: entitlement._id,
+        partnersAffected: partnerIds.length,
       });
 
       // Update category access for the new tier
@@ -365,24 +387,69 @@ class RevenueCatService {
         user.subscribed = false;
         await user.save();
         
-        // Downgrade to FREE tier
-        const entitlement = await UserEntitlement.findOneAndUpdate(
-          { userId: user._id },
-          {
-            tier: Tier.FREE,
-            trialEnd: undefined,
-            premiumEnd: undefined,
-            refreshesDefault: 1, // Free tier gets 1 refresh
-          },
-          { new: true }
+        // 🔄 ONE PLAN PER COUPLE: Check if partner has active subscription
+        let newTier = Tier.FREE;
+        let partnerIds = [user._id];
+        
+        if (user.coupleId) {
+          const Couple = (await import('../../models/Couple')).default;
+          const couple = await Couple.findById(user.coupleId).select('user1Id user2Id');
+          
+          if (couple) {
+            partnerIds = [couple.user1Id, couple.user2Id];
+            const partnerId = partnerIds.find(id => id.toString() !== user._id.toString());
+            
+            if (partnerId) {
+              // Check if partner has active subscription
+              const partnerSubscription = await Purchase.findOne({
+                userId: partnerId,
+                status: 'active',
+                expiresAt: { $gt: new Date() },
+              });
+              
+              if (partnerSubscription) {
+                // Partner still has subscription - couple stays on that tier
+                const planType = partnerSubscription.planType;
+                newTier = planType === 'trial' ? Tier.TRIAL : Tier.PREMIUM;
+                console.log(`✅ Partner has active ${planType} - couple remains on ${newTier} tier`);
+              } else {
+                console.log('⬇️ Partner also has no subscription - couple downgrading to FREE');
+              }
+            }
+          }
+        }
+        
+        // Update tier for all partners in couple (or just user if solo)
+        await Promise.all(
+          partnerIds.map(async (partnerId) => {
+            const isExpiredUser = partnerId.toString() === user._id.toString();
+            
+            await UserEntitlement.findOneAndUpdate(
+              { userId: partnerId },
+              {
+                tier: newTier,
+                ...(newTier === Tier.FREE && {
+                  trialEnd: undefined,
+                  premiumEnd: undefined,
+                  refreshesDefault: 1,
+                }),
+              },
+              { new: true }
+            );
+            
+            // Only mark expired user as unsubscribed if going to FREE
+            if (isExpiredUser && newTier === Tier.FREE) {
+              await User.findByIdAndUpdate(partnerId, { subscribed: false });
+            }
+            
+            console.log(`${isExpiredUser ? '⏰ Expired user' : '👥 Partner'} tier set to ${newTier}:`, partnerId);
+          })
         );
-
-        console.log('✅ User downgraded to FREE tier');
 
         // Update category access
         if (user.coupleId) {
-          await QuestionServiceEngine.updateCategoryAccessForTierChange(user.coupleId, Tier.FREE);
-          console.log('✅ Category access locked for couple:', user.coupleId);
+          await QuestionServiceEngine.updateCategoryAccessForTierChange(user.coupleId, newTier);
+          console.log(`✅ Category access updated for couple - tier: ${newTier}`);
         }
       } else {
         console.log('ℹ️ User still has active subscription, not downgrading');

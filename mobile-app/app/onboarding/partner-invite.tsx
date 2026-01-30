@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '../../components/ui/onboarding/Onboarding_layout';
 import { useOnboarding } from '@/context/onboarding_context';
+import { useAuth } from '@/context/auth_context';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import * as Clipboard from 'expo-clipboard';
 import { generateCoupleInvite, acceptCoupleInvite } from '@/services/onboarding_service';
@@ -22,6 +23,7 @@ import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 export default function PartnerInviteScreen() {
   const router = useRouter();
   const { onboardingData } = useOnboarding();
+  const { user, refreshSession } = useAuth();
   const [inviteCode, setInviteCode] = useState('');
   const [partnerCode, setPartnerCode] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,23 @@ export default function PartnerInviteScreen() {
   useEffect(() => {
     generateInviteCode();
   }, []);
+
+  // Poll for couple connection every 5 seconds
+  // This allows User A to auto-navigate when User B connects
+  useEffect(() => {
+    // Don't poll if user is already in a real couple
+    if (!user || (user.coupleId && !user.isSoloMode)) return;
+
+    const pollInterval = setInterval(async () => {
+      console.log('🔄 Checking for partner connection...');
+      await refreshSession();
+      
+      // Note: The navigation will happen via NavigationHandler when user state updates
+      // No need to manually navigate here
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [user?.id, user?.coupleId, user?.isSoloMode]);
 
   const generateInviteCode = async () => {
     try {
@@ -58,10 +77,25 @@ export default function PartnerInviteScreen() {
     setConnecting(true);
 
     try {
+      // Accept the invite - this creates the couple connection (becomes real couple, isSoloMode = false)
       await acceptCoupleInvite(partnerCode.trim());
+      
+      // Refresh user session to get updated coupleId and user data
+      await refreshSession();
+      
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success!', 'You are now connected with your partner!');
-      router.replace('/onboarding/attribution');
+      
+      // Check if user has already completed onboarding
+      if (user && user.onboarded) {
+        // Already onboarded → go directly to first-tether
+        console.log('✅ User already onboarded, navigating to first-tether');
+        router.replace('/onboarding/first-tether');
+      } else {
+        // Not onboarded yet → continue through attribution → finish → first-tether
+        console.log('⏳ User not onboarded, continuing to attribution');
+        router.replace('/onboarding/attribution');
+      }
     } catch (error: any) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to connect with partner');
@@ -92,8 +126,24 @@ export default function PartnerInviteScreen() {
   };
 
   const handleSkip = async () => {
+    // Disable skip if user has entered a partner code
+    if (partnerCode.trim()) {
+      Alert.alert('Code Entered', 'Please connect with your partner or clear the code to skip');
+      return;
+    }
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.replace('/onboarding/attribution');
+    
+    // User pressed skip while in solo mode
+    // Check if they've already completed onboarding
+    if (user && user.onboarded) {
+      // Already onboarded → go directly to first-tether
+      console.log('✅ Solo user already onboarded, navigating to first-tether');
+      router.replace('/onboarding/first-tether');
+    } else {
+      // Not onboarded yet → continue through attribution → finish → first-tether
+      console.log('⏳ Solo user not onboarded, continuing to attribution');
+      router.replace('/onboarding/attribution');
+    }
   };
 
   if (loading) {
@@ -108,8 +158,18 @@ export default function PartnerInviteScreen() {
   }
 
   return (
-    <OnboardingLayout showBackButton={true} showLogo={true}>
+    <OnboardingLayout showBackButton={true} showLogo={true} showLogoutAvatar={true}>
       <View style={styles.container}>
+        {/* Solo Mode Indicator */}
+        {user?.isSoloMode && !user?.linkedToRealPartner && (
+          <View style={styles.soloModeIndicator}>
+            <Ionicons name="person-outline" size={20} color={Colors.darkOrange} />
+            <Text style={styles.soloModeText}>
+              You're exploring in Solo Mode. Connect with your partner to unlock the full experience!
+            </Text>
+          </View>
+        )}
+
         {/* Heading */}
         <Text style={styles.heading}>Tether yourselves together</Text>
 
@@ -164,8 +224,12 @@ export default function PartnerInviteScreen() {
         </DebouncedButton>
 
         {/* Skip Link */}
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip</Text>
+        <TouchableOpacity 
+          onPress={handleSkip} 
+          style={[styles.skipButton, partnerCode.trim() && styles.skipButtonDisabled]}
+          disabled={partnerCode.trim().length > 0}
+        >
+          <Text style={[styles.skipText, partnerCode.trim() && styles.skipTextDisabled]}>Skip</Text>
         </TouchableOpacity>
       </View>
     </OnboardingLayout>
@@ -275,11 +339,35 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     marginTop: 'auto',
   },
+  skipButtonDisabled: {
+    opacity: 0.4,
+  },
   skipText: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: FontSizes.description,
     fontWeight: FontWeights.regular,
     color: Colors.black,
     textDecorationLine: 'underline',
+  },
+  skipTextDisabled: {
+    color: Colors.darkGrey,
+  },
+  soloModeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.veryLightOrange,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.lightOrange,
+  },
+  soloModeText: {
+    fontFamily: 'SFProDisplay-Medium',
+    fontSize: FontSizes.small,
+    fontWeight: FontWeights.medium,
+    color: Colors.inputText,
+    flex: 1,
   },
 });

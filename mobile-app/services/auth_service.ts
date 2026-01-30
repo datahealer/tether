@@ -192,6 +192,8 @@ export interface AuthUser {
   coupleId: any;
   subscribed?: boolean;
   onboarded?: boolean;
+  isSoloMode?: boolean; // 🆕 Solo mode flag
+  linkedToRealPartner?: boolean; // 🆕 Solo mode - if real partner joined
   id: string;
   email: string;
   name: string;
@@ -210,7 +212,6 @@ export interface AuthUser {
     livingType?: string[];
     hasChildren?: boolean;
     goals?: string[];
-    emotionalNeeds?: string[];
     rhythm?: string;
     tone?: string;
     packPreferences?: string[];
@@ -539,6 +540,8 @@ export const signInWithApple = async (): Promise<AuthUser> => {
       subscribed: data.user.subscribed,
       coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
+      isSoloMode: data.user.isSoloMode,
+      linkedToRealPartner: data.user.linkedToRealPartner,
     };
   } catch (error: any) {
     console.error('❌ Apple sign-in error:', error);
@@ -624,6 +627,8 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
       subscribed: data.user.subscribed,
       coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
+      isSoloMode: data.user.isSoloMode,
+      linkedToRealPartner: data.user.linkedToRealPartner,
     };
   } catch (error: any) {
     console.error('❌ Native Google sign-in error:', error);
@@ -695,6 +700,8 @@ export const processGoogleSignIn = async (response: any): Promise<AuthUser> => {
       subscribed: data.user.subscribed,
       coupleId: data.user.coupleId,
       onboardingData: data.user.onboardingData,
+      isSoloMode: data.user.isSoloMode,
+      linkedToRealPartner: data.user.linkedToRealPartner,
     };
   } catch (error: any) {
     console.error('❌ Google sign in error:', error);

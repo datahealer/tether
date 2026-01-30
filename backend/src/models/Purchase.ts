@@ -2,12 +2,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPurchase extends Document {
   userId: mongoose.Types.ObjectId;
-  planType: 'yearly' | 'monthly' | 'trial';
+  planType: 'yearly' | 'monthly' | 'trial' | 'refresh_bundle' | 'pack_unlock';
   amount: number;
   currency: string;
-  status: 'active' | 'expired' | 'cancelled';
+  status: 'active' | 'expired' | 'cancelled' | 'completed';
   startDate: Date;
-  expiresAt: Date;
+  expiresAt?: Date;
   autoRenew: boolean;
   purchaseToken?: string;
   revenueCatTransactionId?: string;
@@ -15,6 +15,12 @@ export interface IPurchase extends Document {
   revenueCatProductId?: string;
   revenueCatStore?: string;
   cancelledAt?: Date;
+  metadata?: {
+    refreshCount?: number;
+    categoryId?: string;
+    unlockDuration?: number;
+    type?: 'permanent_refresh' | 'temporary_pack_unlock';
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +34,7 @@ const PurchaseSchema: Schema = new Schema(
     },
     planType: {
       type: String,
-      enum: ['yearly', 'monthly', 'trial'],
+      enum: ['yearly', 'monthly', 'trial', 'refresh_bundle', 'pack_unlock'],
       required: true,
     },
     amount: {
@@ -42,7 +48,7 @@ const PurchaseSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'expired', 'cancelled'],
+      enum: ['active', 'expired', 'cancelled', 'completed'],
       default: 'active',
     },
     startDate: {
@@ -52,7 +58,6 @@ const PurchaseSchema: Schema = new Schema(
     },
     expiresAt: {
       type: Date,
-      required: true,
     },
     autoRenew: {
       type: Boolean,
@@ -76,6 +81,10 @@ const PurchaseSchema: Schema = new Schema(
     },
     cancelledAt: {
       type: Date,
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {},
     },
   },
   {
