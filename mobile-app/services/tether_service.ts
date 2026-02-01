@@ -8,8 +8,34 @@ import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 
+// ==================== CONSTANTS ====================
+
+/**
+ * Question States (aligned with backend QuestionState enum)
+ * 
+ * LIFECYCLE:
+ * UNSEEN → SERVED → WAITING_FOR_PARTNER/COMPLETED/CLEARED_BY_FIRST_ANSWER
+ *                 → UNANSWERED_EXPIRED (with 14-day cooldown)
+ * 
+ * SKIPPED_REFRESH: Question refreshed/skipped by user
+ * CLEARED_BY_FIRST_ANSWER: Other questions cleared when first answer submitted (NO cooldown)
+ */
+export const QUESTION_STATES = {
+  UNSEEN: 'unseen',                               // Question exists but never served to couple
+  SERVED: 'served',                               // Active question, neither partner answered yet
+  SKIPPED_REFRESH: 'skipped_refresh',             // Question skipped/refreshed by user
+  CLEARED_BY_FIRST_ANSWER: 'cleared_by_first_answer', // Cleared when first answer submitted (no penalty)
+  UNANSWERED_EXPIRED: 'unanswered_expired',       // Expired without both answers (14-day cooldown)
+  WAITING_FOR_PARTNER: 'waiting_for_partner',     // One partner answered, waiting for other
+  COMPLETED: 'completed',                         // Both partners answered
+} as const;
+
 // ==================== TYPES ====================
 
+/**
+ * Tether Question from backend
+ * Represents a single question with its current state and answer data
+ */
 export interface TetherQuestion {
   questionId: string;
   question: string;
@@ -17,6 +43,7 @@ export interface TetherQuestion {
   categoryName?: string;
   difficulty: number;
   tone: string;
+  /** Current state - see QUESTION_STATES constant for all possible values */
   state?: string;
   servedAt?: string;
   expiresAt?: string;
@@ -67,6 +94,7 @@ export interface TetherHistory {
   partnerAnswer?: string;
   answeredAt: string;
   partnerAnsweredAt?: string;
+  state?: string; // 'COMPLETED' or 'CLEARED_BY_FIRST_ANSWER'
   reactions?: Array<{
     userId: string;
     emoji: string;

@@ -564,6 +564,7 @@ export interface CarouselCard {
   isLocked?: boolean;
   isTemporary?: boolean;
   daysLeft?: number;
+  hasActiveTether?: boolean; // ✅ Flag to indicate if this category has an active tether ready
 }
 
 interface Card3DCarouselProps {
@@ -788,6 +789,14 @@ export default function Card3DCarousel({
                     shouldShowBorder && styles.cardActive,
                     !isActive && styles.cardInactive,
                   ]}>
+                    {/* Active Tether Badge - Top Left */}
+                    {card.hasActiveTether && !card.isLocked && (
+                      <View style={styles.activeTetherBadge}>
+                        <View style={styles.activeTetherPulse} />
+                        <Text style={styles.activeTetherText}>● Ready to answer</Text>
+                      </View>
+                    )}
+
                     {/* Locked Badge - Top Right */}
                     {card.isLocked && (
                       <View style={styles.lockedBadge}>
@@ -995,5 +1004,35 @@ const styles = StyleSheet.create({
   dotActive: {
     width: 24,
     backgroundColor: Colors.darkOrange,
+  },
+  activeTetherBadge: {
+    position: 'absolute',
+    top: Spacing.md,
+    left: Spacing.md,
+    backgroundColor: Colors.darkOrange,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: 16,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: Colors.darkOrange,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  activeTetherPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.white,
+  },
+  activeTetherText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: 11,
+    fontWeight: FontWeights.semibold,
+    color: Colors.white,
   },
 });

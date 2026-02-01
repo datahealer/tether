@@ -99,8 +99,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Handle different notification types
     switch (data.type) {
       case 'NEW_TETHER':
-        // New tether available - go to category packs
-        console.log('➡️ New tether available - navigating to category packs');
+        // New tether cycle available - go to category packs to see all active tethers
+        // Note: This is ONE notification per cycle drop (not per question)
+        // Aligned with developerhelp.md Section 9
+        console.log('➡️ New tether cycle available - navigating to category packs');
+        console.log(`   Tethers in cycle: ${data.tetherCount || 'unknown'}`);
         router.push('/home/category-packs');
         break;
 
@@ -180,7 +183,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       case 'PARTNER_REFRESHED':
         console.log('➡️ Partner refreshed - navigating to category question');
         router.push({
-          pathname: data.route || '/home/category-question',
+          pathname: (data.route || '/home/category-question') as any,
           params: {
             categoryId: data.categoryId,
             tetherQuestion: data.questionId || data.tetherId,

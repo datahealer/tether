@@ -101,6 +101,20 @@ export const createOrUpdateUser = async (data: CreateUserData): Promise<any> => 
     }
 
     user = await User.create(userData);
+    
+    // ✅ Create default FREE entitlement for new user
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const { Tier } = await import('../types/enums');
+    await UserEntitlement.create({
+      userId: user._id,
+      tier: Tier.FREE,
+      refreshesDefault: 1,
+      refreshesBonus: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log('✅ Created default FREE entitlement for OAuth user:', user.email);
+    
     return user;
   } catch (error) {
     console.error('Error creating/updating user:', error);

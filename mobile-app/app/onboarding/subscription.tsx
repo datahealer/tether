@@ -402,6 +402,23 @@ export default function SubscriptionScreen() {
     setSelectedPlan(planId);
   };
 
+  const handleContinueAsFree = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      console.log('✅ User chose to continue with free tier (2 categories)');
+      
+      // Navigate directly to category-packs
+      // Backend already has user's entitlement set to FREE tier by default
+      // Category selection algorithm will show their 2 best-fit categories
+      router.replace('/home/category-packs');
+      
+    } catch (error: any) {
+      console.error('❌ Error navigating to free tier:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    }
+  };
+
   const handleStartTrial = async () => {
     try {
       setIsLoading(true);
@@ -687,6 +704,15 @@ export default function SubscriptionScreen() {
           Your 7-day Premium Trial will automatically convert to a Monthly{'\n'}
           Subscription unless cancelled at least <Text style={styles.highlight}>24 hours</Text> before renewal.
         </Text>
+
+        {/* Continue as Free Button */}
+        <DebouncedButton
+          style={styles.continueFreeButton}
+          onPress={handleContinueAsFree}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.continueFreeText}>Continue with 2 Free Categories</Text>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );
@@ -844,5 +870,24 @@ const styles = StyleSheet.create({
     fontFamily: 'SFProDisplay-Bold',
     fontWeight: FontWeights.bold,
     color: Colors.darkOrange,
+  },
+  continueFreeButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.inputText,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xl,
+    minHeight: 52,
+  },
+  continueFreeText: {
+    fontFamily: 'InterTight-SemiBold',
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.semibold,
+    color: Colors.inputText,
+    letterSpacing: 0.3,
   },
 });

@@ -390,6 +390,8 @@ export const getCategoryProgress = async (req: Request, res: Response) => {
         unlocked: state.unlocked,
         unlockExpiry: state.unlockExpiry,
         lastActivityAt: state.lastActivityAt,
+        hasActiveTether: state.hasActiveTether || false, // ✅ Include active tether status
+        latestServedDate: state.latestServedDate || null, // ✅ Include latest served date
       };
     });
 

@@ -20,10 +20,18 @@ Notifications.setNotificationHandler({
 export interface NotificationData {
   type?: string;
   tetherId?: string;
+  questionId?: string;
   coupleId?: string;
   categoryId?: string;
+  categoryIds?: string[]; // For cycle drops with multiple categories
+  tetherCount?: number; // Number of tethers in the cycle drop
   streak?: number;
   hoursRemaining?: number;
+  question?: string;
+  categoryName?: string;
+  partnerAnswer?: string;
+  expiresAt?: string;
+  route?: string;
   [key: string]: any;
 }
 

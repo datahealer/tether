@@ -482,7 +482,27 @@ export default function AccountCreationScreen() {
 
   const handleSkip = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/onboarding/privacy');
+    
+    // Smart navigation based on user state
+    if (!user) {
+      // No user - go to privacy to start onboarding
+      router.push('/onboarding/privacy');
+    } else if (!user.onboarded) {
+      // User exists but not onboarded - continue onboarding
+      router.push('/onboarding/privacy');
+    } else if (!user.coupleId) {
+      // Onboarded but no couple - go to partner invite
+      router.replace('/onboarding/partner-invite');
+    } else if (user.isSoloMode && !user.linkedToRealPartner) {
+      // Solo mode - go to partner invite
+      router.replace('/onboarding/partner-invite');
+    } else if (!user.subscribed) {
+      // Has couple but not subscribed - go to subscription or first-tether
+      router.replace('/onboarding/first-tether');
+    } else {
+      // Fully ready - go to home
+      router.replace('/home/category-packs');
+    }
   };
   const handleLogout = async () => {
       Alert.alert(

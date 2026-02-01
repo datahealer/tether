@@ -109,7 +109,7 @@ export class VirtualPartnerService {
 
     console.log(`✅ Couple upgraded to real couple: ${couple._id}`);
 
-    // Update both users
+    // Update both users - BOTH should have linkedToRealPartner = true
     await User.findByIdAndUpdate(soloUserId, {
       coupleId: couple._id,
       linkedToRealPartner: true,
@@ -117,9 +117,10 @@ export class VirtualPartnerService {
 
     await User.findByIdAndUpdate(partnerUserId, {
       coupleId: couple._id,
+      linkedToRealPartner: true, // ✅ FIX: Set to true for partner as well
     });
 
-    console.log(`✅ Both users linked to couple`);
+    console.log(`✅ Both users linked to couple with linkedToRealPartner=true`);
 
     // Delete virtual partner
     await User.findByIdAndDelete(virtualPartnerId);

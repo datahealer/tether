@@ -17,7 +17,7 @@ import { UserEntitlement } from '../models/UserEntitlement';
 import { CoupleCategoryState } from '../models/CoupleCategoryState';
 import { CoupleQuestionState } from '../models/CoupleQuestionState';
 import { QuestionServiceEngine } from './questionService';
-import { Rhythm, TetherStatus, SubscriptionTier, CategoryId } from '../types/enums';
+import { Rhythm, TetherStatus, QuestionState, SubscriptionTier, CategoryId } from '../types/enums';
 import { ITether } from '../types/interfaces';
 
 // Rhythm interval mapping (in milliseconds)
@@ -156,17 +156,6 @@ export class TetherDropService {
         console.log(`[TetherDropService] ✅ Created tether for ${categoryId}: ${question.questionId}`);
         tetherCount++;
         
-        // Send notification to both partners
-        try {
-          const { NotificationTriggers } = await import('./notification/triggers');
-          await NotificationTriggers.onTetherCreated(
-            coupleId.toString(),
-            tether._id.toString()
-          );
-        } catch (notifError) {
-          console.error('[TetherDropService] Notification error:', notifError);
-        }
-        
       } catch (error) {
         console.error(`[TetherDropService] Error creating tether for ${categoryId}:`, error);
       }
@@ -180,6 +169,22 @@ export class TetherDropService {
     await couple.save();
     
     console.log(`[TetherDropService] 🎉 Dropped ${tetherCount} tethers, expires at ${expiresAt.toISOString()}`);
+    
+    // Send ONE notification for the cycle drop (not per-question)
+    // Aligned with developerhelp.md Section 9: "new tether available" is a cycle event
+    if (tetherCount > 0) {
+      try {
+        const { NotificationTriggers } = await import('./notification/triggers');
+        await NotificationTriggers.onCycleDropped(
+          coupleId.toString(),
+          tetherCount,
+          unlockedCategories
+        );
+        console.log(`[TetherDropService] 📲 Sent cycle notification for ${tetherCount} tethers`);
+      } catch (notifError) {
+        console.error('[TetherDropService] Cycle notification error:', notifError);
+      }
+    }
   }
 
   /**
@@ -481,45 +486,61 @@ export class TetherDropService {
 
   /**
    * Handle expired tethers (cron job)
-   * Moves unanswered/partially-answered tethers to cooldown
+   * Marks SERVED questions past their expiry as UNANSWERED_EXPIRED with cooldown
+   * Marks WAITING_FOR_PARTNER questions past expiry as UNANSWERED_EXPIRED with cooldown
    */
   static async handleExpiredTethers(): Promise<void> {
     const now = new Date();
+    const COOLDOWN_DAYS = 14;
+    const cooldownEnd = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
     
+    // Find all questions that are past their expiry and still in SERVED or WAITING_FOR_PARTNER state
+    const expiredQuestions = await CoupleQuestionState.find({
+      state: { $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] },
+      expiryTimestamp: { $lte: now },
+    });
+    
+    console.log(`[TetherDropService] Found ${expiredQuestions.length} expired questions to process`);
+    
+    let expiredCount = 0;
+    
+    for (const questionState of expiredQuestions) {
+      // Mark as UNANSWERED_EXPIRED and apply 14-day cooldown
+      questionState.state = QuestionState.UNANSWERED_EXPIRED;
+      questionState.cooldownEnd = cooldownEnd;
+      await questionState.save();
+      expiredCount++;
+      
+      console.log(
+        `[TetherDropService] ⏰ Expired: ${questionState.categoryId} question ${questionState.questionId} ` +
+        `for couple ${questionState.coupleId} (had ${questionState.answers?.length || 0} answers)`
+      );
+    }
+    
+    console.log(`[TetherDropService] ✅ Marked ${expiredCount} questions as UNANSWERED_EXPIRED with cooldown`);
+    
+    // Also handle legacy Tether model if still in use
     const expiredTethers = await Tether.find({
       status: { $in: [TetherStatus.ACTIVE, TetherStatus.WAITING_FOR_PARTNER] },
       expiresAt: { $lte: now },
     });
     
-    console.log(`[TetherDropService] Found ${expiredTethers.length} expired tethers`);
-    
-    for (const tether of expiredTethers) {
-      if (tether.answers.length === 1) {
-        // First responder answered, second didn't
-        tether.status = TetherStatus.UNANSWERED_EXPIRED;
-        tether.clearedBy = 'expiry';
-      } else if (tether.answers.length === 0) {
-        // Nobody answered
-        tether.status = TetherStatus.EXPIRED;
-        tether.clearedBy = 'expiry';
+    if (expiredTethers.length > 0) {
+      console.log(`[TetherDropService] Found ${expiredTethers.length} expired legacy tethers`);
+      
+      for (const tether of expiredTethers) {
+        if (tether.answers.length === 1) {
+          tether.status = TetherStatus.UNANSWERED_EXPIRED;
+          tether.clearedBy = 'expiry';
+        } else if (tether.answers.length === 0) {
+          tether.status = TetherStatus.EXPIRED;
+          tether.clearedBy = 'expiry';
+        }
+        await tether.save();
       }
       
-      await tether.save();
-      
-      // Add to cooldown pool
-      await CoupleQuestionState.findOneAndUpdate(
-        { coupleId: tether.coupleId, questionId: tether.questionId },
-        {
-          $set: {
-            expiredWithoutBothAnswers: true,
-            cooldownEnd: new Date(now.getTime() + COOLDOWN_PERIOD),
-          },
-        },
-        { upsert: true }
-      );
+      console.log(`[TetherDropService] ✅ Processed ${expiredTethers.length} legacy tethers`);
     }
-    
-    console.log(`[TetherDropService] ✅ Processed ${expiredTethers.length} expired tethers`);
   }
 
   /**

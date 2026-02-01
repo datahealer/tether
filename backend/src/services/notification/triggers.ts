@@ -64,9 +64,13 @@ export class NotificationTriggers {
   }
 
   /**
-   * When a new tether is dropped
+   * When a new tether is dropped (DEPRECATED - use onCycleDropped instead)
+   * @deprecated This method sent per-question notifications which violates the design.
+   * Use onCycleDropped for batch cycle notifications.
    */
   static async onTetherCreated(coupleId: string, questionStateId: string): Promise<void> {
+    console.warn('[NotificationTriggers] onTetherCreated is deprecated. Use onCycleDropped for batch notifications.');
+    // Kept for backward compatibility but should not be called
     try {
       const questionState = await CoupleQuestionState.findById(questionStateId);
       if (!questionState) return;
@@ -90,6 +94,50 @@ export class NotificationTriggers {
       );
     } catch (error) {
       console.error('Error sending new tether notification:', error);
+    }
+  }
+
+  /**
+   * When a new cycle drops (batch of tethers)
+   * Sends ONE notification for the cycle drop event, not per-question
+   * Aligned with developerhelp.md Section 9: "new tether available" is a cycle event
+   */
+  static async onCycleDropped(
+    coupleId: string,
+    tetherCount: number,
+    categoryIds: string[]
+  ): Promise<void> {
+    try {
+      const couple = await Couple.findById(coupleId);
+      if (!couple) return;
+
+      // Determine notification copy based on count
+      const title = tetherCount === 1 
+        ? 'Your tether is ready! 💬'
+        : `${tetherCount} tethers ready! 💬`;
+        
+      const body = tetherCount === 1
+        ? 'A new question is waiting—pull on the line together!'
+        : 'New questions are waiting—time to connect!';
+
+      await notificationService.sendToCouple(
+        coupleId,
+        NotificationType.NEW_TETHER,
+        () => ({
+          title,
+          body,
+          data: {
+            type: 'NEW_TETHER',
+            tetherCount,
+            categoryIds,
+            route: '/home/category-packs', // Deep link to category packs, not specific question
+          },
+        })
+      );
+
+      console.log(`✅ Sent cycle notification for ${tetherCount} tethers to couple ${coupleId}`);
+    } catch (error) {
+      console.error('❌ Error in onCycleDropped trigger:', error);
     }
   }
 

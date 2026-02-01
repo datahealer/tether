@@ -305,6 +305,38 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
         invite.acceptedAt = new Date();
         await invite.save();
 
+        // ✅ Ensure both users have entitlements
+        const { UserEntitlement } = await import('../models/UserEntitlement');
+        const { Tier } = await import('../types/enums');
+        const [inviterEntitlement, accepterEntitlement] = await Promise.all([
+          UserEntitlement.findOne({ userId: invite.inviterId }),
+          UserEntitlement.findOne({ userId: userId }),
+        ]);
+
+        if (!inviterEntitlement) {
+          await UserEntitlement.create({
+            userId: invite.inviterId,
+            tier: Tier.FREE,
+            refreshesDefault: 1,
+            refreshesBonus: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          console.log('✅ Created missing entitlement for inviter (solo upgrade)');
+        }
+
+        if (!accepterEntitlement) {
+          await UserEntitlement.create({
+            userId: userId,
+            tier: Tier.FREE,
+            refreshesDefault: 1,
+            refreshesBonus: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          console.log('✅ Created missing entitlement for accepter (solo upgrade)');
+        }
+
         // Send couple creation notifications
         try {
           const { NotificationTriggers } = await import('../services/notification/triggers');
@@ -425,13 +457,16 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
       },
     });
 
-    // Update both users with coupleId
+    // Update both users with coupleId - BOTH should have linkedToRealPartner = true
     inviter.coupleId = couple._id;
+    inviter.linkedToRealPartner = true; // ✅ FIX: Set for inviter
     accepter.coupleId = couple._id;
+    accepter.linkedToRealPartner = true; // ✅ FIX: Set for accepter
     await Promise.all([
       inviter.save(),
       accepter.save(),
     ]);
+    console.log(`✅ Both users linked to couple with linkedToRealPartner=true`);
 
     // ✅ CREATE USER ENTITLEMENTS FOR BOTH PARTNERS
     // Both partners should have the same tier (highest tier wins)

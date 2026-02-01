@@ -257,6 +257,22 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
       await updateOnboardingData(onboardingData);
       const updatedUser = await completeOnboarding();
       
+      // ✅ CRITICAL: Update user in AsyncStorage with onboarded flag
+      const currentUserStr = await AsyncStorage.getItem('user');
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        const refreshedUser = {
+          ...currentUser,
+          onboarded: true,
+          onboardingData: onboardingData,
+          coupleId: updatedUser.coupleId || currentUser.coupleId,
+          isSoloMode: updatedUser.isSoloMode !== undefined ? updatedUser.isSoloMode : currentUser.isSoloMode,
+          linkedToRealPartner: updatedUser.linkedToRealPartner !== undefined ? updatedUser.linkedToRealPartner : currentUser.linkedToRealPartner,
+        };
+        await AsyncStorage.setItem('user', JSON.stringify(refreshedUser));
+        console.log('✅ Updated AsyncStorage with onboarded=true and fresh user data');
+      }
+      
       // Keep onboarding data in storage as fallback (don't clear it)
       // The user's profile should include this data from the backend
       console.log('✅ Onboarding submitted successfully (data kept in storage as fallback)');

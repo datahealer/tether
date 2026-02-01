@@ -542,6 +542,19 @@ export const emailSignup = async (req: Request, res: Response): Promise<void> =>
       refreshTokenVersion: 0,
     });
 
+    // ✅ Create default FREE entitlement for new user
+    const { UserEntitlement } = await import('../models/UserEntitlement');
+    const { Tier } = await import('../types/enums');
+    await UserEntitlement.create({
+      userId: user._id,
+      tier: Tier.FREE,
+      refreshesDefault: 1,
+      refreshesBonus: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log('✅ Created default FREE entitlement for user:', user.email);
+
     // Generate token pair
     const { accessToken, refreshToken } = generateTokenPair(user._id.toString());
     

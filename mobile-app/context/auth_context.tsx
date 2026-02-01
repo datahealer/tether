@@ -266,6 +266,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   refreshSession: () => Promise<boolean>;
+  updateUserData: (updates: Partial<AuthUser>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -514,6 +515,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     }
   }, []);
 
+  const updateUserData = useCallback(async (updates: Partial<AuthUser>) => {
+    try {
+      const currentUserStr = await AsyncStorage.getItem('user');
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        const updatedUser = { ...currentUser, ...updates };
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        console.log('✅ User data updated:', updates);
+      }
+    } catch (error) {
+      console.error('Error updating user data:', error);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -522,7 +538,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
       signOut, 
       signUp, 
       login,
-      refreshSession 
+      refreshSession,
+      updateUserData 
     }}>
       {children}
     </AuthContext.Provider>

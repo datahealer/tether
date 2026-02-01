@@ -29,7 +29,7 @@ type AttributionSource =
 export default function AttributionScreen() {
   const router = useRouter();
   const { updateField, submitOnboarding } = useOnboarding();
-  const { user, refreshSession } = useAuth();
+  const { user, refreshSession, updateUserData } = useAuth();
   const [selectedSource, setSelectedSource] = useState<AttributionSource | null>(null);
   const [otherText, setOtherText] = useState('');
   const [otherTextFocused, setOtherTextFocused] = useState(false);
@@ -73,7 +73,18 @@ export default function AttributionScreen() {
       
       // Submit all onboarding data + complete onboarding
       // This calls updateOnboardingData() AND completeOnboarding()
-      await submitOnboarding();
+      const updatedUser = await submitOnboarding();
+      
+      // ✅ Update auth context immediately with onboarded status
+      if (updatedUser) {
+        await updateUserData({
+          onboarded: true,
+          coupleId: updatedUser.coupleId,
+          isSoloMode: updatedUser.isSoloMode,
+          linkedToRealPartner: updatedUser.linkedToRealPartner,
+        });
+        console.log('✅ Auth context updated with onboarded=true');
+      }
       
       // Refresh user session to get updated onboarded flag and coupleId
       const refreshed = await refreshSession();

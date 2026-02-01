@@ -293,8 +293,13 @@ export default function CategoryPacksScreen() {
           totalQuestions: cat.totalQuestions || 180,
           gradient: [baseColor, `${baseColor}CC`] as [string, string], // Add transparency for gradient
           isLocked: !cat.unlocked,
+          hasActiveTether: cat.hasActiveTether || false, // ✅ Pass active tether status from backend
         };
       });
+
+      // Backend already sorts by active tethers, but we can log it for debugging
+      const activeTetherCount = mappedCategories.filter(c => c.hasActiveTether).length;
+      console.log(`📊 Loaded ${mappedCategories.length} categories, ${activeTetherCount} with active tethers`);
 
       setCategories(mappedCategories);
     } catch (error: any) {

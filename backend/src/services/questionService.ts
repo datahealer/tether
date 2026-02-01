@@ -618,18 +618,6 @@ static async updateCategoryAccessForTierChange(
         servedDate: createdState.servedDate,
       });
       
-      // Send notification to both partners
-      try {
-        const { NotificationTriggers } = await import('./notification/triggers');
-        await NotificationTriggers.onTetherCreated(
-          coupleId.toString(),
-          createdState._id.toString()
-        );
-        console.log(`📲 Sent NEW_TETHER notification for ${question.questionId}`);
-      } catch (notifError) {
-        console.error('Error sending new tether notification:', notifError);
-      }
-      
       droppedCount++;
     }
 
@@ -641,6 +629,22 @@ static async updateCategoryAccessForTierChange(
       'sharedData.refreshesUsedThisCycle': 0,
       'sharedData.lastRefreshCycleReset': new Date(),
     });
+    
+    // Send ONE notification for the cycle drop
+    if (droppedCount > 0) {
+      try {
+        const { NotificationTriggers } = await import('./notification/triggers');
+        const categoryIds = unlockedCategories.map((cs: any) => cs.categoryId);
+        await NotificationTriggers.onCycleDropped(
+          coupleId.toString(),
+          droppedCount,
+          categoryIds
+        );
+        console.log(`📲 Sent cycle notification for ${droppedCount} tethers`);
+      } catch (notifError) {
+        console.error('Error sending cycle notification:', notifError);
+      }
+    }
   }
 
   /**
@@ -686,6 +690,7 @@ static async updateCategoryAccessForTierChange(
     const isBothAnswered = questionState.answers.length === 2;
 
     // FIRST ANSWER: Clear all other live tethers for this cycle
+    // These questions are marked as CLEARED (not expired) and return to pool immediately
     if (isFirstAnswer) {
       console.log(`🔒 First answer submitted - clearing other live tethers for couple ${coupleId}`);
       await CoupleQuestionState.updateMany(
@@ -696,12 +701,12 @@ static async updateCategoryAccessForTierChange(
         },
         {
           $set: {
-            state: QuestionState.UNANSWERED_EXPIRED,
-            cooldownEnd: new Date(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000),
+            state: QuestionState.CLEARED_BY_FIRST_ANSWER,
+            // No cooldownEnd - these questions didn't expire, they were just cleared
           },
         }
       );
-      console.log('✅ Cleared other live tethers - locked into current question');
+      console.log('✅ Cleared other live tethers (CLEARED_BY_FIRST_ANSWER) - locked into current question');
     }
 
     // Update state
@@ -724,19 +729,9 @@ static async updateCategoryAccessForTierChange(
       // Update couple stats and check for streak/milestone
       milestones = await this.updateCoupleStats(coupleId, questionState.expiryTimestamp!);
 
-      // 🚀 BOTH ANSWERED: Drop new tethers asynchronously (performance optimization)
-      // Run in background to avoid blocking the response to Partner B
-      console.log('🎉 Both partners answered - scheduling new tethers drop in background');
-      process.nextTick(async () => {
-        try {
-          console.log(`🔄 Dropping new questions for couple ${coupleId}...`);
-          await this.dropTethersForCouple(coupleId, true); // force = true bypasses rhythm check
-          console.log(`✅ New questions ready for couple ${coupleId}`);
-        } catch (dropError) {
-          console.error('❌ Failed to drop new tethers after completion:', dropError);
-          // Background task - log error but don't fail the original request
-        }
-      });
+      // ✅ BOTH ANSWERED: Questions will drop at next rhythm interval via cron job
+      // No immediate re-drop - respects rhythm-based timing per documentation
+      console.log('🎉 Both partners answered - new questions will drop at next rhythm cycle');
     } else {
       questionState.state = QuestionState.WAITING_FOR_PARTNER;
     }
@@ -1186,7 +1181,8 @@ static async getActiveTethers(
   };
 }
   /**
-   * Get category progress for a couple
+   * Get category progress for a couple with active tether detection
+   * Categories with active tethers are automatically sorted to the top
    */
   static async getCategoryProgress(coupleId: mongoose.Types.ObjectId) {
     // Get all category states for this couple
@@ -1196,7 +1192,68 @@ static async getActiveTethers(
     if (!coupleStates || coupleStates.length === 0) {
       return [];
     }
+
+    // Check for active tethers per category
+    // Active tether = SERVED or WAITING_FOR_PARTNER state
+    const activeTethersByCategory = await CoupleQuestionState.aggregate([
+      {
+        $match: {
+          coupleId: coupleId,
+          state: { 
+            $in: [QuestionState.SERVED, QuestionState.WAITING_FOR_PARTNER] 
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$categoryId',
+          hasActiveTether: { $sum: 1 },
+          latestServedDate: { $max: '$servedDate' }
+        }
+      }
+    ]);
+
+    // Create a lookup map for O(1) access
+    const activeTetherMap = new Map(
+      activeTethersByCategory.map(item => [
+        item._id, 
+        { 
+          hasActive: item.hasActiveTether > 0, 
+          latestServed: item.latestServedDate 
+        }
+      ])
+    );
+
+    // Enrich category states with active tether info
+    const enrichedStates = coupleStates.map(state => ({
+      ...state,
+      hasActiveTether: activeTetherMap.get(state.categoryId)?.hasActive || false,
+      latestServedDate: activeTetherMap.get(state.categoryId)?.latestServed || null
+    }));
+
+    // Sort: Active tethers first, then by last activity, then alphabetically
+    const sortedStates = enrichedStates.sort((a, b) => {
+      // Priority 1: Categories with active tethers come first
+      if (a.hasActiveTether !== b.hasActiveTether) {
+        return a.hasActiveTether ? -1 : 1;
+      }
+
+      // Priority 2: If both have active tethers, newest served first
+      if (a.hasActiveTether && b.hasActiveTether) {
+        if (a.latestServedDate && b.latestServedDate) {
+          return b.latestServedDate.getTime() - a.latestServedDate.getTime();
+        }
+      }
+
+      // Priority 3: Sort by last activity date
+      if (a.lastActivityAt && b.lastActivityAt) {
+        return b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
+      }
+
+      // Priority 4: Alphabetical fallback
+      return (a.categoryId || '').localeCompare(b.categoryId || '');
+    });
     
-    return coupleStates;
+    return sortedStates;
   }
 }

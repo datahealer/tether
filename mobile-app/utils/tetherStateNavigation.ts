@@ -31,6 +31,15 @@ export type TetherScreenRoute =
 export function getTetherScreenRoute(tether: TetherStateInfo): TetherScreenRoute {
   const { state, hasUserAnswered, hasPartnerAnswered, isExpired } = tether;
 
+  // Case: Cleared by first answer (question was removed from cycle when first answer was submitted)
+  // These questions should not be navigable - they're in history or hidden
+  if (state === 'CLEARED_BY_FIRST_ANSWER') {
+    return {
+      screen: 'tether-history',
+      params: {},
+    };
+  }
+
   // Case: Both expired (neither answered in time)
   if (state === 'UNANSWERED_EXPIRED' || state === 'BOTH_EXPIRED') {
     return {
@@ -108,8 +117,14 @@ export function getTetherScreenRoute(tether: TetherStateInfo): TetherScreenRoute
  */
 export function getTetherStateDescription(state: string): string {
   switch (state) {
+    case 'UNSEEN':
+      return 'Not Served';
     case 'SERVED':
       return 'Active';
+    case 'SKIPPED_REFRESH':
+      return 'Skipped';
+    case 'CLEARED_BY_FIRST_ANSWER':
+      return 'Cleared';
     case 'WAITING_FOR_PARTNER':
       return 'Waiting for Partner';
     case 'COMPLETED':
@@ -130,4 +145,26 @@ export function isTetherExpired(expiresAt?: Date | string): boolean {
   
   const expiry = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
   return expiry.getTime() < Date.now();
+}
+
+/**
+ * Check if a state represents an active tether (served or waiting for partner)
+ * These are the only states that should be shown in the current tether cycle
+ */
+export function isActiveTetherState(state: string): boolean {
+  return state === 'SERVED' || state === 'WAITING_FOR_PARTNER';
+}
+
+/**
+ * Check if a state represents a completed/cleared tether that's in history
+ */
+export function isHistoricalTetherState(state: string): boolean {
+  return state === 'COMPLETED' || state === 'CLEARED_BY_FIRST_ANSWER';
+}
+
+/**
+ * Check if a state represents an expired tether
+ */
+export function isExpiredTetherState(state: string): boolean {
+  return state === 'UNANSWERED_EXPIRED' || state === 'BOTH_EXPIRED';
 }

@@ -43,7 +43,8 @@ export enum QuestionState {
   UNSEEN = 'unseen',
   SERVED = 'served',
   SKIPPED_REFRESH = 'skipped_refresh',
-  UNANSWERED_EXPIRED = 'unanswered_expired',
+  CLEARED_BY_FIRST_ANSWER = 'cleared_by_first_answer', // Other questions cleared when first answer submitted
+  UNANSWERED_EXPIRED = 'unanswered_expired', // Questions that expired without both answers (cycle timeout)
   WAITING_FOR_PARTNER = 'waiting_for_partner',
   COMPLETED = 'completed',
   answers = "answers",

@@ -24,6 +24,21 @@ export default function PartnerInviteScreen() {
   const router = useRouter();
   const { onboardingData } = useOnboarding();
   const { user, refreshSession } = useAuth();
+  
+  // Prevent back navigation to account-creation if user is onboarded
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (user?.onboarded) {
+        // For onboarded users, back button should not go to account-creation
+        // Instead, stay on this screen or go to settings
+        return true; // Prevent default back behavior
+      }
+      return false; // Allow default back behavior for non-onboarded users
+    };
+    
+    // Note: For web/native back button handling
+    // This is more of a navigation flow design - we handle it in layout
+  }, [user?.onboarded]);
   const [inviteCode, setInviteCode] = useState('');
   const [partnerCode, setPartnerCode] = useState('');
   const [loading, setLoading] = useState(true);
@@ -78,16 +93,20 @@ export default function PartnerInviteScreen() {
 
     try {
       // Accept the invite - this creates the couple connection (becomes real couple, isSoloMode = false)
-      await acceptCoupleInvite(partnerCode.trim());
+      const response = await acceptCoupleInvite(partnerCode.trim());
       
-      // Refresh user session to get updated coupleId and user data
-      await refreshSession();
+      // Update auth context with the fresh user data from response
+      if (response.user) {
+        await refreshSession(); // This will fetch and update the user state
+      }
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success!', 'You are now connected with your partner!');
       
-      // Check if user has already completed onboarding
-      if (user && user.onboarded) {
+      // Use the fresh user data from the response, not the stale `user` from context
+      const updatedUser = response.user;
+      
+      if (updatedUser && updatedUser.onboarded) {
         // Already onboarded → go directly to first-tether
         console.log('✅ User already onboarded, navigating to first-tether');
         router.replace('/onboarding/first-tether');
@@ -148,7 +167,7 @@ export default function PartnerInviteScreen() {
 
   if (loading) {
     return (
-      <OnboardingLayout showBackButton={true} showLogo={true}>
+      <OnboardingLayout showBackButton={false} showLogo={true}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.darkOrange} />
           <Text style={styles.loadingText}>Generating your invite code...</Text>
@@ -157,8 +176,15 @@ export default function PartnerInviteScreen() {
     );
   }
 
+  // Hide back button if user is already onboarded (prevents going back to account-creation)
+  const shouldShowBackButton = !user?.onboarded;
+
   return (
-    <OnboardingLayout showBackButton={true} showLogo={true} showLogoutAvatar={true}>
+    <OnboardingLayout 
+      showBackButton={shouldShowBackButton} 
+      showLogo={true} 
+      showLogoutAvatar={true}
+    >
       <View style={styles.container}>
         {/* Solo Mode Indicator */}
         {user?.isSoloMode && !user?.linkedToRealPartner && (
