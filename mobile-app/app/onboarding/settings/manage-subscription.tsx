@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -24,6 +24,7 @@ import {
   checkRevenueCatSubscription,
 } from '../../../services/subscription';
 import type { PurchasesPackage } from 'react-native-purchases';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type PlanType = 'trial' | 'monthly' | 'yearly' | 'free';
 
@@ -250,7 +251,7 @@ export default function ManageSubscriptionScreen() {
         {/* Header */}
         <Text style={styles.heading}>Manage your Tether{'\n'}Subscription</Text>
         <Text style={styles.subtitle}>
-          Subscriptions are shared with your partner. When one person upgrades, both benefit from the same Premium experience.
+          View your plan, change it or cancel at any time.
         </Text>
 
         {/* Current Subscription Status */}
@@ -281,7 +282,7 @@ export default function ManageSubscriptionScreen() {
         <Text style={styles.sectionTitle}>Choose Your Plan</Text>
 
         {/* 7 Day Premium Trial */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'trial' && styles.planCardSelected,
@@ -299,10 +300,10 @@ export default function ManageSubscriptionScreen() {
               <Ionicons name="checkmark-circle" size={24} color={Colors.darkOrange} />
             )}
           </View>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Monthly Plan */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'monthly' && styles.planCardSelected,
@@ -320,10 +321,10 @@ export default function ManageSubscriptionScreen() {
               <Ionicons name="checkmark-circle" size={24} color={Colors.darkOrange} />
             )}
           </View>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Yearly Plan */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'yearly' && styles.planCardSelected,
@@ -346,22 +347,22 @@ export default function ManageSubscriptionScreen() {
               <Ionicons name="checkmark-circle" size={24} color={Colors.darkOrange} />
             )}
           </View>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Cancel Your Premium Plan */}
         {currentSubscription?.isSubscribed && (
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.cancelButton}
             onPress={handleCancelPlan}
             activeOpacity={0.8}
             disabled={isLoading}
           >
             <Text style={styles.cancelButtonText}>Cancel Your Premium Plan</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         )}
 
         {/* Free Experience */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'free' && styles.planCardSelected,
@@ -379,13 +380,13 @@ export default function ManageSubscriptionScreen() {
               <Ionicons name="checkmark-circle" size={24} color={Colors.darkOrange} />
             )}
           </View>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Spacer */}
         <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
         {/* Save Changes Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.saveButton,
             isLoading && styles.saveButtonDisabled,
@@ -399,7 +400,7 @@ export default function ManageSubscriptionScreen() {
           ) : (
             <Text style={styles.saveButtonText}>Save Changes</Text>
           )}
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
     </OnboardingLayout>
   );
@@ -421,6 +422,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'SFProDisplay-Regular',
@@ -430,6 +432,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   sectionTitle: {
     fontFamily: 'InterTight-SemiBold',

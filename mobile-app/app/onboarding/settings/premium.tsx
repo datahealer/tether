@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -17,6 +17,7 @@ import {
   subscribeToPlan,
   getAvailablePlans,
 } from '../../../services/subscription';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 type PlanType = 'yearly' | 'monthly';
 
@@ -137,7 +138,7 @@ export default function PremiumScreen() {
         )}
 
         {/* Yearly Plan */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'yearly' && styles.planCardSelected,
@@ -154,10 +155,10 @@ export default function PremiumScreen() {
           </View>
           <Text style={styles.planSubtitle}>Billed annually at $44.99</Text>
           <Text style={styles.planPrice}>$3.75 per month</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Monthly Plan */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.planCard,
             selectedPlan === 'monthly' && styles.planCardSelected,
@@ -170,13 +171,13 @@ export default function PremiumScreen() {
             <Text style={styles.planTitle}>Monthly</Text>
           </View>
           <Text style={styles.planPrice}>$6.49 per month</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Spacer */}
         <View style={{ flex: 1, minHeight: Spacing.xl * 2 }} />
 
         {/* Update Plan Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={[
             styles.updateButton,
             isLoading && styles.updateButtonDisabled,
@@ -192,7 +193,7 @@ export default function PremiumScreen() {
               {currentSubscription?.planType === selectedPlan ? 'Current Plan' : 'Update plan'}
             </Text>
           )}
-        </TouchableOpacity>
+        </DebouncedButton>
 
         {/* Footer Text */}
         <Text style={styles.footerText}>
@@ -219,6 +220,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'SFProDisplay-Regular',
@@ -228,6 +230,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.md,
     letterSpacing: 0,
+    textAlign:'center'
   },
   badge: {
     fontFamily: 'SFProDisplay-Medium',
@@ -235,6 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.medium,
     color: Colors.darkOrange,
     marginBottom: Spacing.xl,
+    textAlign:'center'
   },
   planCard: {
     backgroundColor: Colors.white,

@@ -3,7 +3,7 @@
 //   View,
 //   Text,
 //   StyleSheet,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   ScrollView,
 //   Image,
 //   Alert,
@@ -23,7 +23,7 @@
 // }
 
 // const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, value, onPress, isExternal }) => (
-//   <TouchableOpacity style={styles.settingsItem} onPress={onPress} activeOpacity={0.7}>
+//   <DebouncedButton style={styles.settingsItem} onPress={onPress} activeOpacity={0.7}>
 //     <View style={styles.settingsItemLeft}>
 //       <Ionicons name={icon as any} size={20} color={Colors.darkOrange} />
 //       <Text style={styles.settingsItemLabel}>{label}</Text>
@@ -36,7 +36,7 @@
 //         color={Colors.darkGrey} 
 //       />
 //     </View>
-//   </TouchableOpacity>
+//   </DebouncedButton>
 // );
 
 // export default function SettingsScreen() {
@@ -121,9 +121,9 @@
 //     <View style={styles.container}>
 //       {/* Header */}
 //       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+//         <DebouncedButton onPress={() => router.back()} style={styles.closeButton}>
 //           <Ionicons name="close" size={24} color={Colors.black} />
-//         </TouchableOpacity>
+//         </DebouncedButton>
 //         <Text style={styles.headerTitle}>Settings</Text>
 //         <View style={styles.placeholder} />
 //       </View>
@@ -240,9 +240,9 @@
 //         </View>
 
 //         {/* Log Out Button */}
-//         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+//         <DebouncedButton style={styles.logoutButton} onPress={handleLogout}>
 //           <Text style={styles.logoutButtonText}>Log Out</Text>
-//         </TouchableOpacity>
+//         </DebouncedButton>
 
 //         <View style={{ height: Spacing.xxl }} />
 //       </ScrollView>
@@ -393,7 +393,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Image,
   Alert,
   Share
@@ -405,6 +405,7 @@ import { useAuth } from '@/context/auth_context';
 import LanguageModal from '@/components/ui/profile/LanguageModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { restoreSubscriptionPurchases } from '@/services/subscription';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 
 interface SettingsItemProps {
@@ -416,7 +417,7 @@ interface SettingsItemProps {
 }
 
 const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, value, onPress, isExternal }) => (
-  <TouchableOpacity style={styles.settingsItem} onPress={onPress} activeOpacity={0.7}>
+  <DebouncedButton style={styles.settingsItem} onPress={onPress} activeOpacity={0.7}>
     <View style={styles.settingsItemLeft}>
       <Ionicons name={icon as any} size={20} color={Colors.darkOrange} />
       <Text style={styles.settingsItemLabel}>{label}</Text>
@@ -429,7 +430,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, value, onPress
         color={Colors.darkGrey} 
       />
     </View>
-  </TouchableOpacity>
+  </DebouncedButton>
 );
 
 export default function SettingsScreen() {
@@ -587,9 +588,9 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <DebouncedButton onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={Colors.black} />
-        </TouchableOpacity>
+        </DebouncedButton>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.placeholder} />
       </View>
@@ -706,9 +707,9 @@ export default function SettingsScreen() {
         </View>
 
         {/* Log Out Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <DebouncedButton style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
 
         <View style={{ height: Spacing.xxl }} />
       </ScrollView>

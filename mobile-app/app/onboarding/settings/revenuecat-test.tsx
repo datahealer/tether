@@ -3,7 +3,7 @@
 //   View,
 //   Text,
 //   StyleSheet,
-//   TouchableOpacity,
+//   DebouncedButton,
 //   ScrollView,
 //   Alert,
 //   ActivityIndicator,
@@ -111,7 +111,7 @@
 //         {/* Test Buttons */}
 //         <View style={styles.testsContainer}>
 //           {tests.map((test, index) => (
-//             <TouchableOpacity
+//             <DebouncedButton
 //               key={index}
 //               style={styles.testButton}
 //               onPress={test.action}
@@ -123,7 +123,7 @@
 //                 <Text style={styles.testButtonDescription}>{test.description}</Text>
 //               </View>
 //               {loading && <ActivityIndicator size="small" color={Colors.darkOrange} />}
-//             </TouchableOpacity>
+//             </DebouncedButton>
 //           ))}
 //         </View>
 

@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface Answer {
   id: string;
@@ -85,7 +86,7 @@ export default function DeleteAnswersScreen() {
           {/* Answers List */}
           <View style={styles.answersList}>
             {answers.map((answer, index) => (
-              <TouchableOpacity
+              <DebouncedButton
                 key={answer.id}
                 style={[
                   styles.answerItem,
@@ -106,20 +107,20 @@ export default function DeleteAnswersScreen() {
                     <Ionicons name="checkmark" size={18} color={Colors.white} />
                   )}
                 </View>
-              </TouchableOpacity>
+              </DebouncedButton>
             ))}
           </View>
         </ScrollView>
 
         {/* Delete Button - Fixed at bottom */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.deleteButton}
             onPress={handleDeleteSelected}
             activeOpacity={0.8}
           >
             <Text style={styles.deleteButtonText}>Delete Selected Answers</Text>
-          </TouchableOpacity>
+          </DebouncedButton>
         </View>
       </View>
     </OnboardingLayout>
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'SFProDisplay-Regular',
@@ -154,6 +156,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   answersList: {
     backgroundColor: Colors.white,

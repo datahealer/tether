@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Image,
   Alert,
 } from 'react-native';
@@ -24,6 +24,7 @@ import { uploadProfilePhoto } from '@/services/upload_service';
 import { authenticatedFetch } from '@/services/auth_service';
 import { formatDateToYMD, formatDateForDisplay } from '@/utils/dateUtils';
 import Constants from 'expo-constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function ProfileDetailsScreen() {
   const router = useRouter();
@@ -306,7 +307,7 @@ export default function ProfileDetailsScreen() {
 
         {/* Profile Photo Section */}
         <View style={styles.photoSection}>
-          <TouchableOpacity
+          <DebouncedButton
             style={styles.photoContainer}
             onPress={() => setShowPhotoModal(true)}
             activeOpacity={0.8}
@@ -338,7 +339,7 @@ export default function ProfileDetailsScreen() {
                 {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload Photo'}
               </Text>
             </View>
-          </TouchableOpacity>
+          </DebouncedButton>
         </View>
 
         {/* Editable Fields */}
@@ -386,13 +387,13 @@ export default function ProfileDetailsScreen() {
         <View style={{ flex: 1, minHeight: Spacing.xl }} />
 
         {/* Save Button */}
-        <TouchableOpacity
+        <DebouncedButton
           style={styles.saveButton}
           onPress={handleSaveChanges}
           activeOpacity={0.8}
         >
           <Text style={styles.saveButtonText}>Save Changes</Text>
-        </TouchableOpacity>
+        </DebouncedButton>
       </ScrollView>
 
       {/* Photo Picker Modal */}

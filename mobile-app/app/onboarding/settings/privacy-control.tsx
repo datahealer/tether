@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,22 +14,26 @@ import ExportDataModal from '@/components/ui/profile/ExportDataModal';
 import DeleteAccountModal from '@/components/ui/profile/DeleteAccountModal';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
 import { Ionicons } from '@expo/vector-icons';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 interface PrivacyItemProps {
   label: string;
   onPress: () => void;
   isDanger?: boolean;
+  showChevron?: boolean;
 }
 
-const PrivacyItem: React.FC<PrivacyItemProps> = ({ label, onPress, isDanger }) => (
-  <TouchableOpacity
+const PrivacyItem: React.FC<PrivacyItemProps> = ({ label, onPress, isDanger, showChevron = true }) => (
+  <DebouncedButton
     style={styles.privacyItem}
     onPress={onPress}
     activeOpacity={0.7}
   >
     <Text style={[styles.privacyItemLabel, isDanger && styles.dangerText]}>{label}</Text>
-    <Ionicons name="chevron-forward" size={20} color={isDanger ? '#FF3B30' : Colors.darkGrey} />
-  </TouchableOpacity>
+    {showChevron && (
+      <Ionicons name="chevron-forward" size={20} color={isDanger ? '#FF3B30' : Colors.darkGrey} />
+    )}
+  </DebouncedButton>
 );
 
 export default function PrivacyControlScreen() {
@@ -96,6 +100,7 @@ export default function PrivacyControlScreen() {
             label="Delete Account"
             onPress={handleDeleteAccount}
             isDanger
+            showChevron={false}
           />
         </View>
       </ScrollView>
@@ -133,6 +138,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'SFProDisplay-Regular',
@@ -142,6 +148,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   optionsContainer: {
     backgroundColor: Colors.white,

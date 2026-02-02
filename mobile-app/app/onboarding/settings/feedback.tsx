@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import OnboardingLayout from '@/components/ui/onboarding/Onboarding_layout';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import DebouncedButton from '@/components/ui/buttons/DebouncedButton';
 
 export default function FeedbackScreen() {
   const router = useRouter();
@@ -21,11 +22,6 @@ export default function FeedbackScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const handleShareFeedback = async () => {
-    if (!feedback.trim()) {
-      Alert.alert('Required', 'Please enter your feedback before sharing');
-      return;
-    }
-
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // TODO: Send feedback to backend
@@ -94,19 +90,13 @@ export default function FeedbackScreen() {
         </ScrollView>
 
         {/* Share Feedback Button - Fixed at bottom */}
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={[
-              styles.shareButton,
-              !feedback.trim() && styles.shareButtonDisabled
-            ]}
-            onPress={handleShareFeedback}
-            activeOpacity={0.8}
-            disabled={!feedback.trim()}
-          >
-            <Text style={styles.shareButtonText}>Share Feedback</Text>
-          </TouchableOpacity>
-        </View>
+        <DebouncedButton
+          style={styles.shareButton}
+          onPress={handleShareFeedback}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.shareButtonText}>Share Feedback</Text>
+        </DebouncedButton>
       </KeyboardAvoidingView>
     </OnboardingLayout>
   );
@@ -131,6 +121,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.sm,
     letterSpacing: 0,
+    textAlign:'center'
   },
   subtitle: {
     fontFamily: 'SFProDisplay-Regular',
@@ -140,6 +131,7 @@ const styles = StyleSheet.create({
     color: Colors.inputText,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   textAreaContainer: {
     backgroundColor: Colors.white,
@@ -173,11 +165,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: Spacing.sm,
   },
-  bottomContainer: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-    backgroundColor: Colors.cream,
-  },
   shareButton: {
     backgroundColor: Colors.darkOrange,
     borderRadius: BorderRadius.xl,
@@ -188,10 +175,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-  },
-  shareButtonDisabled: {
-    backgroundColor: Colors.mediumGrey,
-    opacity: 0.5,
+    marginTop: Spacing.xl,
   },
   shareButtonText: {
     fontFamily: 'InterTight-SemiBold',

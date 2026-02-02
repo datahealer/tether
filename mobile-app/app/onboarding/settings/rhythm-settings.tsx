@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: Spacing.xl,
     letterSpacing: 0,
+    textAlign:'center'
   },
   section: {
     backgroundColor: Colors.white,
