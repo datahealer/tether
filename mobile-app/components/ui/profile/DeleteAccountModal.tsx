@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { deleteAccount } from '@/services/privacy_service';
+import { clearTokens } from '@/services/auth_service';
 
 interface DeleteAccountModalProps {
   visible: boolean;
@@ -21,10 +25,38 @@ export default function DeleteAccountModal({
   onClose,
   onConfirm,
 }: DeleteAccountModalProps) {
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    onConfirm();
-    onClose();
+    
+    // Double confirmation for safety
+    Alert.alert(
+      'Final Confirmation',
+      'Are you absolutely sure? This will permanently delete your account, all your data, and disconnect you from your partner. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Delete Forever',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount();
+              await clearTokens();
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              onConfirm();
+              onClose();
+            } catch (error) {
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+              console.error('Delete account error:', error);
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleKeep = async () => {
@@ -63,11 +95,16 @@ export default function DeleteAccountModal({
 
           {/* Delete Button */}
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.deleteButton, deleting && styles.buttonDisabled]}
             onPress={handleDelete}
             activeOpacity={0.8}
+            disabled={deleting}
           >
-            <Text style={styles.deleteButtonText}>Delete My Account</Text>
+            {deleting ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.deleteButtonText}>Delete My Account</Text>
+            )}
           </TouchableOpacity>
 
           {/* Keep Button */}
@@ -145,6 +182,9 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.white,
     letterSpacing: 0.45,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   keepButton: {
     backgroundColor: 'transparent',

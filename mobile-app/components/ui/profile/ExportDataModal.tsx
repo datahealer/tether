@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/theme/constants';
+import { exportUserData } from '@/services/privacy_service';
 
 interface ExportDataModalProps {
   visible: boolean;
@@ -21,10 +24,25 @@ export default function ExportDataModal({
   onClose,
   onConfirm,
 }: ExportDataModalProps) {
+  const [loading, setLoading] = useState(false);
+
   const handleExport = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onConfirm();
-    onClose();
+    setLoading(true);
+    
+    try {
+      await exportUserData();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Your data has been exported and is ready to share');
+      onConfirm();
+      onClose();
+    } catch (error) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Export Failed', 'Unable to export your data. Please try again.');
+      console.error('Export error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -69,11 +87,16 @@ export default function ExportDataModal({
 
           {/* Export Button */}
           <TouchableOpacity
-            style={styles.exportButton}
+            style={[styles.exportButton, loading && styles.buttonDisabled]}
             onPress={handleExport}
             activeOpacity={0.8}
+            disabled={loading}
           >
-            <Text style={styles.exportButtonText}>Export</Text>
+            {loading ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.exportButtonText}>Export</Text>
+            )}
           </TouchableOpacity>
 
           {/* Cancel Button */}
@@ -159,6 +182,9 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.white,
     letterSpacing: 0.45,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   cancelButton: {
     backgroundColor: 'transparent',

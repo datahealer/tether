@@ -57,20 +57,14 @@ export default function PrivacyControlScreen() {
   };
 
   const handleConfirmExport = async () => {
-    // Simulate export
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Success', 'Your data has been exported and sent to your email');
+    // Export is handled in the modal
+    setShowExportModal(false);
   };
 
   const handleConfirmDeleteAccount = async () => {
-    // Handle account deletion
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Account Deleted', 'Your account has been permanently deleted', [
-      {
-        text: 'OK',
-        onPress: () => router.replace('/onboarding/welcome'),
-      },
-    ]);
+    // The modal handles the actual deletion and clears tokens
+    // After successful deletion, navigate to welcome screen
+    router.replace('/onboarding/welcome');
   };
 
   return (
